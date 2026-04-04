@@ -13,7 +13,7 @@ function Header() {
               <img src="/profile.jpg" alt="Eric Reilly" className="profile-image" />
               <div className="name-title">
                 <h1>Eric Reilly</h1>
-                <p>Senior Cloud Architect | Tampa, FL</p>
+                <p>Hands-On Technical Leader | Tampa, FL</p>
               </div>
             </div>
           </div>

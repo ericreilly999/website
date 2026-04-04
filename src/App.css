@@ -125,6 +125,11 @@ section {
   margin-bottom: 0;
 }
 
+.summary-lead {
+  font-size: 1.1rem;
+  color: #f0f6fc;
+}
+
 h2 {
   font-size: 1.8rem;
   margin-bottom: 1.5rem;
@@ -167,10 +172,14 @@ li {
 }
 
 li::before {
-  content: "▸";
+  content: ">";
   color: #58a6ff;
   position: absolute;
   left: 0;
+}
+
+.highlights-list {
+  margin-top: 0.5rem;
 }
 
 .skills-grid {
@@ -313,30 +322,68 @@ li::before {
   background-color: #6c757d;
 }
 
-.projects-placeholder {
-  margin-top: 2rem;
-  text-align: center;
+.projects-intro {
+  color: #8b949e;
+  margin-bottom: 1.5rem;
 }
 
-.placeholder-content {
+.project-grid {
+  display: grid;
+  gap: 1.5rem;
+}
+
+.project-card {
   background-color: #161b22;
-  padding: 3rem 2rem;
-  border-radius: 8px;
   border: 1px solid #30363d;
-  max-width: 600px;
-  margin: 0 auto;
+  border-radius: 10px;
+  padding: 1.5rem;
 }
 
-.placeholder-content h3 {
-  font-size: 1.5rem;
+.project-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1rem;
   margin-bottom: 1rem;
-  color: #f0f6fc;
 }
 
-.placeholder-content ul {
-  text-align: left;
-  max-width: 400px;
-  margin: 1.5rem auto;
+.project-meta {
+  margin: 0;
+  color: #8b949e;
+  font-size: 0.95rem;
+}
+
+.project-card p {
+  margin-bottom: 1rem;
+}
+
+.project-why {
+  margin-top: 1.25rem;
+  padding-top: 1rem;
+  border-top: 1px solid #30363d;
+}
+
+.project-why h4 {
+  margin-bottom: 0.65rem;
+}
+
+.project-why p {
+  margin-bottom: 0;
+  color: #c9d1d9;
+}
+
+.project-link {
+  color: #58a6ff;
+  text-decoration: none;
+  border: 1px solid #30363d;
+  border-radius: 6px;
+  padding: 0.5rem 0.85rem;
+  white-space: nowrap;
+}
+
+.project-link:hover {
+  background-color: #21262d;
+  border-color: #58a6ff;
 }
 
 .footer {
@@ -413,6 +460,10 @@ li::before {
   .contact-links {
     flex-direction: column;
     align-items: center;
+  }
+
+  .project-card-header {
+    flex-direction: column;
   }
 
   .form-row {

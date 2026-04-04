@@ -1,108 +1,133 @@
 import React from 'react';
 
+const majorContributions = [
+  'Platform owner for an international core banking SaaS offering on Microsoft Azure.',
+  'Selected for the EZRA executive coaching program for high-potential leaders.',
+  'Led reliability engineering for a core banking SaaS platform that grew from 0 to 5M+ accounts over five years.',
+  'Spearheaded AI adoption with a custom incident-response GPT, a Claude-based change review workflow, and team enablement around MCPs.',
+  'Drove five data migrations and three application migrations from VMs to containers to improve scalability and cloud efficiency.',
+  'Built AI-driven workflows that removed 1,000+ hours of manual work and reduced client credits by 77%.',
+  'Reduced SLA-impacting incidents by 53% through stronger observability, SLO discipline, and system design standardization.',
+  'Standardized observability across 20+ Datadog tenants, saving about $10K per month and eliminating roughly 700 legacy monitors.',
+];
+
+const experience = [
+  {
+    title: 'Senior Cloud Architect',
+    company: 'Togetherwork | Nov 2025 - Present',
+    bullets: [
+      'Lead observability and reliability strategy across a 25+ product SaaS portfolio.',
+      'Drive platform-wide SRE initiatives including disaster recovery, performance testing, and toil reduction.',
+      'Partner with engineering and product teams to modernize infrastructure with AI-assisted development and AWS-native automation.',
+    ],
+  },
+  {
+    title: 'Senior SRE Manager',
+    company: 'FIS Global | Jan 2021 - Nov 2025',
+    bullets: [
+      'Led a global team of about 15 SREs supporting a large-scale core banking SaaS platform with strict uptime and regulatory requirements.',
+      'Owned production reliability, incident management, and SLO enforcement across customer-facing environments.',
+      'Drove cross-functional cloud migrations, data conversions, and platform modernization efforts.',
+      'Scaled operational practices and team capability to support rapid platform growth.',
+    ],
+  },
+  {
+    title: 'Programmer Analyst',
+    company: 'FIS Global | Jun 2019 - Dec 2020',
+    bullets: [
+      'Managed concurrent production support cases spanning performance issues, defects, and configuration challenges.',
+      'Partnered with engineering teams to diagnose root causes and improve platform stability.',
+      'Built Bash and Python automation to streamline support workflows and reduce manual effort.',
+    ],
+  },
+];
+
+const skillAreas = [
+  {
+    heading: 'AI and Automation',
+    details: 'Claude, ChatGPT, Codex, MCP-enabled workflows, AI-assisted change review, incident-response automation',
+  },
+  {
+    heading: 'Cloud and Platform',
+    details: 'AWS, Azure, Kubernetes, Terraform, ECS, Docker, CI/CD, cloud architecture',
+  },
+  {
+    heading: 'Observability and Reliability',
+    details: 'Datadog, Dynatrace, observability strategy, SLOs, incident management, disaster recovery, performance testing',
+  },
+  {
+    heading: 'Delivery and Leadership',
+    details: 'SRE leadership, platform modernization, toil reduction, engineering enablement, operational coaching',
+  },
+];
+
 function About() {
   return (
     <main className="main">
       <section className="about">
         <div className="container">
-          <h2>About</h2>
-          <p>
-            I'm a Philadelphia-born IT professional with over six years of experience building
-            reliable, scalable platforms. I lead SRE teams, drive observability strategy, and
-            design durable cloud architectures, with a growing focus on practical AI adoption. I
-            currently work as a Senior Cloud Architect at Togetherwork, where I strengthen SRE
-            practices across the organization. I earned my B.S. in Information Technology
-            Management from Bloomsburg University in 2019 and relocated to Tampa in 2021, where
-            I'm now based.
+          <h2>Professional Summary</h2>
+          <p className="summary-lead">
+            Senior Cloud Architect and SRE leader with 7+ years of experience driving
+            reliability, scalability, AI adoption, and cloud transformation across SaaS
+            platforms.
           </p>
           <p>
-            Outside of work, my interests include football (go birds), chess, running, travel,
-            food, history, cats, and video games.
+            I currently work at Togetherwork, where I help standardize reliability and
+            observability practices across a broad SaaS portfolio. My work has focused on
+            reducing incidents, modernizing platforms, improving cloud efficiency, and turning AI
+            into something engineering teams can actually use day to day.
           </p>
           <p>
-            I'm also open to part-time consulting opportunities that do not conflict with my
-            full-time role. Please reach out via the 'contact' form.
+            I earned my B.S. in Information Technology Management from Bloomsburg University and
+            am based in Tampa, Florida. Outside of work, I am into football, chess, running,
+            travel, food, history, cats, and video games.
           </p>
+          <p>
+            I am also open to selective consulting opportunities that do not conflict with my
+            full-time role. The contact page is the best place to reach me.
+          </p>
+        </div>
+      </section>
+
+      <section className="achievements">
+        <div className="container">
+          <h2>Major Contributions</h2>
+          <ul className="highlights-list">
+            {majorContributions.map((item) => (
+              <li key={item}>{item}</li>
+            ))}
+          </ul>
         </div>
       </section>
 
       <section className="experience">
         <div className="container">
           <h2>Experience</h2>
-
-          <div className="job">
-            <h3>Senior Cloud Architect</h3>
-            <p className="company">Togetherwork | November 2025–Present</p>
-            <ul>
-              <li>Drive observability strategy and implementation</li>
-              <li>Spearhead SRE-focused deliverables including disaster recovery planning</li>
-              <li>Lead toil reduction initiatives and architecture reviews</li>
-              <li>Design scalable cloud solutions and reliability frameworks</li>
-            </ul>
-          </div>
-
-          <div className="job">
-            <h3>Senior SRE Manager</h3>
-            <p className="company">FIS Global | Jan 2021–November 2025</p>
-            <ul>
-              <li>Ran a global team of 20 SREs supporting FIS's core banking SaaS platform</li>
-              <li>Defined SLOs to meet customer and regulatory requirements</li>
-              <li>Drove cloud migrations, performance testing, and automation</li>
-              <li>Mentored engineers and promoted operational excellence</li>
-            </ul>
-          </div>
-
-          <div className="job">
-            <h3>Programmer Analyst</h3>
-            <p className="company">FIS Global | Jun 2019–Dec 2020</p>
-            <ul>
-              <li>Managed 15+ concurrent support cases involving defects and performance</li>
-              <li>Partnered with engineering teams to resolve issues and improve satisfaction</li>
-              <li>Wrote bash/python scripts to automate repetitive tasks</li>
-            </ul>
-          </div>
-        </div>
-      </section>
-
-      <section className="achievements">
-        <div className="container">
-          <h2>Key Wins</h2>
-          <ul>
-            <li>
-              Built CI/CD workflows that eliminated 1,000+ hours of manual work and cut client
-              credits by 77%
-            </li>
-            <li>
-              Reduced SLA-impacting incidents by 53% through better observability and incident
-              management
-            </li>
-            <li>Scaled platform from zero to 3M+ active accounts across 10 major fintech partners</li>
-            <li>Led successful Kubernetes and Azure migrations for enhanced scalability</li>
-            <li>Managed four major client data conversions with minimal disruption</li>
-          </ul>
+          {experience.map((role) => (
+            <div className="job" key={role.title}>
+              <h3>{role.title}</h3>
+              <p className="company">{role.company}</p>
+              <ul>
+                {role.bullets.map((bullet) => (
+                  <li key={bullet}>{bullet}</li>
+                ))}
+              </ul>
+            </div>
+          ))}
         </div>
       </section>
 
       <section className="skills">
         <div className="container">
-          <h2>Tech Stack</h2>
+          <h2>Technical Skills</h2>
           <div className="skills-grid">
-            <div className="skill-category">
-              <h4>Cloud &amp; Infrastructure</h4>
-              <p>Kubernetes, Azure, Terraform, Docker, Jenkins</p>
-            </div>
-            <div className="skill-category">
-              <h4>Languages &amp; Tools</h4>
-              <p>Python, Bash, PowerShell, SQL, Java, Git</p>
-            </div>
-            <div className="skill-category">
-              <h4>Monitoring &amp; Ops</h4>
-              <p>Splunk, Dynatrace, Grafana, Prometheus, Azure Monitor</p>
-            </div>
-            <div className="skill-category">
-              <h4>Leadership</h4>
-              <p>SRE, DevOps, Incident Management, Strategic Planning</p>
-            </div>
+            {skillAreas.map((area) => (
+              <div className="skill-category" key={area.heading}>
+                <h4>{area.heading}</h4>
+                <p>{area.details}</p>
+              </div>
+            ))}
           </div>
         </div>
       </section>
