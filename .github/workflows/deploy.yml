@@ -56,7 +56,9 @@ jobs:
 
           shopt -s nullglob
           for file in build/*.html build/asset-manifest.json build/manifest.json build/robots.txt build/sitemap.xml; do
-            aws s3 cp "$file" "s3://${S3_BUCKET}/${file#build/}" --cache-control "no-cache, no-store, must-revalidate"
+            if [ -f "$file" ]; then
+              aws s3 cp "$file" "s3://${S3_BUCKET}/${file#build/}" --cache-control "no-cache, no-store, must-revalidate"
+            fi
           done
 
       - name: Invalidate CloudFront cache
