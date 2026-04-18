@@ -123,8 +123,8 @@ module "staging_github_deploy" {
   create_oidc_provider = false
   oidc_provider_arn    = module.github_deploy.oidc_provider_arn
 
-  # Staging deployments are triggered by pushes to main, not tags.
-  ref_condition = "ref:refs/heads/main"
+  # Job uses `environment: staging` so the OIDC sub claim is environment-scoped.
+  ref_condition = "environment:staging"
 }
 
 # ---------------------------------------------------------------------------

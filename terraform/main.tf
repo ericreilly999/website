@@ -73,6 +73,9 @@ module "github_deploy" {
   bucket_arn                  = module.static_site.bucket_arn
   cloudfront_distribution_arn = module.static_site.cloudfront_distribution_arn
   tags                        = local.common_tags
+
+  # Job uses `environment: production` so the OIDC sub claim is environment-scoped.
+  ref_condition = "environment:production"
 }
 
 output "website_bucket_name" {
