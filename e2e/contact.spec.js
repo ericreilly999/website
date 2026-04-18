@@ -48,14 +48,14 @@ test.describe('Contact page', () => {
   });
 
   test('Project Term dropdown should include expected duration options', async ({ page }) => {
-    const select = page.getByLabel('Project Term');
-    await expect(select.getByText('Select duration')).toBeAttached();
-    await expect(select.getByText('1-2 weeks')).toBeAttached();
-    await expect(select.getByText('1 month')).toBeAttached();
-    await expect(select.getByText('2-3 months')).toBeAttached();
-    await expect(select.getByText('3-6 months')).toBeAttached();
-    await expect(select.getByText('6+ months')).toBeAttached();
-    await expect(select.getByText('Ongoing')).toBeAttached();
+    const select = page.getByRole('combobox', { name: /project term/i });
+    await expect(select.getByRole('option', { name: 'Select duration' })).toBeAttached();
+    await expect(select.getByRole('option', { name: '1-2 weeks' })).toBeAttached();
+    await expect(select.getByRole('option', { name: '1 month' })).toBeAttached();
+    await expect(select.getByRole('option', { name: '2-3 months' })).toBeAttached();
+    await expect(select.getByRole('option', { name: '3-6 months' })).toBeAttached();
+    await expect(select.getByRole('option', { name: '6+ months' })).toBeAttached();
+    await expect(select.getByRole('option', { name: 'Ongoing' })).toBeAttached();
   });
 
   test('should display the Send Message submit button', async ({ page }) => {
@@ -98,6 +98,6 @@ test.describe('Contact page', () => {
   });
 
   test('no error or success message should be visible on initial load', async ({ page }) => {
-    await expect(page.locator('.form-message')).not.toBeVisible();
+    await expect(page.locator('.form-message')).not.toBeAttached();
   });
 });
