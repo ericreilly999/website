@@ -17,3 +17,5 @@ crash.log
 # Playwright test output artifacts (test files in e2e/ are committed)
 test-results/
 playwright-report/
+project-status/
+.claude/worktrees/
