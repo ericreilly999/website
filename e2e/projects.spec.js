@@ -10,7 +10,7 @@ test.describe('Projects page', () => {
     await expect(page.getByRole('heading', { name: 'Projects', level: 2 })).toBeVisible();
   });
 
-  test('should render at least 5 project cards', async ({ page }) => {
+  test('should render exactly 5 project cards', async ({ page }) => {
     const cards = page.locator('article.project-card');
     await expect(cards).toHaveCount(5);
   });
@@ -74,5 +74,12 @@ test.describe('Projects page', () => {
 
   test('should display the intro paragraph', async ({ page }) => {
     await expect(page.getByText(/five projects on my GitHub/)).toBeVisible();
+  });
+
+  test('Prompted: Tech Talks card should have a visible Spotify link', async ({ page }) => {
+    const spotifyLink = page.getByRole('link', { name: 'Listen on Spotify' });
+    await expect(spotifyLink).toBeVisible();
+    const href = await spotifyLink.getAttribute('href');
+    expect(href).toContain('open.spotify.com');
   });
 });

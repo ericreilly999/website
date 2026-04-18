@@ -53,6 +53,7 @@ describe('Projects page', () => {
     expect(container.textContent).toContain('Why I Built This');
     expect(container.textContent).toContain('Personal brand matters a lot now');
     expect(container.querySelector('a[href="https://github.com/ericreilly999/inventory"]')).not.toBeNull();
+    expect(container.querySelector('a[href="https://open.spotify.com/show/4xeSrrczxTao9JyZ8Amgmp"]')).not.toBeNull();
 
     unmount();
   });

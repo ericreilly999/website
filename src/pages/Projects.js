@@ -125,6 +125,9 @@ function Projects() {
                   <h4>Why I Built This</h4>
                   <p>{project.why}</p>
                 </div>
+                {project.spotifyUrl && (
+                  <a href={project.spotifyUrl} target="_blank" rel="noopener noreferrer">Listen on Spotify</a>
+                )}
               </article>
             ))}
           </div>
