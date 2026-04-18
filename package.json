@@ -6,7 +6,8 @@
     "start": "react-scripts start",
     "build": "react-scripts build",
     "test": "react-scripts test",
-    "eject": "react-scripts eject"
+    "eject": "react-scripts eject",
+    "test:e2e": "playwright test"
   },
   "dependencies": {
     "react": "18.2.0",
@@ -33,6 +34,7 @@
     ]
   },
   "devDependencies": {
+    "@playwright/test": "^1.52.0",
     "yaml": "^2.8.3"
   }
 }
