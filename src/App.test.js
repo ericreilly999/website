@@ -39,19 +39,21 @@ describe('About page', () => {
 });
 
 describe('Projects page', () => {
-  test('renders all four GitHub projects with repo links', () => {
+  test('renders all five GitHub projects with repo links', () => {
     const { container, unmount } = renderComponent(Projects);
 
     const projectCards = container.querySelectorAll('.project-card');
 
-    expect(projectCards).toHaveLength(4);
+    expect(projectCards).toHaveLength(5);
     expect(container.textContent).toContain('Paused proof of concept');
     expect(container.textContent).toContain('AI Assistant MVP Scaffold');
     expect(container.textContent).toContain('Pokemon Tuxedo');
     expect(container.textContent).toContain('Personal Website');
+    expect(container.textContent).toContain('Prompted: Tech Talks');
     expect(container.textContent).toContain('Why I Built This');
     expect(container.textContent).toContain('Personal brand matters a lot now');
     expect(container.querySelector('a[href="https://github.com/ericreilly999/inventory"]')).not.toBeNull();
+    expect(container.querySelector('a[href="https://open.spotify.com/show/4xeSrrczxTao9JyZ8Amgmp"]')).not.toBeNull();
 
     unmount();
   });

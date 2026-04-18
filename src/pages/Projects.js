@@ -65,6 +65,23 @@ const projects = [
     why:
       'This is just a simple website to showcase what I do, highlight some of my projects, and give people a way to get in touch. Personal brand matters a lot now, and I wanted a place on the internet that felt like mine.',
   },
+  {
+    title: 'Prompted: Tech Talks',
+    repo: 'prompted-tech-talks',
+    status: 'Active — episodes live on Spotify',
+    updated: 'Apr 18, 2026',
+    url: 'https://github.com/ericreilly999/prompted-tech-talks',
+    spotifyUrl: 'https://open.spotify.com/show/4xeSrrczxTao9JyZ8Amgmp',
+    description:
+      'An end-to-end AI podcast pipeline. Listeners submit a topic prompt, Claude generates a structured multi-segment script using a custom skill, OpenAI tts-1-hd synthesizes dual-voice audio (sage + echo voices with intro/outro), FFmpeg assembles the final MP3, and GitHub Actions publishes to S3, rebuilds the RSS feed, and syncs to Spotify and Apple Podcasts. Zero manual production steps after the script is approved.',
+    highlights: [
+      'Fully AI-native production pipeline: topic prompt in, published episode out — no manual audio editing or publishing steps.',
+      'Dual-voice synthesis using OpenAI tts-1-hd with sage and echo voices; FFmpeg handles intro/outro assembly into the final MP3.',
+      'GitHub Actions orchestrates S3 upload, RSS feed regeneration, and distribution sync to Spotify and Apple Podcasts on every approved script.',
+    ],
+    why:
+      'I wanted to explore what a fully AI-native content pipeline could look like — not just using AI as a writing aid, but as the core production engine. Prompted: Tech Talks is a podcast where listeners submit tech topics as prompts, and Claude generates the full script. The result gets synthesized into dual-voice audio and published automatically via CI/CD. It is part personal experiment, part proof of concept for AI-generated educational content.',
+  },
 ];
 
 function Projects() {
@@ -74,7 +91,7 @@ function Projects() {
         <div className="container">
           <h2>Projects</h2>
           <p className="projects-intro">
-            This page reflects the four public repositories on my GitHub as of April 4, 2026.
+            This page reflects five projects on my GitHub as of April 18, 2026.
             Each section links back to the source repo and calls out the current state of the
             work.
           </p>
@@ -108,6 +125,9 @@ function Projects() {
                   <h4>Why I Built This</h4>
                   <p>{project.why}</p>
                 </div>
+                {project.spotifyUrl && (
+                  <a href={project.spotifyUrl} target="_blank" rel="noopener noreferrer">Listen on Spotify</a>
+                )}
               </article>
             ))}
           </div>
