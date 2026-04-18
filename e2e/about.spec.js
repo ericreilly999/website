@@ -37,7 +37,7 @@ test.describe('About page', () => {
   });
 
   test('should mention Togetherwork as employer', async ({ page }) => {
-    await expect(page.getByText(/Togetherwork/)).toBeVisible();
+    await expect(page.getByText('Togetherwork | Nov 2025 - Present')).toBeVisible();
   });
 
   test('should mention FIS Global as employer', async ({ page }) => {
