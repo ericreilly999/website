@@ -59,6 +59,25 @@ Terraform for the production website lives in `terraform/`.
 - S3 bucket: `ericreilly.com-prod`
 - CloudFront distribution: `EU0P2OBAYXZSI`
 
+### Remote backend (S3 + DynamoDB)
+
+Terraform state is stored remotely in S3. The backend resources must exist before running `terraform init`.
+
+**First-time setup (run once):**
+
+1. Ensure your AWS CLI session is active (`aws sso login` or equivalent).
+2. Create the backend bucket and lock table:
+   ```sh
+   bash terraform/bootstrap-backend.sh
+   ```
+3. Migrate the existing local state to S3 (one-time only):
+   ```sh
+   cd terraform
+   terraform init -migrate-state
+   ```
+   Terraform will prompt for confirmation — type `yes`.
+4. After a successful migration you can delete `terraform/terraform.tfstate` locally (it is gitignored, but removing it prevents accidental reuse).
+
 ### Local Terraform workflow
 
 1. Run `aws login` if your AWS CLI session is expired.

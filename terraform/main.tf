@@ -7,6 +7,14 @@ terraform {
       version = "~> 5.0"
     }
   }
+
+  backend "s3" {
+    bucket         = "ericreilly-website-tfstate"
+    key            = "website/terraform.tfstate"
+    region         = "us-east-1"
+    dynamodb_table = "ericreilly-website-tfstate-lock"
+    encrypt        = true
+  }
 }
 
 provider "aws" {
@@ -164,7 +172,7 @@ moved {
 
 moved {
   from = aws_iam_openid_connect_provider.github_actions
-  to   = module.github_deploy.aws_iam_openid_connect_provider.github_actions
+  to   = module.github_deploy.aws_iam_openid_connect_provider.github_actions[0]
 }
 
 moved {

@@ -1,17 +1,21 @@
 variable "bucket_name" {
-  type = string
+  type        = string
+  description = "Name of the S3 bucket to create for website content."
 }
 
 variable "domain_aliases" {
-  type = list(string)
+  type        = list(string)
+  description = "List of domain aliases configured on the CloudFront distribution."
 }
 
 variable "certificate_arn" {
-  type = string
+  type        = string
+  description = "ARN of the ACM certificate used by the CloudFront distribution (must be in us-east-1)."
 }
 
 variable "tags" {
-  type = map(string)
+  type        = map(string)
+  description = "Tags applied to all resources created by this module."
 }
 
 data "aws_iam_policy_document" "website_bucket_policy" {
@@ -150,21 +154,26 @@ resource "aws_cloudfront_distribution" "website" {
 }
 
 output "bucket_name" {
-  value = aws_s3_bucket.website.bucket
+  value       = aws_s3_bucket.website.bucket
+  description = "Name of the S3 website bucket."
 }
 
 output "bucket_arn" {
-  value = aws_s3_bucket.website.arn
+  value       = aws_s3_bucket.website.arn
+  description = "ARN of the S3 website bucket."
 }
 
 output "cloudfront_distribution_id" {
-  value = aws_cloudfront_distribution.website.id
+  value       = aws_cloudfront_distribution.website.id
+  description = "CloudFront distribution ID."
 }
 
 output "cloudfront_distribution_arn" {
-  value = aws_cloudfront_distribution.website.arn
+  value       = aws_cloudfront_distribution.website.arn
+  description = "ARN of the CloudFront distribution."
 }
 
 output "cloudfront_distribution_domain_name" {
-  value = aws_cloudfront_distribution.website.domain_name
+  value       = aws_cloudfront_distribution.website.domain_name
+  description = "Domain name of the CloudFront distribution (e.g. d1234abcd.cloudfront.net)."
 }

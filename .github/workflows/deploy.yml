@@ -1,10 +1,14 @@
 name: Deploy Website
 
+# Staging:    push to main branch  → deploys to staging.ericreilly.com
+# Production: push of a git tag    → deploys to ericreilly.com (prod)
+
 on:
   push:
+    branches:
+      - main
     tags:
-      - '*'
-      - '*/*'
+      - 'v[0-9]+.[0-9]+.[0-9]+'
 
 concurrency:
   group: deploy-${{ github.ref }}
@@ -17,12 +21,18 @@ permissions:
 env:
   AWS_REGION: us-east-1
   NODE_VERSION: 20
+  # Shared contact API endpoint — both environments point at the same backend.
+  REACT_APP_CONTACT_API_URL: https://k7cpfmv07e.execute-api.us-east-1.amazonaws.com/prod/contact
 
 jobs:
-  deploy-prod:
-    name: Deploy Production
-    if: startsWith(github.ref, 'refs/tags/')
+  # ---------------------------------------------------------------------------
+  # Staging — triggered by every push to main
+  # ---------------------------------------------------------------------------
+  deploy-staging:
+    name: Deploy Staging
+    if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
+    environment: staging
     steps:
       - name: Check out repository
         uses: actions/checkout@v4
@@ -33,22 +43,91 @@ jobs:
           node-version: ${{ env.NODE_VERSION }}
           cache: npm
 
-      - name: Configure AWS credentials
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run tests
+        run: npm test -- --watchAll=false --ci
+
+      - name: Configure AWS credentials (staging)
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          # Staging deploy role — created by module.staging_github_deploy in staging.tf.
+          # After the first `terraform apply`, copy the value of the
+          # staging_github_actions_deploy_role_arn output into the
+          # STAGING_DEPLOY_ROLE_ARN Actions secret (repo → Settings → Secrets).
+          role-to-assume: ${{ secrets.STAGING_DEPLOY_ROLE_ARN }}
+          role-session-name: github-actions-website-staging-deploy
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Build website
+        run: npm run build
+
+      - name: Upload assets to S3 (staging)
+        run: |
+          S3_BUCKET="ericreilly.com-staging"
+          aws s3 sync build/ "s3://${S3_BUCKET}" --delete --cache-control "public, max-age=300"
+          aws s3 sync build/static/ "s3://${S3_BUCKET}/static/" --cache-control "public, max-age=31536000, immutable"
+
+          shopt -s nullglob
+          for file in build/*.html build/asset-manifest.json build/manifest.json build/robots.txt build/sitemap.xml; do
+            if [ -f "$file" ]; then
+              aws s3 cp "$file" "s3://${S3_BUCKET}/${file#build/}" --cache-control "no-cache, no-store, must-revalidate"
+            fi
+          done
+
+      - name: Invalidate CloudFront cache (staging)
+        run: |
+          # STAGING_CF_DIST_ID must be set as a GitHub Actions variable (repo → Settings → Variables)
+          # after the first `terraform apply`. The value is the staging_cloudfront_distribution_id
+          # output from Terraform.
+          aws cloudfront create-invalidation \
+            --distribution-id "${{ vars.STAGING_CF_DIST_ID }}" \
+            --paths "/*"
+
+      - name: Job summary
+        run: |
+          echo "## Staging deployment complete" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "- **URL:** https://staging.ericreilly.com" >> "$GITHUB_STEP_SUMMARY"
+          echo "- **Commit:** \`${{ github.sha }}\`" >> "$GITHUB_STEP_SUMMARY"
+          echo "- **Triggered by:** \`${{ github.actor }}\`" >> "$GITHUB_STEP_SUMMARY"
+
+  # ---------------------------------------------------------------------------
+  # Production — triggered by semver tag push (e.g. v1.2.3)
+  # ---------------------------------------------------------------------------
+  deploy-prod:
+    name: Deploy Production
+    if: startsWith(github.ref, 'refs/tags/')
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run tests
+        run: npm test -- --watchAll=false --ci
+
+      - name: Configure AWS credentials (prod)
         uses: aws-actions/configure-aws-credentials@v4
         with:
           role-to-assume: arn:aws:iam::290993374431:role/eric-reilly-website-prod-deploy
           role-session-name: github-actions-website-deploy
           aws-region: ${{ env.AWS_REGION }}
 
-      - name: Install dependencies
-        run: npm ci
-
       - name: Build website
-        env:
-          REACT_APP_CONTACT_API_URL: https://k7cpfmv07e.execute-api.us-east-1.amazonaws.com/prod/contact
         run: npm run build
 
-      - name: Upload assets to S3
+      - name: Upload assets to S3 (prod)
         run: |
           S3_BUCKET="ericreilly.com-prod"
           aws s3 sync build/ "s3://${S3_BUCKET}" --delete --cache-control "public, max-age=300"
@@ -61,5 +140,13 @@ jobs:
             fi
           done
 
-      - name: Invalidate CloudFront cache
+      - name: Invalidate CloudFront cache (prod)
         run: aws cloudfront create-invalidation --distribution-id "EU0P2OBAYXZSI" --paths "/*"
+
+      - name: Job summary
+        run: |
+          echo "## Production deployment complete" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "- **URL:** https://ericreilly.com" >> "$GITHUB_STEP_SUMMARY"
+          echo "- **Tag:** \`${{ github.ref_name }}\`" >> "$GITHUB_STEP_SUMMARY"
+          echo "- **Triggered by:** \`${{ github.actor }}\`" >> "$GITHUB_STEP_SUMMARY"
