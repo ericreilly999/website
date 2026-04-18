@@ -1,21 +1,26 @@
 variable "zone_id" {
-  type = string
+  type        = string
+  description = "Route 53 hosted zone ID in which the alias records will be created."
 }
 
 variable "domain_name" {
-  type = string
+  type        = string
+  description = "Apex domain name to create an A and AAAA alias record for (e.g. example.com)."
 }
 
 variable "www_domain_name" {
-  type = string
+  type        = string
+  description = "www subdomain to create an A alias record for (e.g. www.example.com)."
 }
 
 variable "cloudfront_domain_name" {
-  type = string
+  type        = string
+  description = "CloudFront distribution domain name used as the alias target."
 }
 
 variable "cloudfront_zone_id" {
-  type = string
+  type        = string
+  description = "Hosted zone ID for the CloudFront distribution (always Z2FDTNDATAQYW2)."
 }
 
 resource "aws_route53_record" "website_alias_a" {

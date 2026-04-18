@@ -1,13 +1,16 @@
 variable "domain_name" {
-  type = string
+  type        = string
+  description = "Apex domain name (e.g. example.com). Used as the primary name on the ACM certificate."
 }
 
 variable "www_domain_name" {
-  type = string
+  type        = string
+  description = "www subdomain (e.g. www.example.com). Added as a SAN on the ACM certificate."
 }
 
 variable "tags" {
-  type = map(string)
+  type        = map(string)
+  description = "Tags applied to all resources created by this module."
 }
 
 locals {
@@ -55,9 +58,11 @@ resource "aws_acm_certificate_validation" "website" {
 }
 
 output "zone_id" {
-  value = aws_route53_zone.website.zone_id
+  value       = aws_route53_zone.website.zone_id
+  description = "Route 53 hosted zone ID for the domain."
 }
 
 output "certificate_arn" {
-  value = aws_acm_certificate_validation.website.certificate_arn
+  value       = aws_acm_certificate_validation.website.certificate_arn
+  description = "ARN of the validated ACM certificate."
 }
