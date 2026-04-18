@@ -10,9 +10,9 @@ test.describe('Projects page', () => {
     await expect(page.getByRole('heading', { name: 'Projects', level: 2 })).toBeVisible();
   });
 
-  test('should render at least 4 project cards', async ({ page }) => {
+  test('should render at least 5 project cards', async ({ page }) => {
     const cards = page.locator('article.project-card');
-    await expect(cards).toHaveCount(4);
+    await expect(cards).toHaveCount(5);
   });
 
   test('should display the Inventory Management System project card', async ({ page }) => {
@@ -29,6 +29,10 @@ test.describe('Projects page', () => {
 
   test('should display the Personal Website project card', async ({ page }) => {
     await expect(page.getByRole('heading', { name: 'Personal Website', level: 3 })).toBeVisible();
+  });
+
+  test('should display the Prompted: Tech Talks project card', async ({ page }) => {
+    await expect(page.getByRole('heading', { name: 'Prompted: Tech Talks', level: 3 })).toBeVisible();
   });
 
   test('should include at least one "View Repo" GitHub link', async ({ page }) => {
@@ -57,7 +61,7 @@ test.describe('Projects page', () => {
 
   test('should display "Why I Built This" section in each project card', async ({ page }) => {
     const whySections = page.getByRole('heading', { name: 'Why I Built This', level: 4 });
-    await expect(whySections).toHaveCount(4);
+    await expect(whySections).toHaveCount(5);
   });
 
   test('should display project status for each card', async ({ page }) => {
@@ -69,6 +73,6 @@ test.describe('Projects page', () => {
   });
 
   test('should display the intro paragraph', async ({ page }) => {
-    await expect(page.getByText(/four public repositories on my GitHub/)).toBeVisible();
+    await expect(page.getByText(/five projects on my GitHub/)).toBeVisible();
   });
 });
