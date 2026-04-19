@@ -3,21 +3,21 @@ const { test, expect } = require('@playwright/test');
 
 test.describe('Navigation', () => {
   test('brand link navigates to homepage', async ({ page }) => {
-    await page.goto('/projects.html');
+    await page.goto('/projects');
     await page.locator('.brand').click();
     await expect(page).toHaveURL('/');
   });
 
-  test('clicking projects nav link loads /projects.html', async ({ page }) => {
+  test('clicking projects nav link loads /projects', async ({ page }) => {
     await page.goto('/');
-    await page.locator('.nav-links a[href="/projects.html"]').click();
+    await page.locator('.nav-links a[href="/projects"]').click();
     await expect(page).toHaveURL(/projects\.html/);
     await expect(page).toHaveTitle('Projects · Eric Reilly');
   });
 
-  test('clicking contact nav link loads /contact.html', async ({ page }) => {
+  test('clicking contact nav link loads /contact', async ({ page }) => {
     await page.goto('/');
-    await page.locator('.nav-links a[href="/contact.html"]').click();
+    await page.locator('.nav-links a[href="/contact"]').click();
     await expect(page).toHaveURL(/contact\.html/);
     await expect(page).toHaveTitle('Contact · Eric Reilly');
   });
@@ -28,13 +28,13 @@ test.describe('Navigation', () => {
   });
 
   test('projects nav link is active on projects page', async ({ page }) => {
-    await page.goto('/projects.html');
-    await expect(page.locator('.nav-links a.active')).toHaveAttribute('href', '/projects.html');
+    await page.goto('/projects');
+    await expect(page.locator('.nav-links a.active')).toHaveAttribute('href', '/projects');
   });
 
   test('contact nav link is active on contact page', async ({ page }) => {
-    await page.goto('/contact.html');
-    await expect(page.locator('.nav-links a.active')).toHaveAttribute('href', '/contact.html');
+    await page.goto('/contact');
+    await expect(page.locator('.nav-links a.active')).toHaveAttribute('href', '/contact');
   });
 
   test('linkedin nav link opens in new tab with noopener', async ({ page }) => {

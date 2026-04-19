@@ -28,8 +28,8 @@ test.describe('Homepage', () => {
   });
 
   test('nav includes projects, contact, linkedin, github links', async ({ page }) => {
-    await expect(page.locator('.nav-links a[href="/projects.html"]')).toBeVisible();
-    await expect(page.locator('.nav-links a[href="/contact.html"]')).toBeVisible();
+    await expect(page.locator('.nav-links a[href="/projects"]')).toBeVisible();
+    await expect(page.locator('.nav-links a[href="/contact"]')).toBeVisible();
     await expect(page.locator('.nav-links a[href*="linkedin.com"]')).toBeVisible();
     await expect(page.locator('.nav-links a[href*="github.com"]')).toBeVisible();
   });

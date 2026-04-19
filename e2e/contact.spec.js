@@ -3,7 +3,7 @@ const { test, expect } = require('@playwright/test');
 
 test.describe('Contact page', () => {
   test.beforeEach(async ({ page }) => {
-    await page.goto('/contact.html');
+    await page.goto('/contact');
   });
 
   test('page title is "Contact · Eric Reilly"', async ({ page }) => {

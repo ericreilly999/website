@@ -61,10 +61,19 @@ jobs:
       - name: Build website
         run: npm run build
 
+      - name: Patch prompted link for staging
+        run: |
+          sed -i 's|https://prompted\.ericreilly\.com|https://staging.prompted.ericreilly.com|g' build/*.html
+
       - name: Upload assets to S3 (staging)
         run: |
           S3_BUCKET="ericreilly.com-staging"
-          aws s3 sync build/ "s3://${S3_BUCKET}" --delete --cache-control "no-cache, no-store, must-revalidate"
+          CACHE="no-cache, no-store, must-revalidate"
+          aws s3 sync build/ "s3://${S3_BUCKET}" --delete --cache-control "$CACHE"
+          for page in projects contact; do
+            aws s3 cp "build/${page}.html" "s3://${S3_BUCKET}/${page}" \
+              --content-type "text/html" --cache-control "$CACHE"
+          done
 
       - name: Invalidate CloudFront cache (staging)
         run: |
@@ -155,7 +164,12 @@ jobs:
       - name: Upload assets to S3 (prod)
         run: |
           S3_BUCKET="ericreilly.com-prod"
-          aws s3 sync build/ "s3://${S3_BUCKET}" --delete --cache-control "no-cache, no-store, must-revalidate"
+          CACHE="no-cache, no-store, must-revalidate"
+          aws s3 sync build/ "s3://${S3_BUCKET}" --delete --cache-control "$CACHE"
+          for page in projects contact; do
+            aws s3 cp "build/${page}.html" "s3://${S3_BUCKET}/${page}" \
+              --content-type "text/html" --cache-control "$CACHE"
+          done
 
       - name: Invalidate CloudFront cache (prod)
         run: aws cloudfront create-invalidation --distribution-id "EU0P2OBAYXZSI" --paths "/*"
