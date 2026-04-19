@@ -1,85 +1,105 @@
 # Eric Reilly Website
 
-This repo was recovered from the deployed S3 site on 2026-03-23 from `s3://ericreilly.com-prod`.
+Personal website for [ericreilly.com](https://ericreilly.com) — static HTML with a shared dark-theme design system. Three pages: about, projects, contact. Deployed to S3 + CloudFront via GitHub Actions with OIDC.
 
-## What is here
+---
 
-- `src/` contains the React source recovered from the production source maps.
-- `public/` contains the static assets and SEO files used by the site.
-- `recovered-build/` preserves the exact deployed build that was downloaded from S3.
+## Structure
+
+```
+public/
+  index.html       # About / homepage
+  projects.html    # Projects listing
+  contact.html     # Contact form
+  shared.css       # Design system (dark theme, JetBrains Mono, Instrument Serif)
+  whiteglovesolutions.png  # Favicon
+  robots.txt
+terraform/         # Production AWS infrastructure (Terraform)
+.github/workflows/
+  deploy.yml       # CI/CD pipeline
+e2e/               # Playwright end-to-end tests
+```
+
+---
 
 ## Development
 
-1. Install dependencies with `npm install`.
-2. Start the app with `npm start`.
-3. Build a production bundle with `npm run build`.
+No framework or build step — pages are plain HTML. `npm run build` just copies `public/` to `build/`.
 
-## Environment
+```bash
+npm install        # installs Playwright for E2E tests only
+npm run build      # copies public/ → build/
+npm run test:e2e   # runs Playwright tests (requires a live base URL)
+```
 
-The contact form uses `REACT_APP_CONTACT_API_URL`.
+To preview locally, open any file in `public/` directly in a browser, or serve the directory:
 
-- Default production endpoint: `https://k7cpfmv07e.execute-api.us-east-1.amazonaws.com/prod/contact`
-- Copy `.env.example` to `.env.local` and change it if you want to point the form at a different API.
+```bash
+npx serve public
+```
+
+---
+
+## Environments
+
+| Environment | URL | Deploy trigger |
+|-------------|-----|----------------|
+| Staging | `https://staging.ericreilly.com` | Push to `main` |
+| Production | `https://ericreilly.com` | Semver tag (e.g. `v1.0.0`) |
+
+---
 
 ## Deployment
 
-GitHub Actions deployment is defined in `.github/workflows/deploy.yml`.
+```bash
+# Deploy to staging (automatic on push to main)
+git push origin main
 
-- Tag pushes deploy to production.
-- The workflow hardcodes AWS region `us-east-1`.
-- The workflow deploys to the live production site only.
-- The workflow uses GitHub OIDC and assumes `arn:aws:iam::290993374431:role/eric-reilly-website-prod-deploy`.
+# Deploy to production
+git tag v1.0.0
+git push origin v1.0.0
+```
 
-### GitHub configuration
+The `deploy.yml` workflow:
+1. Runs `npm test` (no-op for unit tests)
+2. Builds the site (`npm run build`)
+3. For staging: patches the prompted link to point at `staging.prompted.ericreilly.com`
+4. Syncs `build/` to the S3 bucket
+5. Uploads HTML pages without `.html` extension so `/projects` and `/contact` resolve cleanly
+6. Invalidates the CloudFront distribution
 
-No long-lived AWS secrets are required after the Terraform IAM resources are applied.
+AWS credentials are obtained via OIDC — no long-lived secrets required.
 
-- GitHub Actions needs `id-token: write`, which is already set in the workflow.
-- The repo just needs permission to run the workflow on tag pushes.
+| Environment | IAM role | S3 bucket | CloudFront ID |
+|-------------|----------|-----------|---------------|
+| Staging | `${{ secrets.STAGING_DEPLOY_ROLE_ARN }}` | `ericreilly.com-staging` | `${{ vars.STAGING_CF_DIST_ID }}` |
+| Production | `arn:aws:iam::290993374431:role/eric-reilly-website-prod-deploy` | `ericreilly.com-prod` | `EU0P2OBAYXZSI` |
 
-### Production values discovered in AWS on 2026-03-28
+---
 
-- `S3 bucket: ericreilly.com-prod`
-- `CloudFront distribution ID: EU0P2OBAYXZSI`
-- `Contact API URL: https://k7cpfmv07e.execute-api.us-east-1.amazonaws.com/prod/contact`
+## Contact API
+
+The contact form on `/contact` posts to a shared Lambda-backed API:
+
+```
+POST https://k7cpfmv07e.execute-api.us-east-1.amazonaws.com/prod/contact
+Content-Type: application/json
+
+{ "name": "...", "email": "...", "company": "...", "project": "...", "term": "..." }
+```
+
+The same API handles prompt submissions from `prompted.ericreilly.com` (uses `{ "message": "..." }` format instead).
+
+---
 
 ## Terraform
 
-Terraform for the production website lives in `terraform/`.
+Infrastructure in `terraform/` manages the production AWS resources:
 
-- The root Terraform configuration is a single `terraform/main.tf` that only wires local modules together.
-- Existing production resources are modeled there and can be imported with `terraform/import-existing.ps1`.
-- A credential-aware plan helper is available at `terraform/plan.ps1`.
-- The Terraform stack manages the website bucket, Route 53 zone and records, ACM certificate, CloudFront distribution, GitHub OIDC provider, and deploy role/policy.
+- S3 bucket (`ericreilly.com-prod`)
+- CloudFront distribution (`EU0P2OBAYXZSI`)
+- Route 53 hosted zone (`Z09302003LDW15NJ86V5W`) and records
+- ACM certificate
+- GitHub OIDC provider and deploy IAM role
 
-### Current imported production resources
-
-- Route 53 hosted zone: `Z09302003LDW15NJ86V5W`
-- ACM certificate ARN: `arn:aws:acm:us-east-1:290993374431:certificate/756e2d67-7ae2-4b63-9405-ff3239198e02`
-- S3 bucket: `ericreilly.com-prod`
-- CloudFront distribution: `EU0P2OBAYXZSI`
-
-### Remote backend (S3 + DynamoDB)
-
-Terraform state is stored remotely in S3. The backend resources must exist before running `terraform init`.
-
-**First-time setup (run once):**
-
-1. Ensure your AWS CLI session is active (`aws sso login` or equivalent).
-2. Create the backend bucket and lock table:
-   ```sh
-   bash terraform/bootstrap-backend.sh
-   ```
-3. Migrate the existing local state to S3 (one-time only):
-   ```sh
-   cd terraform
-   terraform init -migrate-state
-   ```
-   Terraform will prompt for confirmation — type `yes`.
-4. After a successful migration you can delete `terraform/terraform.tfstate` locally (it is gitignored, but removing it prevents accidental reuse).
-
-### Local Terraform workflow
-
-1. Run `aws login` if your AWS CLI session is expired.
-2. Run `powershell -ExecutionPolicy Bypass -File .\terraform\import-existing.ps1` once for a fresh local state file.
-3. Run `powershell -ExecutionPolicy Bypass -File .\terraform\plan.ps1` to generate `terraform/website.tfplan`.
+State is stored remotely in S3. See `terraform/` for setup instructions.
