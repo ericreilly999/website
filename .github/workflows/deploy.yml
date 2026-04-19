@@ -21,8 +21,6 @@ permissions:
 env:
   AWS_REGION: us-east-1
   NODE_VERSION: 20
-  # Shared contact API endpoint — both environments point at the same backend.
-  REACT_APP_CONTACT_API_URL: https://k7cpfmv07e.execute-api.us-east-1.amazonaws.com/prod/contact
 
 jobs:
   # ---------------------------------------------------------------------------
@@ -47,7 +45,7 @@ jobs:
         run: npm ci
 
       - name: Run tests
-        run: npm test -- --watchAll=false --ci
+        run: npm test
 
       - name: Configure AWS credentials (staging)
         uses: aws-actions/configure-aws-credentials@v4
@@ -66,15 +64,7 @@ jobs:
       - name: Upload assets to S3 (staging)
         run: |
           S3_BUCKET="ericreilly.com-staging"
-          aws s3 sync build/ "s3://${S3_BUCKET}" --delete --cache-control "public, max-age=300"
-          aws s3 sync build/static/ "s3://${S3_BUCKET}/static/" --cache-control "public, max-age=31536000, immutable"
-
-          shopt -s nullglob
-          for file in build/*.html build/asset-manifest.json build/manifest.json build/robots.txt build/sitemap.xml; do
-            if [ -f "$file" ]; then
-              aws s3 cp "$file" "s3://${S3_BUCKET}/${file#build/}" --cache-control "no-cache, no-store, must-revalidate"
-            fi
-          done
+          aws s3 sync build/ "s3://${S3_BUCKET}" --delete --cache-control "no-cache, no-store, must-revalidate"
 
       - name: Invalidate CloudFront cache (staging)
         run: |
@@ -150,7 +140,7 @@ jobs:
         run: npm ci
 
       - name: Run tests
-        run: npm test -- --watchAll=false --ci
+        run: npm test
 
       - name: Configure AWS credentials (prod)
         uses: aws-actions/configure-aws-credentials@v4
@@ -165,15 +155,7 @@ jobs:
       - name: Upload assets to S3 (prod)
         run: |
           S3_BUCKET="ericreilly.com-prod"
-          aws s3 sync build/ "s3://${S3_BUCKET}" --delete --cache-control "public, max-age=300"
-          aws s3 sync build/static/ "s3://${S3_BUCKET}/static/" --cache-control "public, max-age=31536000, immutable"
-
-          shopt -s nullglob
-          for file in build/*.html build/asset-manifest.json build/manifest.json build/robots.txt build/sitemap.xml; do
-            if [ -f "$file" ]; then
-              aws s3 cp "$file" "s3://${S3_BUCKET}/${file#build/}" --cache-control "no-cache, no-store, must-revalidate"
-            fi
-          done
+          aws s3 sync build/ "s3://${S3_BUCKET}" --delete --cache-control "no-cache, no-store, must-revalidate"
 
       - name: Invalidate CloudFront cache (prod)
         run: aws cloudfront create-invalidation --distribution-id "EU0P2OBAYXZSI" --paths "/*"

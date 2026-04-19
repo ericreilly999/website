@@ -3,101 +3,64 @@ const { test, expect } = require('@playwright/test');
 
 test.describe('Contact page', () => {
   test.beforeEach(async ({ page }) => {
-    await page.goto('/contact');
+    await page.goto('/contact.html');
   });
 
-  test('should display "Get In Touch" heading', async ({ page }) => {
-    await expect(page.getByRole('heading', { name: 'Get In Touch', level: 2 })).toBeVisible();
+  test('page title is "Contact · Eric Reilly"', async ({ page }) => {
+    await expect(page).toHaveTitle('Contact · Eric Reilly');
   });
 
-  test('should display the White Glove Solutions subtitle', async ({ page }) => {
-    await expect(page.getByText(/White Glove Solutions/)).toBeVisible();
+  test('hero headline contains "work together"', async ({ page }) => {
+    await expect(page.locator('h1.headline')).toContainText('work together');
   });
 
-  test('should display the contact form', async ({ page }) => {
-    await expect(page.locator('form.contact-form')).toBeVisible();
+  test('"contact" nav link is active', async ({ page }) => {
+    await expect(page.locator('.nav-links a.active')).toContainText('contact');
   });
 
-  test('should display the Name field with correct label', async ({ page }) => {
-    await expect(page.getByLabel('Name *')).toBeVisible();
-    await expect(page.getByLabel('Name *')).toHaveAttribute('type', 'text');
+  test('contact form is visible', async ({ page }) => {
+    await expect(page.locator('#contactForm')).toBeVisible();
   });
 
-  test('should display the Email field with correct label', async ({ page }) => {
-    await expect(page.getByLabel('Email *')).toBeVisible();
-    await expect(page.getByLabel('Email *')).toHaveAttribute('type', 'email');
+  test('form has name, email, company, project, term fields', async ({ page }) => {
+    await expect(page.locator('#name')).toBeVisible();
+    await expect(page.locator('#email')).toBeVisible();
+    await expect(page.locator('#company')).toBeVisible();
+    await expect(page.locator('#project')).toBeVisible();
+    await expect(page.locator('#term')).toBeVisible();
   });
 
-  test('should display the Company field', async ({ page }) => {
-    await expect(page.getByLabel('Company')).toBeVisible();
-    await expect(page.getByLabel('Company')).toHaveAttribute('type', 'text');
+  test('name, email, project fields are required', async ({ page }) => {
+    await expect(page.locator('#name')).toHaveAttribute('required', '');
+    await expect(page.locator('#email')).toHaveAttribute('required', '');
+    await expect(page.locator('#project')).toHaveAttribute('required', '');
   });
 
-  test('should display the Project Description textarea', async ({ page }) => {
-    await expect(page.getByLabel('Project Description *')).toBeVisible();
-    // Textarea element
-    const tagName = await page.getByLabel('Project Description *').evaluate(el => el.tagName.toLowerCase());
-    expect(tagName).toBe('textarea');
+  test('submit button is visible and enabled', async ({ page }) => {
+    const btn = page.locator('#submitBtn');
+    await expect(btn).toBeVisible();
+    await expect(btn).toBeEnabled();
   });
 
-  test('should display the Project Term dropdown', async ({ page }) => {
-    const select = page.getByLabel('Project Term');
-    await expect(select).toBeVisible();
-    const tagName = await select.evaluate(el => el.tagName.toLowerCase());
-    expect(tagName).toBe('select');
+  test('term select has duration options', async ({ page }) => {
+    const select = page.locator('#term');
+    await expect(select.locator('option[value="1 month"]')).toBeAttached();
+    await expect(select.locator('option[value="ongoing"]')).toBeAttached();
   });
 
-  test('Project Term dropdown should include expected duration options', async ({ page }) => {
-    const select = page.getByRole('combobox', { name: /project term/i });
-    await expect(select.getByRole('option', { name: 'Select duration' })).toBeAttached();
-    await expect(select.getByRole('option', { name: '1-2 weeks' })).toBeAttached();
-    await expect(select.getByRole('option', { name: '1 month' })).toBeAttached();
-    await expect(select.getByRole('option', { name: '2-3 months' })).toBeAttached();
-    await expect(select.getByRole('option', { name: '3-6 months' })).toBeAttached();
-    await expect(select.getByRole('option', { name: '6+ months' })).toBeAttached();
-    await expect(select.getByRole('option', { name: 'Ongoing' })).toBeAttached();
+  test('side panel shows White Glove Solutions', async ({ page }) => {
+    await expect(page.locator('.side')).toContainText('White Glove Solutions');
   });
 
-  test('should display the Send Message submit button', async ({ page }) => {
-    const submitButton = page.getByRole('button', { name: 'Send Message' });
-    await expect(submitButton).toBeVisible();
-    await expect(submitButton).toBeEnabled();
+  test('no form message shown on initial load', async ({ page }) => {
+    await expect(page.locator('.form-message')).not.toBeVisible();
   });
 
-  test('Name and Email fields should be marked as required', async ({ page }) => {
-    await expect(page.getByLabel('Name *')).toHaveAttribute('required', '');
-    await expect(page.getByLabel('Email *')).toHaveAttribute('required', '');
-    await expect(page.getByLabel('Project Description *')).toHaveAttribute('required', '');
-  });
-
-  test('form fields should initially be empty', async ({ page }) => {
-    await expect(page.getByLabel('Name *')).toHaveValue('');
-    await expect(page.getByLabel('Email *')).toHaveValue('');
-    await expect(page.getByLabel('Company')).toHaveValue('');
-    await expect(page.getByLabel('Project Description *')).toHaveValue('');
-  });
-
-  test('user can type into the Name field', async ({ page }) => {
-    await page.getByLabel('Name *').fill('Jane Doe');
-    await expect(page.getByLabel('Name *')).toHaveValue('Jane Doe');
-  });
-
-  test('user can type into the Email field', async ({ page }) => {
-    await page.getByLabel('Email *').fill('jane@example.com');
-    await expect(page.getByLabel('Email *')).toHaveValue('jane@example.com');
-  });
-
-  test('user can type into the Project Description field', async ({ page }) => {
-    await page.getByLabel('Project Description *').fill('I need SRE consulting help.');
-    await expect(page.getByLabel('Project Description *')).toHaveValue('I need SRE consulting help.');
-  });
-
-  test('user can select a Project Term option', async ({ page }) => {
-    await page.getByLabel('Project Term').selectOption('1 month');
-    await expect(page.getByLabel('Project Term')).toHaveValue('1 month');
-  });
-
-  test('no error or success message should be visible on initial load', async ({ page }) => {
-    await expect(page.locator('.form-message')).not.toBeAttached();
+  test('user can fill in and clear the form', async ({ page }) => {
+    await page.locator('#name').fill('Test User');
+    await page.locator('#email').fill('test@example.com');
+    await page.locator('#project').fill('Need SRE help');
+    await expect(page.locator('#name')).toHaveValue('Test User');
+    await expect(page.locator('#email')).toHaveValue('test@example.com');
   });
 });

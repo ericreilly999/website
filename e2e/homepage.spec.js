@@ -6,37 +6,48 @@ test.describe('Homepage', () => {
     await page.goto('/');
   });
 
-  test('should load and display the site owner name in the header', async ({ page }) => {
-    await expect(page.getByRole('heading', { name: 'Eric Reilly', level: 1 })).toBeVisible();
+  test('page title is "Eric Reilly"', async ({ page }) => {
+    await expect(page).toHaveTitle('Eric Reilly');
   });
 
-  test('should display the header tagline', async ({ page }) => {
-    await expect(page.getByText('Hands-On Technical Leader | Tampa, FL')).toBeVisible();
+  test('hero headline is visible', async ({ page }) => {
+    await expect(page.locator('h1.headline')).toBeVisible();
+    await expect(page.locator('h1.headline')).toContainText("doesn't break");
   });
 
-  test('should render the About page content as the default route', async ({ page }) => {
-    await expect(page.getByRole('heading', { name: 'Professional Summary', level: 2 })).toBeVisible();
+  test('hero has three CTA links', async ({ page }) => {
+    await expect(page.locator('.hero-links li')).toHaveCount(3);
   });
 
-  test('should display navigation links for About, Contact, and Projects', async ({ page }) => {
-    const nav = page.getByRole('navigation');
-    await expect(nav.getByRole('link', { name: 'About' })).toBeVisible();
-    await expect(nav.getByRole('link', { name: 'Contact' })).toBeVisible();
-    await expect(nav.getByRole('link', { name: 'Projects' })).toBeVisible();
+  test('prompted podcast link points to prompted.ericreilly.com', async ({ page }) => {
+    await expect(page.locator('.hero-links a[href*="prompted.ericreilly.com"]')).toBeVisible();
   });
 
-  test('should display LinkedIn and GitHub links in the header', async ({ page }) => {
-    await expect(page.getByRole('link', { name: 'LinkedIn' })).toBeVisible();
-    await expect(page.getByRole('link', { name: 'GitHub' })).toBeVisible();
+  test('"about" nav link is active', async ({ page }) => {
+    await expect(page.locator('.nav-links a.active')).toContainText('about');
   });
 
-  test('should display the footer copyright notice', async ({ page }) => {
-    await expect(page.getByRole('contentinfo')).toContainText('2026 Eric Reilly');
+  test('nav includes projects, contact, linkedin, github links', async ({ page }) => {
+    await expect(page.locator('.nav-links a[href="/projects.html"]')).toBeVisible();
+    await expect(page.locator('.nav-links a[href="/contact.html"]')).toBeVisible();
+    await expect(page.locator('.nav-links a[href*="linkedin.com"]')).toBeVisible();
+    await expect(page.locator('.nav-links a[href*="github.com"]')).toBeVisible();
   });
 
-  test('should set a meaningful page title', async ({ page }) => {
-    // The page title is set by CRA's public/index.html — verify it is not blank
-    const title = await page.title();
-    expect(title.length).toBeGreaterThan(0);
+  test('experience section shows Togetherwork and FIS Global', async ({ page }) => {
+    await expect(page.getByText('Togetherwork').first()).toBeVisible();
+    await expect(page.getByText('FIS Global').first()).toBeVisible();
+  });
+
+  test('consulting CTA section is visible with button', async ({ page }) => {
+    await expect(page.locator('section.cta')).toBeVisible();
+    await expect(page.locator('.cta-btn')).toBeVisible();
+  });
+
+  test('footer renders with current year, linkedin, github', async ({ page }) => {
+    const footer = page.locator('footer');
+    await expect(footer.locator('a[href*="linkedin.com"]')).toBeVisible();
+    await expect(footer.locator('a[href*="github.com"]')).toBeVisible();
+    await expect(footer).toContainText(new Date().getFullYear().toString());
   });
 });

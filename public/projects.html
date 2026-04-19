@@ -1,0 +1,194 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Projects · Eric Reilly</title>
+<meta name="description" content="Projects by Eric Reilly — AI pipelines, cloud tooling, and side experiments." />
+<link rel="icon" type="image/png" href="whiteglovesolutions.png" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Instrument+Serif:ital@0;1&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="shared.css" />
+</head>
+<body>
+<div class="grain" aria-hidden="true"></div>
+
+<div class="wrap">
+
+  <nav class="top">
+    <a class="brand" href="/">
+      <span class="dot" aria-hidden="true"></span>
+      <span><b>eric reilly</b><span class="path">&nbsp;·&nbsp;tampa, fl</span></span>
+    </a>
+    <div class="nav-links">
+      <a href="/">about</a>
+      <a href="/projects.html" class="active">projects</a>
+      <a href="/contact.html">contact</a>
+      <a href="https://www.linkedin.com/in/eric-reilly-769562155/" target="_blank" rel="noopener noreferrer">linkedin ↗</a>
+      <a href="https://github.com/ericreilly999" target="_blank" rel="noopener noreferrer">github ↗</a>
+    </div>
+  </nav>
+
+  <header class="hero reveal">
+    <p class="kicker">~/projects · git log</p>
+    <h1 class="headline">
+      Things I'm <span class="token">building.</span><span class="cursor" aria-hidden="true"></span>
+    </h1>
+    <p class="sub">
+      Five projects on my GitHub. Each section links back to the source repo and calls out the current state of the work.
+    </p>
+  </header>
+
+  <section class="reveal">
+    <div class="section-label">Active &amp; recent <span class="num">01 / 01</span></div>
+    <div class="rows">
+
+      <div class="row">
+        <div class="n">P01</div>
+        <div>
+          <div class="title">Prompted: Tech Talks</div>
+          <div class="meta">
+            prompted-tech-talks <span class="sep">·</span>
+            <span class="status">Active — episodes live on Spotify</span> <span class="sep">·</span>
+            Updated Apr 18, 2026
+          </div>
+          <p class="desc">An end-to-end AI podcast pipeline. Listeners submit a topic prompt, Claude generates a structured multi-segment script using a custom skill, OpenAI tts-1-hd synthesizes dual-voice audio (sage + echo voices with intro/outro), FFmpeg assembles the final MP3, and GitHub Actions publishes to S3, rebuilds the RSS feed, and syncs to Spotify and Apple Podcasts. Zero manual production steps after the script is approved.</p>
+          <ul class="bullets">
+            <li>Fully AI-native production pipeline: topic prompt in, published episode out — no manual audio editing or publishing steps.</li>
+            <li>Dual-voice synthesis using OpenAI tts-1-hd with sage and echo voices; FFmpeg handles intro/outro assembly into the final MP3.</li>
+            <li>GitHub Actions orchestrates S3 upload, RSS feed regeneration, and distribution sync to Spotify and Apple Podcasts on every approved script.</li>
+          </ul>
+          <div class="why">
+            <div class="why-label">Why I built this</div>
+            <p>I wanted to explore what a fully AI-native content pipeline could look like — not just using AI as a writing aid, but as the core production engine. Prompted: Tech Talks is a podcast where listeners submit tech topics as prompts, and Claude generates the full script. The result gets synthesized into dual-voice audio and published automatically via CI/CD. It is part personal experiment, part proof of concept for AI-generated educational content.</p>
+          </div>
+        </div>
+        <div class="right">
+          <a href="https://github.com/ericreilly999/prompted-tech-talks" target="_blank" rel="noopener noreferrer">repo ↗</a>
+          <a href="https://open.spotify.com/show/4xeSrrczxTao9JyZ8Amgmp" target="_blank" rel="noopener noreferrer">spotify ↗</a>
+        </div>
+      </div>
+
+      <div class="row">
+        <div class="n">P02</div>
+        <div>
+          <div class="title">AI Assistant MVP Scaffold</div>
+          <div class="meta">
+            ai-assistant <span class="sep">·</span>
+            <span class="status">Active scaffold</span> <span class="sep">·</span>
+            Updated Apr 4, 2026
+          </div>
+          <p class="desc">A development-ready scaffold for a personal assistant MVP. It is set up to let backend, mobile, and infrastructure work move in parallel before live provider credentials are available.</p>
+          <ul class="bullets">
+            <li>Includes an AWS Lambda backend scaffold, React Native and Expo mobile shell, and Terraform layouts for dev, staging, and prod.</li>
+            <li>Uses mock-provider mode by default so orchestration, packaging, and contract tests can run without live third-party secrets.</li>
+            <li>Captures the project in a good starting state for deeper product work rather than presenting it as a finished application.</li>
+          </ul>
+          <div class="why">
+            <div class="why-label">Why I built this</div>
+            <p>Native LLM integrations still feel rough, and MCPs exist but are not especially friendly for non-developers. I wanted to learn more about connecting AI models to real data sources while exploring a real market need and building deeper expertise in AI integrations.</p>
+          </div>
+        </div>
+        <div class="right">
+          <a href="https://github.com/ericreilly999/ai-assistant" target="_blank" rel="noopener noreferrer">repo ↗</a>
+        </div>
+      </div>
+
+      <div class="row">
+        <div class="n">P03</div>
+        <div>
+          <div class="title">Pokemon Tuxedo</div>
+          <div class="meta">
+            pokemon-tuxedo <span class="sep">·</span>
+            <span class="status">Integration phase</span> <span class="sep">·</span>
+            Updated Mar 13, 2026
+          </div>
+          <p class="desc">A Pokemon FireRed ROM hack that focuses on dynamic level scaling, multi-region progression, and a long list of quality-of-life improvements for replayability.</p>
+          <ul class="bullets">
+            <li>Covers Kanto, Johto, Hoenn, and Sinnoh progression with level caps, open exploration in later regions, and more forgiving HM and evolution mechanics.</li>
+            <li>Backed by 5,426+ property-based tests according to the current README.</li>
+            <li>The remaining work is the integration layer: decomp integration, custom sprite assets, and regional map content.</li>
+          </ul>
+          <div class="why">
+            <div class="why-label">Why I built this</div>
+            <p>I have always loved Pokemon, especially the nostalgia around the games I played growing up. Following the Pokemon ROM hack community inspired me to try building one myself, and this project has been a fun, heavily vibe-coded way to make something outside my usual language comfort zone.</p>
+          </div>
+        </div>
+        <div class="right">
+          <a href="https://github.com/ericreilly999/pokemon-tuxedo" target="_blank" rel="noopener noreferrer">repo ↗</a>
+        </div>
+      </div>
+
+      <div class="row">
+        <div class="n">P04</div>
+        <div>
+          <div class="title">Inventory Management System</div>
+          <div class="meta">
+            inventory <span class="sep">·</span>
+            <span class="status">Paused proof of concept</span> <span class="sep">·</span>
+            Updated Feb 23, 2026
+          </div>
+          <p class="desc">This started as a proof-of-concept for a warehousing business. The business itself is no longer active, but I kept the repository public because it shows how I approached the architecture, deployment, and delivery pipeline for the concept.</p>
+          <ul class="bullets">
+            <li>Microservices-based system with a FastAPI backend, a React TypeScript frontend, and JWT-based auth.</li>
+            <li>Infrastructure and deployment work is fleshed out with Terraform, AWS Fargate, RDS, ElastiCache, and GitHub Actions.</li>
+            <li>The README documents working authentication, a live development environment, and a staged roadmap for inventory, locations, reporting, and audit logging.</li>
+          </ul>
+          <div class="why">
+            <div class="why-label">Why I built this</div>
+            <p>This was a proof of concept for a potential client who needed a simple inventory management system with a parent-child item structure. I liked the challenge because it let me turn a very practical business need into a real architecture exercise.</p>
+          </div>
+        </div>
+        <div class="right">
+          <a href="https://github.com/ericreilly999/inventory" target="_blank" rel="noopener noreferrer">repo ↗</a>
+        </div>
+      </div>
+
+      <div class="row">
+        <div class="n">P05</div>
+        <div>
+          <div class="title">Personal Website</div>
+          <div class="meta">
+            website <span class="sep">·</span>
+            <span class="status">Production live</span> <span class="sep">·</span>
+            Updated Apr 2026
+          </div>
+          <p class="desc">The site you are looking at now. It is a simple home base for who I am, what I work on, and how people can reach me, with infrastructure and deployment wired so updates are easy to ship.</p>
+          <ul class="bullets">
+            <li>Static HTML with a shared design system — dark theme, Instrument Serif headlines, JetBrains Mono accents.</li>
+            <li>Production AWS resources modeled in Terraform with local modules for CloudFront, S3, Route 53, ACM, and the GitHub OIDC deploy role.</li>
+            <li>Tag pushes deploy to production through GitHub Actions with OIDC instead of long-lived AWS secrets.</li>
+          </ul>
+          <div class="why">
+            <div class="why-label">Why I built this</div>
+            <p>This is just a simple website to showcase what I do, highlight some of my projects, and give people a way to get in touch. Personal brand matters a lot now, and I wanted a place on the internet that felt like mine.</p>
+          </div>
+        </div>
+        <div class="right">
+          <a href="https://github.com/ericreilly999/website" target="_blank" rel="noopener noreferrer">repo ↗</a>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <footer>
+    <div>© <span id="year"></span> eric reilly <span class="accent">·</span> tampa, fl</div>
+    <div>
+      <a href="https://www.linkedin.com/in/eric-reilly-769562155/" target="_blank" rel="noopener noreferrer">linkedin</a>
+      &nbsp;·&nbsp;
+      <a href="https://github.com/ericreilly999" target="_blank" rel="noopener noreferrer">github</a>
+      &nbsp;·&nbsp;
+      <a href="/contact.html">contact</a>
+    </div>
+  </footer>
+
+</div>
+
+<script>
+  document.getElementById('year').textContent = new Date().getFullYear();
+  document.querySelectorAll('section, header.hero').forEach(el => el.classList.add('reveal'));
+</script>
+</body>
+</html>

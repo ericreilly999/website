@@ -2,53 +2,54 @@
 const { test, expect } = require('@playwright/test');
 
 test.describe('Navigation', () => {
-  test('clicking the About nav link loads the About page', async ({ page }) => {
-    // Start somewhere other than / so the click is meaningful
-    await page.goto('/projects');
-    await page.getByRole('navigation').getByRole('link', { name: 'About' }).click();
+  test('brand link navigates to homepage', async ({ page }) => {
+    await page.goto('/projects.html');
+    await page.locator('.brand').click();
     await expect(page).toHaveURL('/');
-    await expect(page.getByRole('heading', { name: 'Professional Summary', level: 2 })).toBeVisible();
   });
 
-  test('clicking the Projects nav link loads the Projects page', async ({ page }) => {
+  test('clicking projects nav link loads /projects.html', async ({ page }) => {
     await page.goto('/');
-    await page.getByRole('navigation').getByRole('link', { name: 'Projects' }).click();
-    await expect(page).toHaveURL('/projects');
-    await expect(page.getByRole('heading', { name: 'Projects', level: 2 })).toBeVisible();
+    await page.locator('.nav-links a[href="/projects.html"]').click();
+    await expect(page).toHaveURL(/projects\.html/);
+    await expect(page).toHaveTitle('Projects · Eric Reilly');
   });
 
-  test('clicking the Contact nav link loads the Contact page', async ({ page }) => {
+  test('clicking contact nav link loads /contact.html', async ({ page }) => {
     await page.goto('/');
-    await page.getByRole('navigation').getByRole('link', { name: 'Contact' }).click();
-    await expect(page).toHaveURL('/contact');
-    await expect(page.getByRole('heading', { name: 'Get In Touch', level: 2 })).toBeVisible();
+    await page.locator('.nav-links a[href="/contact.html"]').click();
+    await expect(page).toHaveURL(/contact\.html/);
+    await expect(page).toHaveTitle('Contact · Eric Reilly');
   });
 
-  test('About nav link is marked active on the homepage', async ({ page }) => {
+  test('about nav link is active on homepage', async ({ page }) => {
     await page.goto('/');
-    const aboutLink = page.getByRole('navigation').getByRole('link', { name: 'About' });
-    await expect(aboutLink).toHaveClass(/active/);
+    await expect(page.locator('.nav-links a.active')).toHaveAttribute('href', '/');
   });
 
-  test('Projects nav link is marked active on /projects', async ({ page }) => {
-    await page.goto('/projects');
-    const projectsLink = page.getByRole('navigation').getByRole('link', { name: 'Projects' });
-    await expect(projectsLink).toHaveClass(/active/);
+  test('projects nav link is active on projects page', async ({ page }) => {
+    await page.goto('/projects.html');
+    await expect(page.locator('.nav-links a.active')).toHaveAttribute('href', '/projects.html');
   });
 
-  test('Contact nav link is marked active on /contact', async ({ page }) => {
-    await page.goto('/contact');
-    const contactLink = page.getByRole('navigation').getByRole('link', { name: 'Contact' });
-    await expect(contactLink).toHaveClass(/active/);
+  test('contact nav link is active on contact page', async ({ page }) => {
+    await page.goto('/contact.html');
+    await expect(page.locator('.nav-links a.active')).toHaveAttribute('href', '/contact.html');
   });
 
-  test('navigating directly to /projects renders the Projects page without going through /', async ({ page }) => {
-    await page.goto('/projects');
-    await expect(page.getByRole('heading', { name: 'Projects', level: 2 })).toBeVisible();
+  test('linkedin nav link opens in new tab with noopener', async ({ page }) => {
+    await page.goto('/');
+    const li = page.locator('.nav-links a[href*="linkedin.com"]');
+    await expect(li).toHaveAttribute('target', '_blank');
+    const rel = await li.getAttribute('rel');
+    expect(rel).toMatch(/noopener/);
   });
 
-  test('navigating directly to /contact renders the Contact page without going through /', async ({ page }) => {
-    await page.goto('/contact');
-    await expect(page.getByRole('heading', { name: 'Get In Touch', level: 2 })).toBeVisible();
+  test('github nav link opens in new tab with noopener', async ({ page }) => {
+    await page.goto('/');
+    const gh = page.locator('.nav-links a[href*="github.com"]');
+    await expect(gh).toHaveAttribute('target', '_blank');
+    const rel = await gh.getAttribute('rel');
+    expect(rel).toMatch(/noopener/);
   });
 });

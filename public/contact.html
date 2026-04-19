@@ -1,0 +1,161 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Contact · Eric Reilly</title>
+<meta name="description" content="Get in touch with Eric Reilly — SRE and cloud architecture consulting via White Glove Solutions." />
+<link rel="icon" type="image/png" href="whiteglovesolutions.png" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Instrument+Serif:ital@0;1&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="shared.css" />
+</head>
+<body>
+<div class="grain" aria-hidden="true"></div>
+
+<div class="wrap">
+
+  <nav class="top">
+    <a class="brand" href="/">
+      <span class="dot" aria-hidden="true"></span>
+      <span><b>eric reilly</b><span class="path">&nbsp;·&nbsp;tampa, fl</span></span>
+    </a>
+    <div class="nav-links">
+      <a href="/">about</a>
+      <a href="/projects.html">projects</a>
+      <a href="/contact.html" class="active">contact</a>
+      <a href="https://www.linkedin.com/in/eric-reilly-769562155/" target="_blank" rel="noopener noreferrer">linkedin ↗</a>
+      <a href="https://github.com/ericreilly999" target="_blank" rel="noopener noreferrer">github ↗</a>
+    </div>
+  </nav>
+
+  <header class="hero reveal">
+    <p class="kicker">white glove solutions · sre &amp; cloud architecture</p>
+    <h1 class="headline">
+      Let's <span class="token">work together.</span><span class="cursor" aria-hidden="true"></span>
+    </h1>
+    <p class="sub">
+      Interested in consulting services? I'm open to part-time projects that align with my expertise in SRE, cloud architecture, and observability. Fill out the form and I'll get back to you.
+    </p>
+  </header>
+
+  <section class="reveal">
+    <div class="section-label">Project inquiry <span class="num">01 / 01</span></div>
+    <div class="split">
+      <div>
+        <div id="formMessage"></div>
+        <form class="contact-form" id="contactForm" autocomplete="off">
+          <div class="form-grid">
+            <div class="field">
+              <label for="name">Name <span class="req">*</span></label>
+              <input type="text" id="name" name="name" required />
+            </div>
+            <div class="field">
+              <label for="email">Email <span class="req">*</span></label>
+              <input type="email" id="email" name="email" required />
+            </div>
+            <div class="field full">
+              <label for="company">Company</label>
+              <input type="text" id="company" name="company" />
+            </div>
+            <div class="field full">
+              <label for="project">Project description <span class="req">*</span></label>
+              <textarea id="project" name="project" rows="5" placeholder="Describe your project, goals, and how I can help..." required></textarea>
+            </div>
+            <div class="field full">
+              <label for="term">Project term</label>
+              <select id="term" name="term">
+                <option value="">Select duration</option>
+                <option value="1-2 weeks">1–2 weeks</option>
+                <option value="1 month">1 month</option>
+                <option value="2-3 months">2–3 months</option>
+                <option value="3-6 months">3–6 months</option>
+                <option value="6+ months">6+ months</option>
+                <option value="ongoing">Ongoing</option>
+              </select>
+            </div>
+          </div>
+          <button type="submit" class="submit-btn" id="submitBtn">
+            send message <span aria-hidden="true">→</span>
+          </button>
+        </form>
+      </div>
+      <div class="side">
+        <dl>
+          <div><dt>Practice</dt><dd>White Glove Solutions</dd></div>
+          <div><dt>Focus</dt><dd>Premium SRE &amp; cloud architecture consulting</dd></div>
+          <div><dt>Availability</dt><dd>Part-time, selective</dd></div>
+          <div><dt>Based</dt><dd>Tampa, FL · remote-friendly</dd></div>
+          <div><dt>Elsewhere</dt><dd>
+            <a href="https://www.linkedin.com/in/eric-reilly-769562155/" target="_blank" rel="noopener noreferrer">linkedin</a><br/>
+            <a href="https://github.com/ericreilly999" target="_blank" rel="noopener noreferrer">github</a>
+          </dd></div>
+        </dl>
+      </div>
+    </div>
+  </section>
+
+  <footer>
+    <div>© <span id="year"></span> eric reilly <span class="accent">·</span> tampa, fl</div>
+    <div>
+      <a href="https://www.linkedin.com/in/eric-reilly-769562155/" target="_blank" rel="noopener noreferrer">linkedin</a>
+      &nbsp;·&nbsp;
+      <a href="https://github.com/ericreilly999" target="_blank" rel="noopener noreferrer">github</a>
+      &nbsp;·&nbsp;
+      <a href="/contact.html">contact</a>
+    </div>
+  </footer>
+
+</div>
+
+<script>
+  document.getElementById('year').textContent = new Date().getFullYear();
+  document.querySelectorAll('section, header.hero').forEach(el => el.classList.add('reveal'));
+
+  const form = document.getElementById('contactForm');
+  const submitBtn = document.getElementById('submitBtn');
+  const msg = document.getElementById('formMessage');
+
+  function showMessage(text, isError) {
+    msg.innerHTML = '<div class="form-message ' + (isError ? 'error' : 'success') + '">' + text + '</div>';
+  }
+
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    msg.innerHTML = '';
+    submitBtn.disabled = true;
+    const originalLabel = submitBtn.innerHTML;
+    submitBtn.innerHTML = 'sending...';
+
+    const data = {
+      name: form.name.value,
+      email: form.email.value,
+      company: form.company.value,
+      project: form.project.value,
+      term: form.term.value
+    };
+
+    try {
+      const res = await fetch('https://k7cpfmv07e.execute-api.us-east-1.amazonaws.com/prod/contact', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data)
+      });
+      const result = await res.json();
+      if (res.ok) {
+        showMessage(result.message || "→ message sent. I'll get back to you soon.", false);
+        form.reset();
+      } else {
+        showMessage(result.error || 'Failed to send message. Please try again.', true);
+      }
+    } catch (err) {
+      showMessage('Failed to send message. Please try again later.', true);
+    } finally {
+      submitBtn.disabled = false;
+      submitBtn.innerHTML = originalLabel;
+    }
+  });
+</script>
+</body>
+</html>
