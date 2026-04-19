@@ -4,6 +4,7 @@ const { test, expect } = require('@playwright/test');
 test.describe('Projects page', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/projects');
+    await page.waitForLoadState('networkidle');
   });
 
   test('page title is "Projects · Eric Reilly"', async ({ page }) => {
@@ -23,11 +24,11 @@ test.describe('Projects page', () => {
   });
 
   test('shows all five project titles', async ({ page }) => {
-    await expect(page.getByText('Prompted: Tech Talks')).toBeVisible();
-    await expect(page.getByText('AI Assistant MVP Scaffold')).toBeVisible();
-    await expect(page.getByText('Pokemon Tuxedo')).toBeVisible();
-    await expect(page.getByText('Inventory Management System')).toBeVisible();
-    await expect(page.getByText('Personal Website')).toBeVisible();
+    await expect(page.locator('.title').filter({ hasText: 'Prompted: Tech Talks' })).toBeVisible();
+    await expect(page.locator('.title').filter({ hasText: 'AI Assistant MVP Scaffold' })).toBeVisible();
+    await expect(page.locator('.title').filter({ hasText: 'Pokemon Tuxedo' })).toBeVisible();
+    await expect(page.locator('.title').filter({ hasText: 'Inventory Management System' })).toBeVisible();
+    await expect(page.locator('.title').filter({ hasText: 'Personal Website' })).toBeVisible();
   });
 
   test('each project row has a "Why I built this" section', async ({ page }) => {

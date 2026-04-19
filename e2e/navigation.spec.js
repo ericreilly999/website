@@ -11,14 +11,14 @@ test.describe('Navigation', () => {
   test('clicking projects nav link loads /projects', async ({ page }) => {
     await page.goto('/');
     await page.locator('.nav-links a[href="/projects"]').click();
-    await expect(page).toHaveURL(/projects\.html/);
+    await expect(page).toHaveURL(/\/projects$/);
     await expect(page).toHaveTitle('Projects · Eric Reilly');
   });
 
   test('clicking contact nav link loads /contact', async ({ page }) => {
     await page.goto('/');
     await page.locator('.nav-links a[href="/contact"]').click();
-    await expect(page).toHaveURL(/contact\.html/);
+    await expect(page).toHaveURL(/\/contact$/);
     await expect(page).toHaveTitle('Contact · Eric Reilly');
   });
 
