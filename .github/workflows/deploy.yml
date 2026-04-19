@@ -1,7 +1,9 @@
 name: Deploy Website
 
 # Staging:    push to main branch  → deploys to staging.ericreilly.com
+#                                     and staging.prompted.ericreilly.com
 # Production: push of a git tag    → deploys to ericreilly.com (prod)
+#                                     and prompted.ericreilly.com (prod)
 
 on:
   push:
@@ -93,6 +95,47 @@ jobs:
           echo "- **Triggered by:** \`${{ github.actor }}\`" >> "$GITHUB_STEP_SUMMARY"
 
   # ---------------------------------------------------------------------------
+  # Prompted: Tech Talks — Staging
+  # Triggered by every push to main. Syncs prompted/ static files to the
+  # staging.prompted.ericreilly.com S3 bucket and invalidates CloudFront.
+  # ---------------------------------------------------------------------------
+  deploy-prompted-staging:
+    name: Deploy Prompted Staging
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    environment: staging
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials (prompted staging)
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::290993374431:role/prompted-site-deploy-staging
+          role-session-name: github-actions-website-prompted-staging-deploy
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Upload static files to S3 (prompted staging)
+        run: |
+          aws s3 sync prompted/ s3://staging.prompted.ericreilly.com \
+            --delete \
+            --cache-control "no-cache, no-store, must-revalidate"
+
+      - name: Invalidate CloudFront cache (prompted staging)
+        run: |
+          aws cloudfront create-invalidation \
+            --distribution-id "E2KX0Q5EAQS7Q6" \
+            --paths "/*"
+
+      - name: Job summary
+        run: |
+          echo "## Prompted staging deployment complete" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "- **URL:** https://staging.prompted.ericreilly.com" >> "$GITHUB_STEP_SUMMARY"
+          echo "- **Commit:** \`${{ github.sha }}\`" >> "$GITHUB_STEP_SUMMARY"
+          echo "- **Triggered by:** \`${{ github.actor }}\`" >> "$GITHUB_STEP_SUMMARY"
+
+  # ---------------------------------------------------------------------------
   # E2E tests — run against staging after every successful staging deploy
   # ---------------------------------------------------------------------------
   e2e-staging:
@@ -179,5 +222,46 @@ jobs:
           echo "## Production deployment complete" >> "$GITHUB_STEP_SUMMARY"
           echo "" >> "$GITHUB_STEP_SUMMARY"
           echo "- **URL:** https://ericreilly.com" >> "$GITHUB_STEP_SUMMARY"
+          echo "- **Tag:** \`${{ github.ref_name }}\`" >> "$GITHUB_STEP_SUMMARY"
+          echo "- **Triggered by:** \`${{ github.actor }}\`" >> "$GITHUB_STEP_SUMMARY"
+
+  # ---------------------------------------------------------------------------
+  # Prompted: Tech Talks — Production
+  # Triggered by semver tag push. Syncs prompted/ static files to the
+  # prompted.ericreilly.com S3 bucket and invalidates CloudFront.
+  # ---------------------------------------------------------------------------
+  deploy-prompted-prod:
+    name: Deploy Prompted Production
+    if: startsWith(github.ref, 'refs/tags/')
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials (prompted prod)
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::290993374431:role/prompted-site-deploy-prod
+          role-session-name: github-actions-website-prompted-prod-deploy
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Upload static files to S3 (prompted prod)
+        run: |
+          aws s3 sync prompted/ s3://prompted.ericreilly.com \
+            --delete \
+            --cache-control "no-cache, no-store, must-revalidate"
+
+      - name: Invalidate CloudFront cache (prompted prod)
+        run: |
+          aws cloudfront create-invalidation \
+            --distribution-id "E2USR2V7OHNC2I" \
+            --paths "/*"
+
+      - name: Job summary
+        run: |
+          echo "## Prompted production deployment complete" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "- **URL:** https://prompted.ericreilly.com" >> "$GITHUB_STEP_SUMMARY"
           echo "- **Tag:** \`${{ github.ref_name }}\`" >> "$GITHUB_STEP_SUMMARY"
           echo "- **Triggered by:** \`${{ github.actor }}\`" >> "$GITHUB_STEP_SUMMARY"
