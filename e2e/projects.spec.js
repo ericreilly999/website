@@ -51,7 +51,7 @@ test.describe('Projects page', () => {
   test('shows project statuses in meta', async ({ page }) => {
     await expect(page.getByText(/Active — episodes live/)).toBeVisible();
     await expect(page.getByText('Production live')).toBeVisible();
-    await expect(page.getByText('Integration phase')).toBeVisible();
+    await expect(page.getByText(/Active QA/)).toBeVisible();
     await expect(page.getByText('Paused proof of concept')).toBeVisible();
   });
 
