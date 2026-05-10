@@ -8,7 +8,7 @@
 # where the rest of the ericreilly.com zone is managed.
 #
 # Records added (provided by SendGrid sender-domain authentication wizard):
-#   - em6103.ericreilly.com         CNAME -> u107100616.wl117.sendgrid.net
+#   - em7106.ericreilly.com         CNAME -> u107100616.wl117.sendgrid.net
 #   - s1._domainkey.ericreilly.com  CNAME -> s1.domainkey.u107100616.wl117.sendgrid.net
 #   - s2._domainkey.ericreilly.com  CNAME -> s2.domainkey.u107100616.wl117.sendgrid.net
 #   - _dmarc.ericreilly.com         TXT   -> v=DMARC1; p=none;
@@ -28,10 +28,12 @@ locals {
 }
 
 # Return-path / link-branding host. SendGrid generates a per-account hostname
-# (em6103) so this value is specific to the DrinkUp SendGrid account.
+# (em7106) so this value is specific to the DrinkUp SendGrid account. The
+# subdomain was rotated by SendGrid from the original em6103 value on
+# 2026-05-10; DKIM and DMARC records were unchanged.
 resource "aws_route53_record" "drinkup_sendgrid_return_path" {
   zone_id = module.certificate_zone.zone_id
-  name    = "em6103.ericreilly.com"
+  name    = "em7106.ericreilly.com"
   type    = "CNAME"
   ttl     = 3600
   records = ["u107100616.wl117.sendgrid.net"]
