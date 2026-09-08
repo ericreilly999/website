@@ -1,6 +1,9 @@
 // @ts-check
 const { test, expect } = require('@playwright/test');
 
+const EM_DASH = '—';
+const LINKEDIN_URL = 'https://www.linkedin.com/in/eric-reilly-sre/';
+
 test.describe('Contact page', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/contact');
@@ -62,5 +65,23 @@ test.describe('Contact page', () => {
     await page.locator('#project').fill('Need SRE help');
     await expect(page.locator('#name')).toHaveValue('Test User');
     await expect(page.locator('#email')).toHaveValue('test@example.com');
+  });
+
+  test('nav linkedin link uses updated profile URL', async ({ page }) => {
+    await expect(page.locator(`.nav-links a[href="${LINKEDIN_URL}"]`)).toBeVisible();
+  });
+
+  test('side panel linkedin link uses updated profile URL', async ({ page }) => {
+    await expect(page.locator(`.side a[href="${LINKEDIN_URL}"]`)).toBeVisible();
+  });
+
+  test('footer linkedin link uses updated profile URL', async ({ page }) => {
+    const footer = page.locator('footer');
+    await expect(footer.locator(`a[href="${LINKEDIN_URL}"]`)).toBeVisible();
+  });
+
+  test('no em dash appears anywhere in body text', async ({ page }) => {
+    const bodyText = await page.locator('body').innerText();
+    expect(bodyText).not.toContain(EM_DASH);
   });
 });
