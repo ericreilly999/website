@@ -4,7 +4,7 @@
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>Projects · Eric Reilly</title>
-<meta name="description" content="Projects by Eric Reilly — AI pipelines, cloud tooling, and side experiments." />
+<meta name="description" content="Projects by Eric Reilly: AI pipelines, cloud tooling, and side experiments." />
 <link rel="icon" type="image/png" href="whiteglovesolutions.png" />
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -25,7 +25,7 @@
       <a href="/">about</a>
       <a href="/projects" class="active">projects</a>
       <a href="/contact">contact</a>
-      <a href="https://www.linkedin.com/in/eric-reilly-769562155/" target="_blank" rel="noopener noreferrer">linkedin ↗</a>
+      <a href="https://www.linkedin.com/in/eric-reilly-sre/" target="_blank" rel="noopener noreferrer">linkedin ↗</a>
       <a href="https://github.com/ericreilly999" target="_blank" rel="noopener noreferrer">github ↗</a>
     </div>
   </nav>
@@ -36,7 +36,7 @@
       Things I'm <span class="token">building.</span><span class="cursor" aria-hidden="true"></span>
     </h1>
     <p class="sub">
-      Five projects on my GitHub. Each section links back to the source repo and calls out the current state of the work.
+      Seven projects, five of them with public repos on GitHub. Each section calls out the current state of the work, repo included where I can share one.
     </p>
   </header>
 
@@ -50,18 +50,19 @@
           <div class="title">Prompted: Tech Talks</div>
           <div class="meta">
             prompted-tech-talks <span class="sep">·</span>
-            <span class="status">Active — episodes live on Spotify</span> <span class="sep">·</span>
-            Updated Apr 18, 2026
+            <span class="status">Active, new episodes shipping regularly</span> <span class="sep">·</span>
+            Updated Jun 6, 2026
           </div>
           <p class="desc">An end-to-end AI podcast pipeline. Listeners submit a topic prompt, Claude generates a structured multi-segment script using a custom skill, OpenAI tts-1-hd synthesizes dual-voice audio (sage + echo voices with intro/outro), FFmpeg assembles the final MP3, and GitHub Actions publishes to S3, rebuilds the RSS feed, and syncs to Spotify and Apple Podcasts. Zero manual production steps after the script is approved.</p>
           <ul class="bullets">
-            <li>Fully AI-native production pipeline: topic prompt in, published episode out — no manual audio editing or publishing steps.</li>
+            <li>Fully AI-native production pipeline. Topic prompt goes in, a published episode comes out, with no manual audio editing or publishing steps.</li>
             <li>Dual-voice synthesis using OpenAI tts-1-hd with sage and echo voices; FFmpeg handles intro/outro assembly into the final MP3.</li>
             <li>GitHub Actions orchestrates S3 upload, RSS feed regeneration, and distribution sync to Spotify and Apple Podcasts on every approved script.</li>
+            <li>Latest episode, EP004, "The Money Lifecycle: Two Seconds at the Register," shipped through the same pipeline as episode one, no hand-holding required.</li>
           </ul>
           <div class="why">
             <div class="why-label">Why I built this</div>
-            <p>I wanted to explore what a fully AI-native content pipeline could look like — not just using AI as a writing aid, but as the core production engine. Prompted: Tech Talks is a podcast where listeners submit tech topics as prompts, and Claude generates the full script. The result gets synthesized into dual-voice audio and published automatically via CI/CD. It is part personal experiment, part proof of concept for AI-generated educational content.</p>
+            <p>I wanted to explore what a fully AI-native content pipeline could look like, not just using AI as a writing aid, but as the core production engine. Prompted: Tech Talks is a podcast where listeners submit tech topics as prompts, and Claude generates the full script. The result gets synthesized into dual-voice audio and published automatically via CI/CD. It is part personal experiment, part proof of concept for AI-generated educational content.</p>
           </div>
         </div>
         <div class="right">
@@ -76,14 +77,14 @@
           <div class="title">AI Assistant MVP Scaffold</div>
           <div class="meta">
             ai-assistant <span class="sep">·</span>
-            <span class="status">In development — dev env live</span> <span class="sep">·</span>
+            <span class="status">Shut down, abandoned</span> <span class="sep">·</span>
             Updated Apr 19, 2026
           </div>
-          <p class="desc">A development-ready scaffold for a personal assistant MVP. It is set up to let backend, mobile, and infrastructure work move in parallel before live provider credentials are available.</p>
+          <p class="desc">A development-ready scaffold for a personal assistant MVP. It was set up to let backend, mobile, and infrastructure work move in parallel before live provider credentials were available, but the project never moved past the scaffold stage.</p>
           <ul class="bullets">
-            <li>Includes an AWS Lambda backend scaffold, React Native and Expo mobile shell, and Terraform layouts for dev, staging, and prod.</li>
-            <li>Uses mock-provider mode by default so orchestration, packaging, and contract tests can run without live third-party secrets.</li>
-            <li>Captures the project in a good starting state for deeper product work rather than presenting it as a finished application.</li>
+            <li>Included an AWS Lambda backend scaffold, React Native and Expo mobile shell, and Terraform layouts for dev, staging, and prod.</li>
+            <li>Used mock-provider mode by default so orchestration, packaging, and contract tests could run without live third-party secrets.</li>
+            <li>Shelved once the direction I actually wanted to pursue diverged from this scaffold, kept public as a record of the approach.</li>
           </ul>
           <div class="why">
             <div class="why-label">Why I built this</div>
@@ -101,7 +102,7 @@
           <div class="title">Pokemon Tuxedo</div>
           <div class="meta">
             pokemon-tuxedo <span class="sep">·</span>
-            <span class="status">Active QA — v0.1 in testing</span> <span class="sep">·</span>
+            <span class="status">Paused, v0.1 on hold</span> <span class="sep">·</span>
             Updated Apr 19, 2026
           </div>
           <p class="desc">A Pokemon FireRed ROM hack that focuses on dynamic level scaling, multi-region progression, and a long list of quality-of-life improvements for replayability.</p>
@@ -152,11 +153,11 @@
           <div class="meta">
             website <span class="sep">·</span>
             <span class="status">Production live</span> <span class="sep">·</span>
-            Updated Apr 19, 2026
+            Updated May 12, 2026
           </div>
           <p class="desc">The site you are looking at now. It is a simple home base for who I am, what I work on, and how people can reach me, with infrastructure and deployment wired so updates are easy to ship.</p>
           <ul class="bullets">
-            <li>Static HTML with a shared design system — dark theme, Instrument Serif headlines, JetBrains Mono accents.</li>
+            <li>Static HTML with a shared design system: dark theme, Instrument Serif headlines, JetBrains Mono accents.</li>
             <li>Production AWS resources modeled in Terraform with local modules for CloudFront, S3, Route 53, ACM, and the GitHub OIDC deploy role.</li>
             <li>Tag pushes deploy to production through GitHub Actions with OIDC instead of long-lived AWS secrets.</li>
           </ul>
@@ -170,13 +171,60 @@
         </div>
       </div>
 
+      <div class="row">
+        <div class="n">P06</div>
+        <div>
+          <div class="title">DrinkUp</div>
+          <div class="meta">
+            drinkupapp (private) <span class="sep">·</span>
+            <span class="status">Pre-launch, final hardening before first prod deploy</span> <span class="sep">·</span>
+            Updated Jun 3, 2026
+          </div>
+          <p class="desc">A mobile ordering and payment platform for bars. A customer orders and pays for a drink right in the app, gets a pickup code, and hands the code to the bartender, who fulfills the order on the spot. No flagging down a bartender, no card swipe at pickup.</p>
+          <ul class="bullets">
+            <li>FastAPI backend with Stripe Connect handling in-app payments and payouts to bar accounts.</li>
+            <li>React and Vite web portal for bartenders and bar admins, running on AWS Fargate, RDS, and ElastiCache, all provisioned through Terraform across dev, staging, and prod.</li>
+            <li>Full pytest and Playwright suite, including live end-to-end tests, gating every deploy.</li>
+            <li>Currently blocked on AWS SMS sandbox approval plus a couple of small live-site UX fixes before the first production deploy.</li>
+          </ul>
+          <div class="why">
+            <div class="why-label">Why I built this</div>
+            <p>I have stood in enough bar lines wondering why paying for a drink still means flagging someone down and waving a card around. DrinkUp lets a customer order and pay from their phone, then just show a code at the bar. Getting the payment and fulfillment flow right, and making a small production system safe enough to run real money through, has been the most demanding project I have shipped outside of work.</p>
+          </div>
+        </div>
+        <div class="right">private repo</div>
+      </div>
+
+      <div class="row">
+        <div class="n">P07</div>
+        <div>
+          <div class="title">Stock Analysis Engine</div>
+          <div class="meta">
+            stock-analysis (private) <span class="sep">·</span>
+            <span class="status">Built, full test suite passing, live sign-off pending</span> <span class="sep">·</span>
+            Updated May 28, 2026
+          </div>
+          <p class="desc">A local, rules-based Python engine for personal market research. It pulls free market data, scores a universe of tickers against a set of technical and fundamental rules, and turns that into a ranked, auditable list of proposed trades.</p>
+          <ul class="bullets">
+            <li>Every candidate comes with a written scorecard, so I can see exactly why it ranked where it did instead of trusting a black-box number.</li>
+            <li>Hard safety boundary baked into the design: the engine only ever proposes trades. It never places, modifies, or cancels an order itself.</li>
+            <li>129 tests passing, 2 skipped, with a CLI that runs the full scoring pipeline end to end.</li>
+          </ul>
+          <div class="why">
+            <div class="why-label">Why I built this</div>
+            <p>I wanted a repeatable way to screen a lot of tickers without spending a Saturday morning eyeballing charts, and without ever giving a script the ability to touch my brokerage account directly. Keeping the tool strictly advisory, propose only, never execute, was the non-negotiable design constraint from day one.</p>
+          </div>
+        </div>
+        <div class="right">private repo</div>
+      </div>
+
     </div>
   </section>
 
   <footer>
     <div>© <span id="year"></span> eric reilly <span class="accent">·</span> tampa, fl</div>
     <div>
-      <a href="https://www.linkedin.com/in/eric-reilly-769562155/" target="_blank" rel="noopener noreferrer">linkedin</a>
+      <a href="https://www.linkedin.com/in/eric-reilly-sre/" target="_blank" rel="noopener noreferrer">linkedin</a>
       &nbsp;·&nbsp;
       <a href="https://github.com/ericreilly999" target="_blank" rel="noopener noreferrer">github</a>
       &nbsp;·&nbsp;
