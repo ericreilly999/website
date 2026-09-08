@@ -94,7 +94,7 @@
 
 - [x] **QA-06** — Update `e2e/projects.spec.js` to target 6-project state
   - Remove "AI Assistant MVP Scaffold" and "Inventory Management System" cards/tests; add title + no-github-link coverage for new "Football Odds Analysis Engine" card (private repo `odds-analysis`)
-  - Row/title/`.why` counts 7 → 6; repo-link count 5 → 4
+  - Row/title/`.why` counts 7 → 6; repo-link count 5 → 3
   - Depends On: —
 
 - [x] **DEV-04** — Frontend Engineer: update `public/projects.html` to match target 6-row state
