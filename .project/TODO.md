@@ -90,6 +90,21 @@
   - Pick this up after DEV-01/DEV-02 land since it touches the same three HTML files
   - Depends On: QA-05
 
+### Story: Project portfolio follow-up fix (post PR #8/#9, human-directed)
+
+- [x] **QA-06** — Update `e2e/projects.spec.js` to target 6-project state
+  - Remove "AI Assistant MVP Scaffold" and "Inventory Management System" cards/tests; add title + no-github-link coverage for new "Football Odds Analysis Engine" card (private repo `odds-analysis`)
+  - Row/title/`.why` counts 7 → 6; repo-link count 5 → 3
+  - Depends On: —
+
+- [x] **DEV-04** — Frontend Engineer: update `public/projects.html` to match target 6-row state
+  - Remove "AI Assistant MVP Scaffold" and "Inventory Management System" cards
+  - Add new card "Football Odds Analysis Engine" (private repo `odds-analysis`, no repo link, same treatment as DrinkUp/Stock Analysis Engine): kicked off 2026-09-07, Sprint 01, nothing deployed, no live data yet
+  - Reorder rows to: DrinkUp, Stock Analysis Engine, Football Odds Analysis Engine, Prompted: Tech Talks, Pokemon Tuxedo, Personal Website
+  - Pokemon Tuxedo bullet: change "Backed by 5,426+ property-based tests according to the current README." to a direct statement without the hedge, e.g. "Backed by 5,426+ property-based tests."
+  - DrinkUp: remove the bullet "Currently blocked on AWS SMS sandbox approval plus a couple of small live-site UX fixes before the first production deploy." (DrinkUp drops from 4 bullets to 3)
+  - Depends On: QA-06
+
 ---
 
 ## Backlog (unscoped)

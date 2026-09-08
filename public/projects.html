@@ -36,7 +36,7 @@
       Things I'm <span class="token">building.</span><span class="cursor" aria-hidden="true"></span>
     </h1>
     <p class="sub">
-      Seven projects, five of them with public repos on GitHub. Each section calls out the current state of the work, repo included where I can share one.
+      Six projects, three of them with public repos on GitHub. Each section calls out the current state of the work, repo included where I can share one.
     </p>
   </header>
 
@@ -46,6 +46,75 @@
 
       <div class="row">
         <div class="n">P01</div>
+        <div>
+          <div class="title">DrinkUp</div>
+          <div class="meta">
+            drinkupapp (private) <span class="sep">·</span>
+            <span class="status">Pre-launch, final hardening before first prod deploy</span> <span class="sep">·</span>
+            Updated Jun 3, 2026
+          </div>
+          <p class="desc">A mobile ordering and payment platform for bars. A customer orders and pays for a drink right in the app, gets a pickup code, and hands the code to the bartender, who fulfills the order on the spot. No flagging down a bartender, no card swipe at pickup.</p>
+          <ul class="bullets">
+            <li>FastAPI backend with Stripe Connect handling in-app payments and payouts to bar accounts.</li>
+            <li>React and Vite web portal for bartenders and bar admins, running on AWS Fargate, RDS, and ElastiCache, all provisioned through Terraform across dev, staging, and prod.</li>
+            <li>Full pytest and Playwright suite, including live end-to-end tests, gating every deploy.</li>
+          </ul>
+          <div class="why">
+            <div class="why-label">Why I built this</div>
+            <p>I have stood in enough bar lines wondering why paying for a drink still means flagging someone down and waving a card around. DrinkUp lets a customer order and pay from their phone, then just show a code at the bar. Getting the payment and fulfillment flow right, and making a small production system safe enough to run real money through, has been the most demanding project I have shipped outside of work.</p>
+          </div>
+        </div>
+        <div class="right">private repo</div>
+      </div>
+
+      <div class="row">
+        <div class="n">P02</div>
+        <div>
+          <div class="title">Stock Analysis Engine</div>
+          <div class="meta">
+            stock-analysis (private) <span class="sep">·</span>
+            <span class="status">Built, full test suite passing, live sign-off pending</span> <span class="sep">·</span>
+            Updated May 28, 2026
+          </div>
+          <p class="desc">A local, rules-based Python engine for personal market research. It pulls free market data, scores a universe of tickers against a set of technical and fundamental rules, and turns that into a ranked, auditable list of proposed trades.</p>
+          <ul class="bullets">
+            <li>Every candidate comes with a written scorecard, so I can see exactly why it ranked where it did instead of trusting a black-box number.</li>
+            <li>Hard safety boundary baked into the design: the engine only ever proposes trades. It never places, modifies, or cancels an order itself.</li>
+            <li>129 tests passing, 2 skipped, with a CLI that runs the full scoring pipeline end to end.</li>
+          </ul>
+          <div class="why">
+            <div class="why-label">Why I built this</div>
+            <p>I wanted a repeatable way to screen a lot of tickers without spending a Saturday morning eyeballing charts, and without ever giving a script the ability to touch my brokerage account directly. Keeping the tool strictly advisory, propose only, never execute, was the non-negotiable design constraint from day one.</p>
+          </div>
+        </div>
+        <div class="right">private repo</div>
+      </div>
+
+      <div class="row">
+        <div class="n">P03</div>
+        <div>
+          <div class="title">Football Odds Analysis Engine</div>
+          <div class="meta">
+            odds-analysis (private) <span class="sep">·</span>
+            <span class="status">Just kicked off, Sprint 01 building the data pipeline</span> <span class="sep">·</span>
+            Updated Sep 7, 2026
+          </div>
+          <p class="desc">A batch pipeline for NFL and NCAAF sportsbook odds. It ingests lines from multiple books, devigs and blends them into a sharp-book consensus fair line, runs that through a deterministic rules engine to produce an adjusted probability estimate, and publishes a small number of value picks each week, each with a fully auditable explanation of how the estimate was reached.</p>
+          <ul class="bullets">
+            <li>No machine learning and no LLM anywhere in the reasoning path. Every pick traces back through a versioned, explicit rules engine, so the rationale is fully explainable rather than a black-box score.</li>
+            <li>The goal for the 2026 season is a public, timestamped, tamper-evident paper-trading track record, built to answer one question by February 2027: does this approach produce positive closing line value.</li>
+            <li>Day one as of this writing. Sprint 01 is building the data ingestion spine and a zero-rules baseline, consensus line passed through unchanged, no live API calls, no real money, no AWS spend yet.</li>
+          </ul>
+          <div class="why">
+            <div class="why-label">Why I built this</div>
+            <p>Sports betting analytics has no shortage of people selling picks on vibes and a good week. I wanted the opposite: a disciplined, deterministic process I could actually audit, with a track record that is public and timestamped from day one so there is nowhere to hide a bad stretch. Win or lose, the record stays honest, and that is the part of this project I actually care about proving.</p>
+          </div>
+        </div>
+        <div class="right">private repo</div>
+      </div>
+
+      <div class="row">
+        <div class="n">P04</div>
         <div>
           <div class="title">Prompted: Tech Talks</div>
           <div class="meta">
@@ -72,32 +141,7 @@
       </div>
 
       <div class="row">
-        <div class="n">P02</div>
-        <div>
-          <div class="title">AI Assistant MVP Scaffold</div>
-          <div class="meta">
-            ai-assistant <span class="sep">·</span>
-            <span class="status">Shut down, abandoned</span> <span class="sep">·</span>
-            Updated Apr 19, 2026
-          </div>
-          <p class="desc">A development-ready scaffold for a personal assistant MVP. It was set up to let backend, mobile, and infrastructure work move in parallel before live provider credentials were available, but the project never moved past the scaffold stage.</p>
-          <ul class="bullets">
-            <li>Included an AWS Lambda backend scaffold, React Native and Expo mobile shell, and Terraform layouts for dev, staging, and prod.</li>
-            <li>Used mock-provider mode by default so orchestration, packaging, and contract tests could run without live third-party secrets.</li>
-            <li>Shelved once the direction I actually wanted to pursue diverged from this scaffold, kept public as a record of the approach.</li>
-          </ul>
-          <div class="why">
-            <div class="why-label">Why I built this</div>
-            <p>Native LLM integrations still feel rough, and MCPs exist but are not especially friendly for non-developers. I wanted to learn more about connecting AI models to real data sources while exploring a real market need and building deeper expertise in AI integrations.</p>
-          </div>
-        </div>
-        <div class="right">
-          <a href="https://github.com/ericreilly999/ai-assistant" target="_blank" rel="noopener noreferrer">repo ↗</a>
-        </div>
-      </div>
-
-      <div class="row">
-        <div class="n">P03</div>
+        <div class="n">P05</div>
         <div>
           <div class="title">Pokemon Tuxedo</div>
           <div class="meta">
@@ -108,7 +152,7 @@
           <p class="desc">A Pokemon FireRed ROM hack that focuses on dynamic level scaling, multi-region progression, and a long list of quality-of-life improvements for replayability.</p>
           <ul class="bullets">
             <li>Covers Kanto, Johto, Hoenn, and Sinnoh progression with level caps, open exploration in later regions, and more forgiving HM and evolution mechanics.</li>
-            <li>Backed by 5,426+ property-based tests according to the current README.</li>
+            <li>Backed by 5,426+ property-based tests.</li>
             <li>The remaining work is the integration layer: decomp integration, custom sprite assets, and regional map content.</li>
           </ul>
           <div class="why">
@@ -122,32 +166,7 @@
       </div>
 
       <div class="row">
-        <div class="n">P04</div>
-        <div>
-          <div class="title">Inventory Management System</div>
-          <div class="meta">
-            inventory <span class="sep">·</span>
-            <span class="status">Paused proof of concept</span> <span class="sep">·</span>
-            Updated Feb 23, 2026
-          </div>
-          <p class="desc">This started as a proof-of-concept for a warehousing business. The business itself is no longer active, but I kept the repository public because it shows how I approached the architecture, deployment, and delivery pipeline for the concept.</p>
-          <ul class="bullets">
-            <li>Microservices-based system with a FastAPI backend, a React TypeScript frontend, and JWT-based auth.</li>
-            <li>Infrastructure and deployment work is fleshed out with Terraform, AWS Fargate, RDS, ElastiCache, and GitHub Actions.</li>
-            <li>The README documents working authentication, a live development environment, and a staged roadmap for inventory, locations, reporting, and audit logging.</li>
-          </ul>
-          <div class="why">
-            <div class="why-label">Why I built this</div>
-            <p>This was a proof of concept for a potential client who needed a simple inventory management system with a parent-child item structure. I liked the challenge because it let me turn a very practical business need into a real architecture exercise.</p>
-          </div>
-        </div>
-        <div class="right">
-          <a href="https://github.com/ericreilly999/inventory" target="_blank" rel="noopener noreferrer">repo ↗</a>
-        </div>
-      </div>
-
-      <div class="row">
-        <div class="n">P05</div>
+        <div class="n">P06</div>
         <div>
           <div class="title">Personal Website</div>
           <div class="meta">
@@ -169,53 +188,6 @@
         <div class="right">
           <a href="https://github.com/ericreilly999/website" target="_blank" rel="noopener noreferrer">repo ↗</a>
         </div>
-      </div>
-
-      <div class="row">
-        <div class="n">P06</div>
-        <div>
-          <div class="title">DrinkUp</div>
-          <div class="meta">
-            drinkupapp (private) <span class="sep">·</span>
-            <span class="status">Pre-launch, final hardening before first prod deploy</span> <span class="sep">·</span>
-            Updated Jun 3, 2026
-          </div>
-          <p class="desc">A mobile ordering and payment platform for bars. A customer orders and pays for a drink right in the app, gets a pickup code, and hands the code to the bartender, who fulfills the order on the spot. No flagging down a bartender, no card swipe at pickup.</p>
-          <ul class="bullets">
-            <li>FastAPI backend with Stripe Connect handling in-app payments and payouts to bar accounts.</li>
-            <li>React and Vite web portal for bartenders and bar admins, running on AWS Fargate, RDS, and ElastiCache, all provisioned through Terraform across dev, staging, and prod.</li>
-            <li>Full pytest and Playwright suite, including live end-to-end tests, gating every deploy.</li>
-            <li>Currently blocked on AWS SMS sandbox approval plus a couple of small live-site UX fixes before the first production deploy.</li>
-          </ul>
-          <div class="why">
-            <div class="why-label">Why I built this</div>
-            <p>I have stood in enough bar lines wondering why paying for a drink still means flagging someone down and waving a card around. DrinkUp lets a customer order and pay from their phone, then just show a code at the bar. Getting the payment and fulfillment flow right, and making a small production system safe enough to run real money through, has been the most demanding project I have shipped outside of work.</p>
-          </div>
-        </div>
-        <div class="right">private repo</div>
-      </div>
-
-      <div class="row">
-        <div class="n">P07</div>
-        <div>
-          <div class="title">Stock Analysis Engine</div>
-          <div class="meta">
-            stock-analysis (private) <span class="sep">·</span>
-            <span class="status">Built, full test suite passing, live sign-off pending</span> <span class="sep">·</span>
-            Updated May 28, 2026
-          </div>
-          <p class="desc">A local, rules-based Python engine for personal market research. It pulls free market data, scores a universe of tickers against a set of technical and fundamental rules, and turns that into a ranked, auditable list of proposed trades.</p>
-          <ul class="bullets">
-            <li>Every candidate comes with a written scorecard, so I can see exactly why it ranked where it did instead of trusting a black-box number.</li>
-            <li>Hard safety boundary baked into the design: the engine only ever proposes trades. It never places, modifies, or cancels an order itself.</li>
-            <li>129 tests passing, 2 skipped, with a CLI that runs the full scoring pipeline end to end.</li>
-          </ul>
-          <div class="why">
-            <div class="why-label">Why I built this</div>
-            <p>I wanted a repeatable way to screen a lot of tickers without spending a Saturday morning eyeballing charts, and without ever giving a script the ability to touch my brokerage account directly. Keeping the tool strictly advisory, propose only, never execute, was the non-negotiable design constraint from day one.</p>
-          </div>
-        </div>
-        <div class="right">private repo</div>
       </div>
 
     </div>
