@@ -7,14 +7,14 @@
 Push to `main` auto-deploys to `staging.ericreilly.com` (and `staging.prompted.ericreilly.com`) and runs the Playwright E2E gate against staging. A semver tag push (`vX.Y.Z`) deploys to production (`ericreilly.com` and `prompted.ericreilly.com`).
 
 ## Current Stage
-**Round 4 in review — Rounds 2 & 3 live on staging, awaiting human review**
+**All four rounds live on staging, awaiting human review — no prod tag requested**
 
-Prior content-refresh story (rewrite + portfolio overhaul + human-directed follow-up) shipped to prod as `v0.1.5`. Three further rounds of copy edits were requested 2026-09-12:
-- **Round 2** (PR #11, `9c76ac1`) — bio lede/paragraph, highlights list, skills grid. Merged, deployed to staging, QA-signed-off.
-- **Round 3** (PR #12, `6538352`) — hero tagline shortened, 3 highlight bullets reworded. Merged, deployed to staging, QA-signed-off.
-- **Round 4** (PR #13, `9a4febf` on branch `content/prose-round-4`) — hero sub-paragraph reworded (drops "Togetherwork"/"AI-native"), bio opener reworded, banking bullet reworded ("Appointed platform owner for..."), delivery & leadership skills cell reworded, tagline "i"→"I" capitalized. **PR open, not yet reviewed/merged.**
+Prior content-refresh story (rewrite + portfolio overhaul + human-directed follow-up) shipped to prod as `v0.1.5`. Three further rounds of copy edits were requested 2026-09-12, all merged, deployed to staging, and QA-signed-off there:
+- **Round 2** (PR #11, `9c76ac1`) — bio lede/paragraph, highlights list, skills grid.
+- **Round 3** (PR #12, `6538352`) — hero tagline shortened, 3 highlight bullets reworded.
+- **Round 4** (PR #13, `b99703f`) — hero sub-paragraph reworded (drops "Togetherwork"/"AI-native"), bio opener reworded, banking bullet reworded ("Appointed platform owner for..."), delivery & leadership skills cell reworded, tagline "i"→"I" capitalized.
 
-No prod tag requested for any round — production still reflects `v0.1.5`.
+Production still reflects `v0.1.5` — no prod tag requested for any round.
 
 ## Last Gate Cleared (prior prod story)
 Prod Deploy — human explicitly approved ("ship the changes to prod"). Tagged and pushed `v0.1.5` from `main` tip `afac3632`.
@@ -27,19 +27,10 @@ Prod Deploy — human explicitly approved ("ship the changes to prod"). Tagged a
 
 **Round 3 (PR #12) — COMPLETE through Stage 5.** QA wrote/updated assertions (`homepage.spec.js`, `about.spec.js`) → Frontend implemented → QA independent pass (58/58, built in proactively) → Docs (no impact) → Code Reviewer merged clean (`6538352`) → staging deploy green (run [34704340442](https://github.com/ericreilly999/website/actions/runs/34704340442)) → QA staging sign-off (58/58, `test-signoff.md` commit `cd03314`).
 
-**Round 4 (PR #13) — Stage 1-3 in progress.**
-```
-[x] QA locates strings, writes/updates assertions (5 checks, commit ddfbf29) — confirmed 5 red/57 green
-  → [x] Frontend implements 5 copy edits (uncommitted → committed by QA)
-  → [x] QA independent validation (62/62 green, commit 9a4febf) → PR #13 opened
-  → [ ] Documentation Agent (doc-impact check)
-  → [ ] Code Reviewer → merge to main
-  → [ ] Auto-deploy to staging → [ ] QA validates staging locally
-  → [ ] Report to human — no prod tag requested this round
-```
+**Round 4 (PR #13) — COMPLETE through Stage 5.** QA located strings, wrote/updated assertions (5 checks, commit `ddfbf29`, confirmed 5 red/57 green) → Frontend implemented → QA independent pass (62/62, commit `9a4febf`) → PR #13 opened → Documentation Agent (no doc impact) → Code Reviewer merged clean (`b99703f`) → staging deploy green (run [34718497465](https://github.com/ericreilly999/website/actions/runs/34718497465)) → QA staging sign-off (62/62).
 
 ## Next Action
-Invoke Documentation Agent on PR #13, then Code Reviewer.
+None queued. All four rounds (prior prod story + this session's Rounds 2/3/4) are complete through their respective gates. Awaiting human review of staging and/or a decision on prod promotion.
 
 ## Gate Status
 
@@ -47,9 +38,9 @@ Invoke Documentation Agent on PR #13, then Code Reviewer.
 |------|------|------|------|
 | Stage 1 — Test writing | ✅ | ✅ | ✅ (commit `ddfbf29`) |
 | Stage 2 — Development | ✅ | ✅ | ✅ (implemented, 62/62 local) |
-| Stage 3 — Code Review | ✅ (CR blocked once, resolved) | ✅ (clean first pass) | ⏳ Docs check pending, then CR |
-| Stage 4 — Deploy to Staging | ✅ (run 34702470524) | ✅ (run 34704340442) | ⏳ pending merge |
-| Stage 5 — QA Validation (staging) | ✅ (31/31) | ✅ (58/58) | ⏳ pending deploy |
+| Stage 3 — Code Review | ✅ (CR blocked once, resolved) | ✅ (clean first pass) | ✅ (clean first pass, merge `b99703f`) |
+| Stage 4 — Deploy to Staging | ✅ (run 34702470524) | ✅ (run 34704340442) | ✅ (run 34718497465) |
+| Stage 5 — QA Validation (staging) | ✅ (31/31) | ✅ (58/58) | ✅ (62/62) |
 | Prod Deploy | Not requested | Not requested | Not requested |
 
 ## Known non-blocking follow-ups (not yet actioned)
