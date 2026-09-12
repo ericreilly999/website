@@ -26,13 +26,44 @@ test.describe('Homepage', () => {
     expect(text.length).toBeGreaterThan(0);
   });
 
-  test('hero tagline drops the "and doesn\'t break" clause', async ({ page }) => {
-    // TDD gate for the 2026-09-12 tagline tweak:
-    //   "i build stuff that scales and doesn't break." -> "i build stuff that scales"
+  test('hero tagline capitalizes the leading "I"', async ({ page }) => {
+    // TDD gate for the 2026-09-12 round-4 copy tweak:
+    //   "i build stuff that scales" -> "I build stuff that scales"
+    // Supersedes the round-3 "drops the and doesn't break clause" test (that
+    // wording change already shipped in PR #12 / commit 6538352 and is no
+    // longer at risk of regressing without a dedicated assertion — the
+    // "and doesn't break" substring can't silently reappear from a
+    // case-only edit). toContainText does a case-SENSITIVE substring match,
+    // so this fails against the current lowercase "i build stuff that
+    // scales" and only passes once the leading letter is capitalized.
     // Expected RED until Frontend ships the copy change to public/index.html.
     const headline = page.locator('h1.headline');
-    await expect(headline).toContainText('i build stuff that scales');
-    await expect(headline).not.toContainText("and doesn't break");
+    await expect(headline).toContainText('I build stuff that scales');
+    const text = (await headline.innerText()).trim();
+    expect(text.startsWith('I ')).toBe(true);
+    expect(text.startsWith('i ')).toBe(false);
+  });
+
+  test('hero sub-paragraph reflects the round-4 "PE-backed SaaS" reframe', async ({ page }) => {
+    // TDD gate for the 2026-09-12 round-4 copy tweak to the hero `.sub`
+    // paragraph (an unrelated hero-section paragraph near the tagline,
+    // never previously pinned by any test — only loosely covered by
+    // about.spec.js's generic "shows 7+ years" regex, which still passes
+    // either way since both old and new copy open with "7+ years"):
+    //   "7+ years making SaaS platforms more reliable, more scalable, and a
+    //   little more AI-native. These days that's at Togetherwork, where I
+    //   own reliability and observability across a big portfolio of
+    //   products."
+    //   ->
+    //   "7+ years making SaaS platforms more reliable, more scalable, and a
+    //   little more cloud native. Right now, I own reliability and
+    //   observability across a portfolio of products for a PE-backed SaaS."
+    // Expected RED until Frontend ships the copy change to public/index.html.
+    const sub = page.locator('header.hero .sub');
+    await expect(sub).toContainText('more cloud native');
+    await expect(sub).toContainText('PE-backed SaaS');
+    await expect(sub).not.toContainText('AI-native');
+    await expect(sub).not.toContainText("that's at");
   });
 
   test('hero has three CTA links', async ({ page }) => {
