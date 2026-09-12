@@ -36,19 +36,46 @@ test.describe('About page content', () => {
     await expect(bio).not.toContainText('fragmented tenant landscape');
   });
 
+  test('bio paragraph opener drops the explicit "at Togetherwork" mention', async ({ page }) => {
+    // TDD gate for the 2026-09-12 round-4 copy tweak: the opening clause
+    //   "I'm at Togetherwork these days, standardizing how reliability..."
+    //   -> "These days, I'm standardizing how reliability..."
+    // Rest of the paragraph (fragmented ecosystem / coaching engineering
+    // teams language, covered by the test above) is unchanged. Expected
+    // RED until Frontend ships the copy change to public/index.html.
+    const bio = page.locator('.prose p').first();
+    await expect(bio).toContainText("These days, I'm standardizing how reliability");
+    await expect(bio).not.toContainText("I'm at Togetherwork these days");
+  });
+
   test('banking platform highlight drops the "if it broke" clause and uses "0 to 5M+" wording', async ({ page }) => {
     // TDD gate for the 2026-09-12 tagline-round follow-up: the bullet is
     // reworded from "Platform owner for ... grew from 0 → 5M+ accounts in
     // five years. If it broke, it was my problem." to "Owned an
     // international core banking SaaS on Azure that grew from 0 to 5M+
     // accounts in five years." (arrow -> "to", trailing clause dropped).
-    // Expected RED until Frontend ships the copy change.
+    // This round-3 wording already shipped (PR #12 / commit 6538352) — kept
+    // as a regression guard for the "if it broke"/arrow wording, which
+    // remains dropped in round 4.
     const items = page.locator('.highlights li');
     const bankingBullet = items.filter({ hasText: '0 to 5M+ accounts' });
     await expect(bankingBullet).toHaveCount(1);
-    await expect(bankingBullet).toContainText('Owned an international core banking SaaS');
     await expect(bankingBullet).not.toContainText('If it broke, it was my problem');
     await expect(bankingBullet).not.toContainText('0 → 5M+ accounts');
+  });
+
+  test('banking platform highlight uses "appointed platform owner" wording', async ({ page }) => {
+    // TDD gate for the 2026-09-12 round-4 copy tweak:
+    //   "Owned an international core banking SaaS on Azure that grew from
+    //   0 to 5M+ accounts in five years."
+    //   -> "Appointed platform owner for an international core banking
+    //   SaaS on Azure that grew from 0 to 5M+ accounts in five years."
+    // Expected RED until Frontend ships the copy change to public/index.html.
+    const items = page.locator('.highlights li');
+    const bankingBullet = items.filter({ hasText: '0 to 5M+ accounts' });
+    await expect(bankingBullet).toHaveCount(1);
+    await expect(bankingBullet).toContainText('Appointed platform owner for an international core banking SaaS');
+    await expect(bankingBullet).not.toContainText('Owned an international core banking SaaS');
   });
 
   test('AI rollout highlight reflects AWS DevOps Agent rollout, not the old GPT/Claude/MCP bullet', async ({ page }) => {
@@ -87,6 +114,30 @@ test.describe('About page content', () => {
     const deliveryCell = page.locator('.grid-2 .cell', { has: page.locator('h4', { hasText: 'delivery & leadership' }) });
     await expect(obsCell).not.toContainText('observability strategy');
     await expect(deliveryCell).toContainText('observability strategy');
+  });
+
+  test('delivery & leadership cell reflects the round-4 rewording', async ({ page }) => {
+    // TDD gate for the 2026-09-12 round-4 copy tweak. No prior test pinned
+    // this cell's exact wording beyond the "observability strategy" phrase
+    // above (which is unchanged and still covered by that test). The rest
+    // of the cell is reworded:
+    //   "SRE leadership, platform modernization, toil reduction, engineering
+    //   enablement, operational coaching, observability strategy"
+    //   -> "Technical leadership, platform modernization, cross-functional
+    //   collaboration, operational excellence, observability strategy"
+    // ("platform modernization" and "observability strategy" survive
+    // unchanged; "toil reduction" is dropped outright; the other three
+    // phrases are each reworded). Expected RED until Frontend ships the
+    // copy change to public/index.html.
+    const deliveryCell = page.locator('.grid-2 .cell', { has: page.locator('h4', { hasText: 'delivery & leadership' }) });
+    await expect(deliveryCell).toContainText('Technical leadership');
+    await expect(deliveryCell).toContainText('cross-functional collaboration');
+    await expect(deliveryCell).toContainText('operational excellence');
+    await expect(deliveryCell).toContainText('platform modernization');
+    await expect(deliveryCell).not.toContainText('SRE leadership');
+    await expect(deliveryCell).not.toContainText('toil reduction');
+    await expect(deliveryCell).not.toContainText('engineering enablement');
+    await expect(deliveryCell).not.toContainText('operational coaching');
   });
 
   test('shows "where i\'ve worked" section with three employers', async ({ page }) => {
