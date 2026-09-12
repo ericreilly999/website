@@ -36,11 +36,19 @@ test.describe('About page content', () => {
     await expect(bio).not.toContainText('fragmented tenant landscape');
   });
 
-  test('banking platform highlight is merged into a single bullet with the 5M+ growth stat', async ({ page }) => {
+  test('banking platform highlight drops the "if it broke" clause and uses "0 to 5M+" wording', async ({ page }) => {
+    // TDD gate for the 2026-09-12 tagline-round follow-up: the bullet is
+    // reworded from "Platform owner for ... grew from 0 → 5M+ accounts in
+    // five years. If it broke, it was my problem." to "Owned an
+    // international core banking SaaS on Azure that grew from 0 to 5M+
+    // accounts in five years." (arrow -> "to", trailing clause dropped).
+    // Expected RED until Frontend ships the copy change.
     const items = page.locator('.highlights li');
-    const bankingBullet = items.filter({ hasText: '0 → 5M+ accounts' });
+    const bankingBullet = items.filter({ hasText: '0 to 5M+ accounts' });
     await expect(bankingBullet).toHaveCount(1);
-    await expect(bankingBullet).toContainText('If it broke, it was my problem');
+    await expect(bankingBullet).toContainText('Owned an international core banking SaaS');
+    await expect(bankingBullet).not.toContainText('If it broke, it was my problem');
+    await expect(bankingBullet).not.toContainText('0 → 5M+ accounts');
   });
 
   test('AI rollout highlight reflects AWS DevOps Agent rollout, not the old GPT/Claude/MCP bullet', async ({ page }) => {
@@ -48,8 +56,24 @@ test.describe('About page content', () => {
     await expect(page.getByText(/MCP enablement for the team/)).toHaveCount(0);
   });
 
+  test('AI rollout highlight uses the new "put to work" phrasing, not the old "rolled out ... provisioned" wording', async ({ page }) => {
+    // TDD gate for the 2026-09-12 tagline-round follow-up: "Rolled out AWS
+    // DevOps Agent across the portfolio to bolster incident response and
+    // troubleshooting, provisioned with Terraform and integrated with
+    // Datadog." -> "Put AWS DevOps Agent to work across the whole
+    // portfolio. Faster incident response, sharper troubleshooting, wired
+    // straight into Terraform and Datadog." Expected RED until shipped.
+    const aiBullet = page.locator('.highlights li').filter({ hasText: 'AWS DevOps Agent' });
+    await expect(aiBullet).toContainText('wired straight into Terraform and Datadog');
+    await expect(aiBullet).not.toContainText('provisioned with Terraform and integrated with Datadog');
+  });
+
   test('migrations highlight reflects consolidated migration count language', async ({ page }) => {
-    await expect(page.getByText(/Led over 10 migrations/)).toBeVisible();
+    // Updated 2026-09-12 (tagline-round follow-up): "Led over 10
+    // migrations in various forms: ..." -> "Led 10+ migrations spanning
+    // ...". Expected RED until shipped.
+    await expect(page.getByText(/Led 10\+ migrations/)).toBeVisible();
+    await expect(page.getByText(/Led over 10 migrations/)).toHaveCount(0);
   });
 
   test('ai & automation skills cell lists the updated tool set including Kiro', async ({ page }) => {

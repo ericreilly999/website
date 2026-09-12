@@ -13,16 +13,26 @@ test.describe('Homepage', () => {
     await expect(page).toHaveTitle('Eric Reilly');
   });
 
-  test('hero headline is visible and communicates the reliability theme', async ({ page }) => {
-    // Loosened from an exact "doesn't break" pin: the hero phrasing itself is
-    // in scope for the voice rewrite (DEV-02), so we assert structure + theme
-    // rather than exact copy. See .project/decisions.md 2026-09-07 #2.
+  test('hero headline is visible and has token-highlighted spans', async ({ page }) => {
+    // Structural check only. Exact copy is pinned by the dedicated tagline
+    // test below, which supersedes the old `/break|reliab/i` theme regex
+    // from .project/decisions.md 2026-09-07 #2 — that regex is retired here
+    // because the 2026-09-12 tagline tweak (dropping "and doesn't break")
+    // means the headline no longer guarantees either word.
     const headline = page.locator('h1.headline');
     await expect(headline).toBeVisible();
     await expect(headline.locator('.token')).not.toHaveCount(0);
     const text = (await headline.innerText()).trim();
     expect(text.length).toBeGreaterThan(0);
-    expect(text).toMatch(/break|reliab/i);
+  });
+
+  test('hero tagline drops the "and doesn\'t break" clause', async ({ page }) => {
+    // TDD gate for the 2026-09-12 tagline tweak:
+    //   "i build stuff that scales and doesn't break." -> "i build stuff that scales"
+    // Expected RED until Frontend ships the copy change to public/index.html.
+    const headline = page.locator('h1.headline');
+    await expect(headline).toContainText('i build stuff that scales');
+    await expect(headline).not.toContainText("and doesn't break");
   });
 
   test('hero has three CTA links', async ({ page }) => {
