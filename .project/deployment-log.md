@@ -4,6 +4,26 @@ Deployments are recorded in reverse-chronological order.
 
 ---
 
+## 2026-09-13 — v0.1.6 — Production
+
+**Deployed by:** GitHub Actions (tag push, `deploy.yml`, run [34763317301](https://github.com/ericreilly999/website/actions/runs/34763317301))
+**Tag:** `v0.1.6` (annotated), created at `main` SHA `e4001237d1e4bb01e2bd3b739e48f2aa3fad56ab`
+**Bundled content:** 5 content rounds — PRs #11, #12, #13, #14 (CTA copy tweak "get in touch to work with me" was the final round, PR #14)
+**Staging QA sign-off (pre-tag):** 31/31, 58/58, 62/62, 73/73 — all green, recorded in `.project/test-signoff.md`
+**Human approval:** Explicit — "I think this is good to ship to production"; PM confirmed tag SHA and proposed `v0.1.6` (prior prod tag `v0.1.5`)
+**Environment:** Production — https://ericreilly.com and https://prompted.ericreilly.com (prompted site)
+**Jobs:**
+- `Deploy Production` — ✅ success (35s)
+- `Deploy Prompted Production` — ✅ success (13s)
+- `Deploy Staging` / `Deploy Prompted Staging` / `E2E Tests (Staging)` — skipped (tag push, not a `main` push; expected)
+**Post-deploy verification (read-only curl spot-check):**
+- `https://ericreilly.com` — "Work with me" hero CTA ✅; "Reduced Sev 1 incidents by over 70%" ✅; "Appointed platform owner for an international core banking SaaS" ✅; "I build stuff that scales" ✅ (capitalized; text split across a `<span class="token">` tag in markup); "Claude Code, Codex, Kiro, Python, Bash" (AI & automation skills) ✅
+- `https://ericreilly.com/contact` — meta description updated: "Work with me: SRE and cloud architecture consulting via White Glove Solutions." ✅
+- `https://ericreilly.com/projects` — "work with me" prose present ✅
+**Status:** ✅ Live
+
+---
+
 ## 2026-04-18 — Staging environment provisioned (Terraform)
 
 **Method:** `terraform apply` (automated via PM)
