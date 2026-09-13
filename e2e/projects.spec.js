@@ -43,6 +43,15 @@ test.describe('Projects page', () => {
     await expect(page.locator('.why')).toHaveCount(6);
   });
 
+  test('Personal Website "why I built this" reflects "work with me" phrasing, not "get in touch"', async ({ page }) => {
+    // TDD gate for the 2026-09-13 CTA copy tweak: "...give people a way to
+    // get in touch." -> "...give people a way to work with me." Expected RED
+    // until Frontend ships the copy change to public/projects.html.
+    const why = rowFor(page, 'Personal Website').locator('.why');
+    await expect(why).toContainText('give people a way to work with me');
+    await expect(why).not.toContainText('give people a way to get in touch');
+  });
+
   test('exactly 3 repo links point to github.com and open in new tab', async ({ page }) => {
     const repoLinks = page.locator('.row .right a[href*="github.com"]');
     await expect(repoLinks).toHaveCount(3);

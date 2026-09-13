@@ -70,6 +70,16 @@ test.describe('Homepage', () => {
     await expect(page.locator('.hero-links li')).toHaveCount(3);
   });
 
+  test('hero contact CTA reads "Work with me", not "Get in touch"', async ({ page }) => {
+    // TDD gate for the 2026-09-13 CTA copy tweak: the first hero-links item
+    // (which links to /contact) is relabeled from "Get in touch" to
+    // "Work with me". Expected RED until Frontend ships the copy change to
+    // public/index.html.
+    const ctaLabel = page.locator('.hero-links a[href="/contact"] .label');
+    await expect(ctaLabel).toHaveText('Work with me');
+    await expect(ctaLabel).not.toHaveText('Get in touch');
+  });
+
   test('prompted podcast link points to prompted.ericreilly.com', async ({ page }) => {
     await expect(page.locator('.hero-links a[href*="prompted.ericreilly.com"]')).toBeVisible();
   });
