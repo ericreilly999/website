@@ -17,6 +17,23 @@ test.describe('Contact page', () => {
     await expect(page.locator('h1.headline')).toContainText('work together');
   });
 
+  test('meta description reflects "work with me" CTA framing, not "get in touch"', async ({ page }) => {
+    // TDD gate for the 2026-09-13 CTA copy tweak. The meta description
+    // currently reads "Get in touch with Eric Reilly: SRE and cloud
+    // architecture consulting via White Glove Solutions." A literal
+    // substring swap of "get in touch" -> "work with me" would produce the
+    // grammatically broken "Work with me with Eric Reilly: ...", so the
+    // expected rewrite drops the redundant "with Eric Reilly" instead:
+    // "Work with me: SRE and cloud architecture consulting via White Glove
+    // Solutions." Flagged for Frontend/PM: confirm this exact wording before
+    // implementing, since it is a copy call beyond a pure find/replace.
+    // Expected RED until Frontend ships the copy change to public/contact.html.
+    const description = page.locator('meta[name="description"]');
+    await expect(description).toHaveAttribute('content', 'Work with me: SRE and cloud architecture consulting via White Glove Solutions.');
+    const content = await description.getAttribute('content');
+    expect(content.toLowerCase()).not.toContain('get in touch');
+  });
+
   test('"contact" nav link is active', async ({ page }) => {
     await expect(page.locator('.nav-links a.active')).toContainText('contact');
   });
