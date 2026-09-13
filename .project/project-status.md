@@ -1,32 +1,34 @@
 ---
 # Project Status
 
-**Last updated:** 2026-09-12
-**Current stage:** Prose Refresh — Rounds 2, 3, and 4 all merged, deployed to staging, and QA-signed-off. No prod tag requested for any round.
+**Last updated:** 2026-09-13
+**Current stage:** Live / Ongoing Maintenance — all five prose-refresh rounds shipped to production as `v0.1.6`. Story closed.
 **Route-to-live:** Standard (`main` → staging auto-deploy → semver tag → prod)
 
 ## Summary
 
 The Eric Reilly personal website is live at https://ericreilly.com, staging at https://staging.ericreilly.com. Site is plain HTML (`public/`) with a shared dark-theme design system; the `src/` React app is legacy and not part of the build.
 
-The prior content-refresh story shipped end-to-end (three PRs, tag `v0.1.5`, verified live). Three further rounds of prose edits were requested 2026-09-12, all staging-only (no prod tag requested), all now merged, deployed to staging, and QA-signed-off there:
-- **Round 2** (PR #11, `9c76ac1`), **Round 3** (PR #12, `6538352`), **Round 4** (PR #13, `b99703f`).
+The prior content-refresh story shipped end-to-end (three PRs, tag `v0.1.5`, verified live). Four further rounds of prose edits were made 2026-09-12/13, all merged, staged, QA-signed-off, and now shipped to production as tag `v0.1.6`:
+- **Round 2** (PR #11, `9c76ac1`), **Round 3** (PR #12, `6538352`), **Round 4** (PR #13, `b99703f`), **Round 5** (PR #14, `f2266c7`).
 
 ## What We Just Completed
 
 - **PR #11** (`9c76ac1`, squash-merged) — Bio lede reworded, bio paragraph reworded, two banking-related highlights merged into one, AI-rollout/migrations/incidents bullets rewritten, skills grid updated. Bundled 2 previously-orphaned test-fix commits (`9d7264a`, `625bb76`).
 - **PR #12** (`6538352`, squash-merged) — Hero tagline shortened ("i build stuff that scales"), 3 highlight bullets reworded again (banking bullet trimmed further, AWS DevOps Agent bullet restyled, migrations bullet tightened to "10+").
 - **PR #13** (`b99703f`, squash-merged) — Hero sub-paragraph reworded (drops "Togetherwork"/"AI-native" framing, now "cloud native" / "PE-backed SaaS"), bio opener reworded ("These days, I'm standardizing..."), banking bullet reworded again ("Appointed platform owner for..."), delivery & leadership skills cell reworded, tagline capitalized ("I build stuff that scales").
-- All three rounds independently QA-validated pre-merge and post-deploy on live staging (31/31, 58/58, 62/62), sign-off recorded in `test-signoff.md` (commits `92f2458`, `cd03314`, and this round's entry).
+- **PR #14** (`f2266c7`, squash-merged) — CTA text "Get in touch" → "Work with me" on the hero button, contact page meta description, and projects-page prose.
+- All four rounds independently QA-validated pre-merge and post-deploy on live staging (31/31, 58/58, 62/62, 73/73), sign-off recorded in `test-signoff.md`.
+- **Production deploy**: human approved 2026-09-13 ("I think this is good to ship to production"). Tagged and pushed `v0.1.6` from `main` @ `e400123`. Workflow run [34763317301](https://github.com/ericreilly999/website/actions/runs/34763317301): `deploy-prod` ✅ `deploy-prompted-prod` ✅. Live production verified via curl — all content changes confirmed present, logged in `deployment-log.md`.
 - **Resume** (`C:\Users\EricW\Downloads\Eric_Reilly_Resume_2026-09-12.docx`, outside this repo) updated in parallel to match the site's new bullet language — banking bullet merged, AWS DevOps Agent bullet, 10+ migrations bullet, Sev 1/70% bullet, AI/LLM tooling skills updated. Bullet about eliminated manual hours/client credits kept its original hard numbers (1,000+ hours / 77%) per explicit instruction, diverging intentionally from the site's softer "countless hours / MTTR" phrasing.
 
 ## What's In Progress
 
-Nothing actively running. All three rounds are complete through Stage 5 (staging QA sign-off). No prod tag requested for any round so far; production still reflects `v0.1.5`.
+Nothing. Human approved and the story shipped to production: tag `v0.1.6`, workflow run 34763317301 fully green, live production verified.
 
 ## What's Coming Next
 
-No scheduled work until the human reviews staging and/or decides on prod promotion. Open backlog items, unchanged by these rounds:
+No scheduled work. Open backlog items, unchanged by these rounds:
 - Enforce branch protection rules and required PR reviews on `main`
 - DEVOPS-04/05/06 post-merge follow-ups (prevent_destroy lifecycle guards, prod-tag regex tightening, bootstrap resource tags)
 - `deploy.yml` has no `paths:` filter — even a test-only merge re-triggers full staging deploy jobs (flagged by Code Reviewer on PR #9, still open)

@@ -7,15 +7,15 @@
 Push to `main` auto-deploys to `staging.ericreilly.com` (and `staging.prompted.ericreilly.com`) and runs the Playwright E2E gate against staging. A semver tag push (`vX.Y.Z`) deploys to production (`ericreilly.com` and `prompted.ericreilly.com`).
 
 ## Current Stage
-**All five rounds live on staging, QA-signed-off — human has approved prod promotion, tag not yet pushed**
+**Live / Ongoing Maintenance — all five rounds shipped to production as `v0.1.6`. Story closed.**
 
-Prior content-refresh story (rewrite + portfolio overhaul + human-directed follow-up) shipped to prod as `v0.1.5`. Four further rounds of copy edits were made 2026-09-12/13, all merged, deployed to staging, and QA-signed-off there:
+Prior content-refresh story shipped to prod as `v0.1.5`. Four further rounds of copy edits were made 2026-09-12/13, all merged, staged, QA-signed-off, and now live in production:
 - **Round 2** (PR #11, `9c76ac1`) — bio lede/paragraph, highlights list, skills grid.
 - **Round 3** (PR #12, `6538352`) — hero tagline shortened, 3 highlight bullets reworded.
 - **Round 4** (PR #13, `b99703f`) — hero sub-paragraph reworded (drops "Togetherwork"/"AI-native"), bio opener reworded, banking bullet reworded ("Appointed platform owner for..."), delivery & leadership skills cell reworded, tagline "i"→"I" capitalized.
 - **Round 5** (PR #14, `f2266c7`) — CTA text "Get in touch" → "Work with me" (hero button, contact meta description, projects prose).
 
-Human said (2026-09-13): "I think this is good to ship to production." Proposing tag `v0.1.6` from `main` tip `fc100b3`. Tier 1 soak (copy-only change) — Round 2-4 have already sat on staging since 2026-09-12 (well over the ~2hr Tier 1 window); Round 5 is newer (just validated) but is the lowest-risk possible change (button/meta-description text only).
+Human approved production promotion 2026-09-13 ("I think this is good to ship to production"). Tag `v0.1.6` pushed from `main` @ `e400123`, `deploy-prod` + `deploy-prompted-prod` both green, live content independently verified via curl against `https://ericreilly.com`.
 
 ## Last Gate Cleared (prior prod story)
 Prod Deploy — human explicitly approved ("ship the changes to prod"). Tagged and pushed `v0.1.5` from `main` tip `afac3632`.
@@ -33,7 +33,7 @@ Prod Deploy — human explicitly approved ("ship the changes to prod"). Tagged a
 **Round 5 (PR #14) — COMPLETE through Stage 5.** QA located 3 "get in touch" occurrences, wrote assertions (commit `ccdb092`, confirmed 3 red/70 green) → Frontend implemented → QA independent pass (73/73, commit `cb283eb`) → PR #14 opened → Documentation Agent (no doc impact) → Code Reviewer merged clean (`f2266c7`) → staging deploy green (run [34763041660](https://github.com/ericreilly999/website/actions/runs/34763041660)) → QA staging sign-off (73/73, `test-signoff.md` commit `fc100b3`).
 
 ## Next Action
-**Awaiting human confirmation to push production tag `v0.1.6` from `main` @ `fc100b3`.** All five rounds are complete through Stage 5. Once confirmed, invoke DevOps to tag and push; DevOps then monitors `deploy-prod`/`deploy-prompted-prod` to terminal state and reports back for live verification.
+None queued. Story complete end-to-end (staging + prod) for all five rounds.
 
 ## Gate Status
 
@@ -44,7 +44,7 @@ Prod Deploy — human explicitly approved ("ship the changes to prod"). Tagged a
 | Stage 3 — Code Review | ✅ (CR blocked once, resolved) | ✅ (clean first pass) | ✅ (clean first pass, merge `b99703f`) | ✅ (clean first pass, merge `f2266c7`) |
 | Stage 4 — Deploy to Staging | ✅ (run 34702470524) | ✅ (run 34704340442) | ✅ (run 34718497465) | ✅ (run 34763041660) |
 | Stage 5 — QA Validation (staging) | ✅ (31/31) | ✅ (58/58) | ✅ (62/62) | ✅ (73/73) |
-| Prod Deploy | Pending v0.1.6 | Pending v0.1.6 | Pending v0.1.6 | Pending v0.1.6 |
+| Prod Deploy | ✅ `v0.1.6` | ✅ `v0.1.6` | ✅ `v0.1.6` | ✅ `v0.1.6` |
 
 ## Known non-blocking follow-ups (not yet actioned)
 - `.project/TODO.md` has no entries for any of the prose-refresh rounds — decided (PM, Tier 1) not to backfill formal TODO tracking for copy-only micro-rounds; noted here for traceability.
