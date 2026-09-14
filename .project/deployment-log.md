@@ -4,6 +4,24 @@ Deployments are recorded in reverse-chronological order.
 
 ---
 
+## 2026-09-14 — v0.1.7 — Production
+
+**Deployed by:** GitHub Actions (tag push, `deploy.yml`, run [34795972197](https://github.com/ericreilly999/website/actions/runs/34795972197))
+**Tag:** `v0.1.7` (annotated), created at `main` SHA `861910f`
+**Bundled content:** Round 6 content — PR #15 (hero sub-paragraph ending reordered to "a portfolio of PE-backed SaaS products."; bio opener trimmed to "These days, I'm standardizing reliability across a big SaaS portfolio."), on top of everything already shipped in `v0.1.6`
+**Staging QA sign-off (pre-tag):** 74/74 — all green, recorded in `.project/test-signoff.md`
+**Human approval:** Explicit — "ship to prod immediately"
+**Environment:** Production — https://ericreilly.com and https://prompted.ericreilly.com (prompted site)
+**Jobs:**
+- `Deploy Production` — ✅ success
+- `Deploy Prompted Production` — ✅ success
+- `Deploy Staging` / `Deploy Prompted Staging` / `E2E Tests (Staging)` — skipped (tag push, not a `main` push; expected)
+**Post-deploy verification (read-only curl spot-check):**
+- `https://ericreilly.com` — hero sub-paragraph ends "a portfolio of PE-backed SaaS products." ✅; bio opens "These days, I'm standardizing reliability across a big SaaS portfolio." ✅
+**Status:** ✅ Live
+
+---
+
 ## 2026-09-13 — v0.1.6 — Production
 
 **Deployed by:** GitHub Actions (tag push, `deploy.yml`, run [34763317301](https://github.com/ericreilly999/website/actions/runs/34763317301))
