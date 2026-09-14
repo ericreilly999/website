@@ -7,15 +7,16 @@
 Push to `main` auto-deploys to `staging.ericreilly.com` (and `staging.prompted.ericreilly.com`) and runs the Playwright E2E gate against staging. A semver tag push (`vX.Y.Z`) deploys to production (`ericreilly.com` and `prompted.ericreilly.com`).
 
 ## Current Stage
-**Live / Ongoing Maintenance — all five rounds shipped to production as `v0.1.6`. Story closed.**
+**Live / Ongoing Maintenance — all six rounds shipped to production as `v0.1.7`. Story closed.**
 
-Prior content-refresh story shipped to prod as `v0.1.5`. Four further rounds of copy edits were made 2026-09-12/13, all merged, staged, QA-signed-off, and now live in production:
+Prior content-refresh story shipped to prod as `v0.1.5`. Five further rounds of copy edits were made 2026-09-12/13, all merged, staged, QA-signed-off, and now live in production:
 - **Round 2** (PR #11, `9c76ac1`) — bio lede/paragraph, highlights list, skills grid.
 - **Round 3** (PR #12, `6538352`) — hero tagline shortened, 3 highlight bullets reworded.
 - **Round 4** (PR #13, `b99703f`) — hero sub-paragraph reworded (drops "Togetherwork"/"AI-native"), bio opener reworded, banking bullet reworded ("Appointed platform owner for..."), delivery & leadership skills cell reworded, tagline "i"→"I" capitalized.
 - **Round 5** (PR #14, `f2266c7`) — CTA text "Get in touch" → "Work with me" (hero button, contact meta description, projects prose).
+- **Round 6** (PR #15, `270558e`) — hero sub-paragraph ending reordered ("a portfolio of PE-backed SaaS products."), bio opener trimmed ("standardizing reliability across a big SaaS portfolio").
 
-Human approved production promotion 2026-09-13 ("I think this is good to ship to production"). Tag `v0.1.6` pushed from `main` @ `e400123`, `deploy-prod` + `deploy-prompted-prod` both green, live content independently verified via curl against `https://ericreilly.com`.
+Human approved production promotion twice: 2026-09-13 for `v0.1.6` ("I think this is good to ship to production"), then again for `v0.1.7` ("ship to prod immediately"). Tag `v0.1.7` pushed from `main` @ `861910f`, `deploy-prod` + `deploy-prompted-prod` both green, live content independently verified via curl against `https://ericreilly.com`.
 
 ## Last Gate Cleared (prior prod story)
 Prod Deploy — human explicitly approved ("ship the changes to prod"). Tagged and pushed `v0.1.5` from `main` tip `afac3632`.
@@ -32,19 +33,21 @@ Prod Deploy — human explicitly approved ("ship the changes to prod"). Tagged a
 
 **Round 5 (PR #14) — COMPLETE through Stage 5.** QA located 3 "get in touch" occurrences, wrote assertions (commit `ccdb092`, confirmed 3 red/70 green) → Frontend implemented → QA independent pass (73/73, commit `cb283eb`) → PR #14 opened → Documentation Agent (no doc impact) → Code Reviewer merged clean (`f2266c7`) → staging deploy green (run [34763041660](https://github.com/ericreilly999/website/actions/runs/34763041660)) → QA staging sign-off (73/73, `test-signoff.md` commit `fc100b3`).
 
+**Round 6 (PR #15) — COMPLETE through Stage 5.** QA located both strings, wrote assertions (commits `d487e1b`, `6a02850`, confirmed 2 red/72 green) → Frontend implemented → QA independent pass (74/74, commit `fb47468`) → PR #15 opened → Documentation Agent (no doc impact) → Code Reviewer merged clean (`270558e`) → staging deploy green (run [34795666261](https://github.com/ericreilly999/website/actions/runs/34795666261)) → QA staging sign-off (74/74, `test-signoff.md` commit `861910f`).
+
 ## Next Action
-None queued. Story complete end-to-end (staging + prod) for all five rounds.
+None queued. Story complete end-to-end (staging + prod) for all six rounds.
 
 ## Gate Status
 
-| Gate | Round 2 (PR #11) | Round 3 (PR #12) | Round 4 (PR #13) | Round 5 (PR #14) |
-|------|------|------|------|------|
-| Stage 1 — Test writing | ✅ | ✅ | ✅ (commit `ddfbf29`) | ✅ (commit `ccdb092`) |
-| Stage 2 — Development | ✅ | ✅ | ✅ (implemented, 62/62 local) | ✅ (implemented, 73/73 local) |
-| Stage 3 — Code Review | ✅ (CR blocked once, resolved) | ✅ (clean first pass) | ✅ (clean first pass, merge `b99703f`) | ✅ (clean first pass, merge `f2266c7`) |
-| Stage 4 — Deploy to Staging | ✅ (run 34702470524) | ✅ (run 34704340442) | ✅ (run 34718497465) | ✅ (run 34763041660) |
-| Stage 5 — QA Validation (staging) | ✅ (31/31) | ✅ (58/58) | ✅ (62/62) | ✅ (73/73) |
-| Prod Deploy | ✅ `v0.1.6` | ✅ `v0.1.6` | ✅ `v0.1.6` | ✅ `v0.1.6` |
+| Gate | Round 2 (PR #11) | Round 3 (PR #12) | Round 4 (PR #13) | Round 5 (PR #14) | Round 6 (PR #15) |
+|------|------|------|------|------|------|
+| Stage 1 — Test writing | ✅ | ✅ | ✅ (commit `ddfbf29`) | ✅ (commit `ccdb092`) | ✅ (commits `d487e1b`/`6a02850`) |
+| Stage 2 — Development | ✅ | ✅ | ✅ (implemented, 62/62 local) | ✅ (implemented, 73/73 local) | ✅ (implemented, 74/74 local) |
+| Stage 3 — Code Review | ✅ (CR blocked once, resolved) | ✅ (clean first pass) | ✅ (clean first pass, merge `b99703f`) | ✅ (clean first pass, merge `f2266c7`) | ✅ (clean first pass, merge `270558e`) |
+| Stage 4 — Deploy to Staging | ✅ (run 34702470524) | ✅ (run 34704340442) | ✅ (run 34718497465) | ✅ (run 34763041660) | ✅ (run 34795666261) |
+| Stage 5 — QA Validation (staging) | ✅ (31/31) | ✅ (58/58) | ✅ (62/62) | ✅ (73/73) | ✅ (74/74) |
+| Prod Deploy | ✅ `v0.1.6` | ✅ `v0.1.6` | ✅ `v0.1.6` | ✅ `v0.1.6` | ✅ `v0.1.7` |
 
 ## Known non-blocking follow-ups (not yet actioned)
 - `.project/TODO.md` has no entries for any of the prose-refresh rounds — decided (PM, Tier 1) not to backfill formal TODO tracking for copy-only micro-rounds; noted here for traceability.

@@ -2,15 +2,15 @@
 # Project Status
 
 **Last updated:** 2026-09-13
-**Current stage:** Live / Ongoing Maintenance — all five prose-refresh rounds shipped to production as `v0.1.6`. Story closed.
+**Current stage:** Live / Ongoing Maintenance — all six prose-refresh rounds shipped to production as `v0.1.7`. Story closed.
 **Route-to-live:** Standard (`main` → staging auto-deploy → semver tag → prod)
 
 ## Summary
 
 The Eric Reilly personal website is live at https://ericreilly.com, staging at https://staging.ericreilly.com. Site is plain HTML (`public/`) with a shared dark-theme design system; the `src/` React app is legacy and not part of the build.
 
-The prior content-refresh story shipped end-to-end (three PRs, tag `v0.1.5`, verified live). Four further rounds of prose edits were made 2026-09-12/13, all merged, staged, QA-signed-off, and now shipped to production as tag `v0.1.6`:
-- **Round 2** (PR #11, `9c76ac1`), **Round 3** (PR #12, `6538352`), **Round 4** (PR #13, `b99703f`), **Round 5** (PR #14, `f2266c7`).
+The prior content-refresh story shipped end-to-end (three PRs, tag `v0.1.5`, verified live). Five further rounds of prose edits were made 2026-09-12/13, all merged, staged, QA-signed-off, and now shipped to production — `v0.1.6` (Rounds 2-5) then `v0.1.7` (Round 6):
+- **Round 2** (PR #11, `9c76ac1`), **Round 3** (PR #12, `6538352`), **Round 4** (PR #13, `b99703f`), **Round 5** (PR #14, `f2266c7`), **Round 6** (PR #15, `270558e`).
 
 ## What We Just Completed
 
@@ -18,13 +18,14 @@ The prior content-refresh story shipped end-to-end (three PRs, tag `v0.1.5`, ver
 - **PR #12** (`6538352`, squash-merged) — Hero tagline shortened ("i build stuff that scales"), 3 highlight bullets reworded again (banking bullet trimmed further, AWS DevOps Agent bullet restyled, migrations bullet tightened to "10+").
 - **PR #13** (`b99703f`, squash-merged) — Hero sub-paragraph reworded (drops "Togetherwork"/"AI-native" framing, now "cloud native" / "PE-backed SaaS"), bio opener reworded ("These days, I'm standardizing..."), banking bullet reworded again ("Appointed platform owner for..."), delivery & leadership skills cell reworded, tagline capitalized ("I build stuff that scales").
 - **PR #14** (`f2266c7`, squash-merged) — CTA text "Get in touch" → "Work with me" on the hero button, contact page meta description, and projects-page prose.
-- All four rounds independently QA-validated pre-merge and post-deploy on live staging (31/31, 58/58, 62/62, 73/73), sign-off recorded in `test-signoff.md`.
-- **Production deploy**: human approved 2026-09-13 ("I think this is good to ship to production"). Tagged and pushed `v0.1.6` from `main` @ `e400123`. Workflow run [34763317301](https://github.com/ericreilly999/website/actions/runs/34763317301): `deploy-prod` ✅ `deploy-prompted-prod` ✅. Live production verified via curl — all content changes confirmed present, logged in `deployment-log.md`.
-- **Resume** (`C:\Users\EricW\Downloads\Eric_Reilly_Resume_2026-09-12.docx`, outside this repo) updated in parallel to match the site's new bullet language — banking bullet merged, AWS DevOps Agent bullet, 10+ migrations bullet, Sev 1/70% bullet, AI/LLM tooling skills updated. Bullet about eliminated manual hours/client credits kept its original hard numbers (1,000+ hours / 77%) per explicit instruction, diverging intentionally from the site's softer "countless hours / MTTR" phrasing.
+- **PR #15** (`270558e`, squash-merged) — Hero sub-paragraph ending reordered ("a portfolio of PE-backed SaaS products."), bio opener trimmed further ("standardizing reliability across a big SaaS portfolio").
+- All five rounds independently QA-validated pre-merge and post-deploy on live staging (31/31, 58/58, 62/62, 73/73, 74/74), sign-off recorded in `test-signoff.md`.
+- **Production deploys**: human approved twice — 2026-09-13 for `v0.1.6` ("I think this is good to ship to production") tagged from `main` @ `e400123` (workflow run [34763317301](https://github.com/ericreilly999/website/actions/runs/34763317301), both prod jobs ✅), then again for `v0.1.7` ("ship to prod immediately") tagged from `main` @ `861910f` (workflow run [34795972197](https://github.com/ericreilly999/website/actions/runs/34795972197), both prod jobs ✅). Live production verified via curl after each — all content changes confirmed present, logged in `deployment-log.md`.
+- **Resume** (`C:\Users\EricW\Downloads\Eric_Reilly_Resume_2026-09-12.docx`, outside this repo) updated in parallel to match the site's new bullet language — banking bullet merged, AWS DevOps Agent bullet, 10+ migrations bullet, Sev 1/70% bullet, AI/LLM tooling skills updated. Bullet about eliminated manual hours/client credits kept its original hard numbers (1,000+ hours / 77%) per explicit instruction, diverging intentionally from the site's softer "countless hours / MTTR" phrasing. Note: Round 6's wording tweaks (hero sub-paragraph, bio opener) postdate the resume update and are not reflected there — resume still matches the state through Round 4.
 
 ## What's In Progress
 
-Nothing. Human approved and the story shipped to production: tag `v0.1.6`, workflow run 34763317301 fully green, live production verified.
+Nothing. Human approved and the story shipped to production: tag `v0.1.7`, workflow run 34795972197 fully green, live production verified.
 
 ## What's Coming Next
 
