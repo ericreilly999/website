@@ -58,12 +58,35 @@ test.describe('Homepage', () => {
     //   "7+ years making SaaS platforms more reliable, more scalable, and a
     //   little more cloud native. Right now, I own reliability and
     //   observability across a portfolio of products for a PE-backed SaaS."
-    // Expected RED until Frontend ships the copy change to public/index.html.
+    // Shipped to prod as v0.1.6 (round 4, PR #13) — no longer at risk of
+    // regressing without a dedicated assertion, so this stays green as a
+    // guard against the "AI-native"/"that's at" wording reappearing.
     const sub = page.locator('header.hero .sub');
     await expect(sub).toContainText('more cloud native');
     await expect(sub).toContainText('PE-backed SaaS');
     await expect(sub).not.toContainText('AI-native');
     await expect(sub).not.toContainText("that's at");
+  });
+
+  test('hero sub-paragraph reflects the round-6 "PE-backed SaaS products" reorder', async ({ page }) => {
+    // TDD gate for the 2026-09-13 round-6 copy tweak to the hero `.sub`
+    // paragraph's final clause. The round-4 test above still passes
+    // unchanged for this edit (it only asserts the substring "PE-backed
+    // SaaS", which remains present either way, and the "more cloud
+    // native" / "AI-native" / "that's at" assertions are untouched by
+    // this clause) — so a new, more specific gate is needed to actually
+    // turn red against the currently-live production wording:
+    //   "...Right now, I own reliability and observability across a
+    //   portfolio of products for a PE-backed SaaS."
+    //   ->
+    //   "...Right now, I own reliability and observability across a
+    //   portfolio of PE-backed SaaS products."
+    // Note the added trailing period is unchanged (both old and new copy
+    // already end the sentence with one) — only the clause order changes.
+    // Expected RED until Frontend ships the copy change to public/index.html.
+    const sub = page.locator('header.hero .sub');
+    await expect(sub).toContainText('a portfolio of PE-backed SaaS products.');
+    await expect(sub).not.toContainText('portfolio of products for a PE-backed SaaS');
   });
 
   test('hero has three CTA links', async ({ page }) => {
