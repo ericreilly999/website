@@ -36,16 +36,30 @@ test.describe('About page content', () => {
     await expect(bio).not.toContainText('fragmented tenant landscape');
   });
 
-  test('bio paragraph opener drops the explicit "at Togetherwork" mention', async ({ page }) => {
-    // TDD gate for the 2026-09-12 round-4 copy tweak: the opening clause
-    //   "I'm at Togetherwork these days, standardizing how reliability..."
-    //   -> "These days, I'm standardizing how reliability..."
-    // Rest of the paragraph (fragmented ecosystem / coaching engineering
-    // teams language, covered by the test above) is unchanged. Expected
-    // RED until Frontend ships the copy change to public/index.html.
+  test('bio paragraph opener reflects the round-6 "standardizing reliability" wording', async ({ page }) => {
+    // TDD gate history for the `.prose` first-paragraph opening clause:
+    //   round 4 (2026-09-12, shipped in v0.1.6): "I'm at Togetherwork these
+    //   days, standardizing how reliability and observability work across
+    //   a pretty big SaaS portfolio." -> "These days, I'm standardizing
+    //   how reliability and observability work across a pretty big SaaS
+    //   portfolio." (drops the explicit "at Togetherwork" mention). This
+    //   test previously gated that edit via a `toContainText("These days,
+    //   I'm standardizing how reliability")` assertion — updated below
+    //   because round 6 removes that same substring.
+    //   round 6 (2026-09-13, this pass, not yet implemented): further
+    //   trims the same opening clause -> "These days, I'm standardizing
+    //   reliability across a big SaaS portfolio." (drops "how... and
+    //   observability work" and "pretty"; adds the article "a" before
+    //   "big SaaS portfolio" for grammar).
+    // Rest of the paragraph, starting at "Some weeks that means cutting
+    // incident noise." (fragmented ecosystem / coaching engineering teams
+    // language, covered by the test above) is UNCHANGED by round 6.
+    // Expected RED until Frontend ships the copy change to public/index.html.
     const bio = page.locator('.prose p').first();
-    await expect(bio).toContainText("These days, I'm standardizing how reliability");
+    await expect(bio).toContainText("These days, I'm standardizing reliability across a big SaaS portfolio.");
     await expect(bio).not.toContainText("I'm at Togetherwork these days");
+    await expect(bio).not.toContainText('standardizing how reliability and observability work');
+    await expect(bio).not.toContainText('pretty big SaaS portfolio');
   });
 
   test('banking platform highlight drops the "if it broke" clause and uses "0 to 5M+" wording', async ({ page }) => {
