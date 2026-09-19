@@ -1,9 +1,10 @@
 ---
 # Project Status
 
-**Last updated:** 2026-09-13
-**Current stage:** Live / Ongoing Maintenance — all six prose-refresh rounds shipped to production as `v0.1.7`. Story closed.
+**Last updated:** 2026-09-19
+**Current stage:** Live / Ongoing Maintenance — all six prose-refresh rounds shipped to production as `v0.1.7`. Onboarded to fleet Linear dashboard this session.
 **Route-to-live:** Standard (`main` → staging auto-deploy → semver tag → prod)
+**Linear project:** [website](https://linear.app/drinkupapp/project/website-b1cbb4812a78) (team Claude's Projects)
 
 ## Summary
 
@@ -11,6 +12,11 @@ The Eric Reilly personal website is live at https://ericreilly.com, staging at h
 
 The prior content-refresh story shipped end-to-end (three PRs, tag `v0.1.5`, verified live). Five further rounds of prose edits were made 2026-09-12/13, all merged, staged, QA-signed-off, and now shipped to production — `v0.1.6` (Rounds 2-5) then `v0.1.7` (Round 6):
 - **Round 2** (PR #11, `9c76ac1`), **Round 3** (PR #12, `6538352`), **Round 4** (PR #13, `b99703f`), **Round 5** (PR #14, `f2266c7`), **Round 6** (PR #15, `270558e`).
+
+## What We Just Completed (this session, 2026-09-19)
+
+- Onboarded `website` to the fleet Linear dashboard: created Project `website` under team `Claude's Projects` (CLD), recorded `Linear project:` in `CLAUDE.md` (newly created — none existed before), created 3 epic-level issues (`CLD-12` Done, `CLD-13` Planning, `CLD-14` Planning). Full detail: `.project/workflow-state.md` "Linear Onboarding" entry.
+- Recovered and committed (`08b2886`) a prior interrupted session's uncommitted Requirement Analyst work: `spec/light-mode-toggle.md`, `.project/TODO.md` (QA-07..09, DEV-05, DEV-06), `.project/decisions.md` Tier 2 record. Verified genuine before committing. Not implemented this session — this run's scope was Linear standardization only.
 
 ## What We Just Completed
 
@@ -29,7 +35,7 @@ Nothing. Human approved and the story shipped to production: tag `v0.1.7`, workf
 
 ## What's Coming Next
 
-No scheduled work. Open backlog items, unchanged by these rounds:
+Next session: pull `CLD-13` (light/dark theme toggle) via Stage 1 — invoke QA Engineer against `spec/light-mode-toggle.md`. Otherwise no scheduled work. Open backlog items, unchanged by these rounds (tracked in `CLD-14`):
 - Enforce branch protection rules and required PR reviews on `main`
 - DEVOPS-04/05/06 post-merge follow-ups (prevent_destroy lifecycle guards, prod-tag regex tightening, bootstrap resource tags)
 - `deploy.yml` has no `paths:` filter — even a test-only merge re-triggers full staging deploy jobs (flagged by Code Reviewer on PR #9, still open)

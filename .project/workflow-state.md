@@ -35,8 +35,16 @@ Prod Deploy — human explicitly approved ("ship the changes to prod"). Tagged a
 
 **Round 6 (PR #15) — COMPLETE through Stage 5.** QA located both strings, wrote assertions (commits `d487e1b`, `6a02850`, confirmed 2 red/72 green) → Frontend implemented → QA independent pass (74/74, commit `fb47468`) → PR #15 opened → Documentation Agent (no doc impact) → Code Reviewer merged clean (`270558e`) → staging deploy green (run [34795666261](https://github.com/ericreilly999/website/actions/runs/34795666261)) → QA staging sign-off (74/74, `test-signoff.md` commit `861910f`).
 
+## Linear Onboarding — 2026-09-19
+Onboarded to the fleet Linear dashboard per `~/.claude/docs/agent-conventions/linear.md`. Project `website` created under team `Claude's Projects` (CLD): https://linear.app/drinkupapp/project/website-b1cbb4812a78. `Linear project:` line recorded in `CLAUDE.md`. Three epics created (status per `list_issue_statuses`, no duplicate-name ambiguity hit for `Done`/`Planning`):
+- `CLD-12` — `[100%] Content refresh — prose rounds 2-6` — **Done**
+- `CLD-13` — `[0%] Light/dark theme toggle` — **Planning**
+- `CLD-14` — `[0%] Ops & maintenance backlog` — **Planning**
+
+Same session: recovered uncommitted PM/RA artifacts from an interrupted 2026-09-14 session (`.project/TODO.md` QA-07..09/DEV-05..06, `.project/decisions.md` Tier 2 record, new `spec/light-mode-toggle.md`) — verified genuine, committed to `main` (`08b2886`). This is the source scope behind `CLD-13`; not started this session (no QA test-writing dispatched) since this run's focus was Linear standardization, not new dev. Ready to pull next session via normal Stage 1 (QA Engineer).
+
 ## Next Action
-None queued. Story complete end-to-end (staging + prod) for all six rounds.
+Next session: pull `CLD-13` (light/dark theme toggle) via Stage 1 — invoke QA Engineer against `spec/light-mode-toggle.md` (tasks QA-07 through QA-09 already decomposed in `TODO.md`). No other work queued.
 
 ## Gate Status
 
