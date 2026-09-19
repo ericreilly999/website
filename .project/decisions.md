@@ -4,6 +4,19 @@ Decisions are recorded in reverse-chronological order.
 
 ---
 
+## 2026-09-14 — Light/dark theme toggle: spec and Tier 2 defaults
+**Decision:** Wrote `spec/light-mode-toggle.md` for a light/dark theme toggle (human request: "let's ship a light mode theme toggle for the website"). `spec/` did not exist previously; created as the convention going forward. Decomposed into TODO tasks QA-07 through QA-09 and DEV-05/DEV-06, added directly to the Active Sprint in `.project/TODO.md` (no `backlog.md` exists yet; followed the same direct-add pattern already used for prior human-directed stories in this file, e.g. "Project portfolio follow-up fix") rather than introducing a formal backlog cycle for a single ad-hoc feature.
+**Tier 2 decisions made autonomously (flagged in spec §4 for override):**
+- Toggle lives in `nav.top`, appended after the `github ↗` link, identical on all 3 pages — icon button (sun/moon), not text or a labeled switch.
+- Default appearance on first visit (no stored preference) is **dark**, ignoring OS `prefers-color-scheme` — the dark theme is the site's established brand identity per `project-status.md` ("shared dark-theme design system"), not an arbitrary default to be overridden by OS preference.
+- Persistence via `localStorage.theme` (`"light"`/`"dark"`), global across all 3 pages, no per-page override.
+- Light-mode accent color is a darker blue (`#1B5FC7`) than the dark-mode accent (`#6AA6FF`), not the same hex — the dark-mode value fails WCAG AA (~2.3:1) against a white background. New `--on-accent` custom property added so button text stays legible against whichever accent shade is active per theme.
+**Rationale:** These are internal UX/implementation calls (placement, default, exact palette), not scope/security/cost questions, so decided rather than blocking per the autonomy bar. All are cheap to redirect since nothing has been implemented yet.
+**Tier 3 check:** None found — pure client-side CSS/JS, no backend, infra, cost, or auth impact (confirmed in spec §8).
+**Alternatives considered:** Respecting `prefers-color-scheme` as the first-visit default (rejected, see spec §4 item 3). Reusing the existing dark-mode accent hex unchanged in light mode (rejected — fails contrast).
+
+---
+
 ## 2026-04-04 — Content refresh: project storytelling rewrite
 **Decision:** Rewrote portfolio project descriptions to emphasise the "why I built this" narrative rather than technical specs.
 **Rationale:** Personal brand positioning; context and motivation resonate more than feature lists.
