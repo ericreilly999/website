@@ -61,8 +61,10 @@ Code Reviewer reviewed PR #17 — **REQUEST CHANGES, not merged.** Implementatio
 
 QA Engineer independent validation: **95/95 passing** (21 new theme-toggle tests + 74 pre-existing), confirmed independently on `feature/light-dark-toggle` @ `be3fbd8`. `test-signoff.md` entry committed `982a3b5` (direct-to-branch, matching this file's established precedent). PR comment: https://github.com/ericreilly999/website/pull/17#issuecomment-5754289600
 
+**Stage 3 — COMPLETE.** Code Reviewer re-reviewed with independent QA corroboration in hand, verified the sign-off entry and PR comment directly, confirmed no implementation drift since first review, and merged PR #17 (squash `b23d4a9`, `feature/light-dark-toggle` retired). `main` now at `b23d4a9`.
+
 ## Next Action
-Stage 3 (retry 2): re-invoke Code Reviewer with independent QA corroboration in hand — review + merge PR #17.
+Stage 4: auto staging deploy triggered by push to `main` (`b23d4a9`). PM blocking on foreground until-loop for the `deploy.yml` workflow run against this commit.
 
 ## Gate Status
 
