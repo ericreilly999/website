@@ -1,6 +1,6 @@
 # Eric Reilly Website
 
-Personal website for [ericreilly.com](https://ericreilly.com) — static HTML with a shared dark-theme design system. Three pages: about, projects, contact. Deployed to S3 + CloudFront via GitHub Actions with OIDC.
+Personal website for [ericreilly.com](https://ericreilly.com) — static HTML with a shared design system supporting light and dark themes (dark by default, user-toggleable, persisted per-browser via `localStorage`). Three pages: about, projects, contact. Deployed to S3 + CloudFront via GitHub Actions with OIDC.
 
 ---
 
@@ -11,7 +11,7 @@ public/
   index.html       # About / homepage
   projects.html    # Projects listing
   contact.html     # Contact form
-  shared.css       # Design system (dark theme, JetBrains Mono, Instrument Serif)
+  shared.css       # Design system (light/dark theme via CSS custom properties, JetBrains Mono, Instrument Serif)
   whiteglovesolutions.png  # Favicon
   robots.txt
 terraform/         # Production AWS infrastructure (Terraform)
