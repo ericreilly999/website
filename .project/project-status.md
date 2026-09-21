@@ -31,11 +31,11 @@ The prior content-refresh story shipped end-to-end (three PRs, tag `v0.1.5`, ver
 
 ## What's In Progress
 
-Nothing. Human approved and the story shipped to production: tag `v0.1.7`, workflow run 34795972197 fully green, live production verified.
+**CLD-13 — Light/dark theme toggle.** Human direction this session: "build the light/dark mode toggle and ship to staging." Stage 1 underway — QA Engineer writing `e2e/theme-toggle.spec.js` against `spec/light-mode-toggle.md` (QA-07..QA-09). Plan runs through Stage 5 (staging QA sign-off); prod tag push intentionally held for separate human approval after staging review.
 
 ## What's Coming Next
 
-Next session: pull `CLD-13` (light/dark theme toggle) via Stage 1 — invoke QA Engineer against `spec/light-mode-toggle.md`. Otherwise no scheduled work. Open backlog items, unchanged by these rounds (tracked in `CLD-14`):
+After CLD-13 reaches staging and QA signs off: present staging URL to Eric for review, hold for explicit prod-tag approval (Tier 3, not autonomous). Open backlog items, unchanged (tracked in `CLD-14`):
 - Enforce branch protection rules and required PR reviews on `main`
 - DEVOPS-04/05/06 post-merge follow-ups (prevent_destroy lifecycle guards, prod-tag regex tightening, bootstrap resource tags)
 - `deploy.yml` has no `paths:` filter — even a test-only merge re-triggers full staging deploy jobs (flagged by Code Reviewer on PR #9, still open)

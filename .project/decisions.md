@@ -4,6 +4,14 @@ Decisions are recorded in reverse-chronological order.
 
 ---
 
+## 2026-09-20 — Light/dark theme toggle: build and ship to staging (human-directed)
+**Decision:** Eric said (verbatim): "build the light/dark mode toggle and ship to staging." Pulled `CLD-13` into the active sprint and ran it through Stage 1 (QA test-writing) → Stage 5 (staging QA sign-off) in one session, per the already-complete spec (`spec/light-mode-toggle.md`) and TODO decomposition (QA-07..QA-09, DEV-05, DEV-06) recovered and committed 2026-09-19.
+**Rationale:** Spec and task decomposition were already reviewed and complete; no new scoping needed, only execution.
+**Scope boundary:** Explicitly stops at staging — no production tag push this session. Human will review `staging.ericreilly.com` / `staging.prompted.ericreilly.com` and approve production promotion separately (Tier 3 per the autonomy bar; prod deploys are never autonomous).
+**Tier 3 check:** Prod deploy withheld pending human approval, consistent with spec §8's confirmation that no architecture/cost/security review is needed for the feature itself.
+
+---
+
 ## 2026-09-14 — Light/dark theme toggle: spec and Tier 2 defaults
 **Decision:** Wrote `spec/light-mode-toggle.md` for a light/dark theme toggle (human request: "let's ship a light mode theme toggle for the website"). `spec/` did not exist previously; created as the convention going forward. Decomposed into TODO tasks QA-07 through QA-09 and DEV-05/DEV-06, added directly to the Active Sprint in `.project/TODO.md` (no `backlog.md` exists yet; followed the same direct-add pattern already used for prior human-directed stories in this file, e.g. "Project portfolio follow-up fix") rather than introducing a formal backlog cycle for a single ad-hoc feature.
 **Tier 2 decisions made autonomously (flagged in spec §4 for override):**

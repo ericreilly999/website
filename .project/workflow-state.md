@@ -43,8 +43,16 @@ Onboarded to the fleet Linear dashboard per `~/.claude/docs/agent-conventions/li
 
 Same session: recovered uncommitted PM/RA artifacts from an interrupted 2026-09-14 session (`.project/TODO.md` QA-07..09/DEV-05..06, `.project/decisions.md` Tier 2 record, new `spec/light-mode-toggle.md`) — verified genuine, committed to `main` (`08b2886`). This is the source scope behind `CLD-13`; not started this session (no QA test-writing dispatched) since this run's focus was Linear standardization, not new dev. Ready to pull next session via normal Stage 1 (QA Engineer).
 
+## Active Route — CLD-13 Light/Dark Theme Toggle (2026-09-20)
+
+Human direction this session (verbatim, recorded in `.project/decisions.md`): **"build the light/dark mode toggle and ship to staging."** Pulled `CLD-13` into the active sprint. Session-open ritual clean: `main` @ `a62d012` (PR #16, SES DKIM for gencast, merged same day, unrelated to this feature), no open PRs, no `deploy-failure` issues, no orphaned in-flight work.
+
+Plan: Stage 1 (QA writes `e2e/theme-toggle.spec.js` for QA-07..QA-09 against `spec/light-mode-toggle.md`) → Stage 2 (Frontend implements DEV-05/DEV-06) → Stage 3 (Documentation Agent → Code Reviewer → merge) → Stage 4 (auto staging deploy, PM blocks on foreground until-loop) → Stage 5 (QA full E2E sign-off on `staging.ericreilly.com`). **Stops at staging** — prod tag push is Tier 3 (human explicitly deferred approval to after viewing staging); queued, not executed, this session.
+
+Fleet-mode note: dispatched engineers use `isolation: "worktree"`, git-writing dispatches serialized (QA → Frontend → Docs → Code Reviewer, one at a time) per this run's override instructions.
+
 ## Next Action
-Next session: pull `CLD-13` (light/dark theme toggle) via Stage 1 — invoke QA Engineer against `spec/light-mode-toggle.md` (tasks QA-07 through QA-09 already decomposed in `TODO.md`). No other work queued.
+Stage 1: QA Engineer dispatched to write `e2e/theme-toggle.spec.js` (QA-07, QA-08, QA-09) on a feature branch, worktree-isolated.
 
 ## Gate Status
 
