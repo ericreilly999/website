@@ -55,8 +55,12 @@ Fleet-mode note: dispatched engineers use `isolation: "worktree"`, git-writing d
 
 **Stage 2 — COMPLETE.** Frontend Engineer implemented DEV-05 (light theme CSS override block + new `--on-accent`/`--error`/`--error-text`/`--select-chevron` variables + hardcoded-hex fixes in `shared.css`) and DEV-06 (toggle button + synchronous head theme-init script + click handler on all 3 pages), commit `1f9b17d` on `feature/light-dark-toggle`. 95/95 tests passing locally (21 new + 74 pre-existing). Contrast independently re-verified against spec §5.4 (tightest margin 4.48:1, clears 3:1 UI-component minimum). PR **#17** opened against `main`: https://github.com/ericreilly999/website/pull/17. `.project/TODO.md` DEV-05/DEV-06 now `[x]`.
 
+Documentation Agent updated `README.md` (dark-theme-only language was stale) on `feature/light-dark-toggle`, commit `be3fbd8`. No `docs/` directory exists in this repo; `docs/api/` not implicated. Flagged `CLAUDE.md`'s similar stale "shared dark-theme design system" line as a follow-up (out of Documentation Agent's `README.md`/`docs/` boundary — PM to action).
+
+Code Reviewer reviewed PR #17 — **REQUEST CHANGES, not merged.** Implementation itself checked out clean (FOUC script synchronous in `<head>` on all 3 pages, `localStorage` failure fallback intact, all hardcoded-hex call sites now `var(...)`-driven, Tier 2 decisions matched). **Blocking finding:** no independent QA validation exists for this PR — only Frontend Engineer's self-reported "95/95 passing," no `test-signoff.md` entry, no QA PR comment. Every prior round (PR #11-#15) went through an independent QA re-validation pass between dev and merge; this round skipped it. Comment: https://github.com/ericreilly999/website/pull/17#issuecomment-5754269056
+
 ## Next Action
-Stage 3: Documentation Agent (doc-impact check on PR #17) → Code Reviewer (review + merge).
+Stage 3 (retry): QA Engineer dispatched for independent validation pass (re-run all 95 tests against `feature/light-dark-toggle`, record `test-signoff.md` entry, comment pass count on PR #17) → re-invoke Code Reviewer for merge.
 
 ## Gate Status
 
