@@ -63,8 +63,10 @@ QA Engineer independent validation: **95/95 passing** (21 new theme-toggle tests
 
 **Stage 3 — COMPLETE.** Code Reviewer re-reviewed with independent QA corroboration in hand, verified the sign-off entry and PR comment directly, confirmed no implementation drift since first review, and merged PR #17 (squash `b23d4a9`, `feature/light-dark-toggle` retired). `main` now at `b23d4a9`.
 
+**Stage 4 — COMPLETE.** Note: `deploy.yml` has no `paths:` filter (pre-existing known risk, see below), so each PM docs-only commit during Stage 3 re-triggered/cancelled the in-flight staging run until the final commit's run completed — the completed run (35551660561, "docs: log CLD-13 Stage 3 complete...") is downstream of `b23d4a9` and deploys the feature correctly. Workflow run [35551660561](https://github.com/ericreilly999/website/actions/runs/35551660561): `Deploy Staging` ✅, `Deploy Prompted Staging` ✅, `E2E Tests (Staging)` ✅ (CI's own smoke gate). `Deploy Production`/`Deploy Prompted Production` correctly skipped (no tag pushed). Staging live at `staging.ericreilly.com` / `staging.prompted.ericreilly.com`.
+
 ## Next Action
-Stage 4: auto staging deploy triggered by push to `main` (`b23d4a9`). PM blocking on foreground until-loop for the `deploy.yml` workflow run against this commit.
+Stage 5: QA Engineer dispatched for full E2E suite + regression, run locally against live `staging.ericreilly.com`, sign off in `test-signoff.md`.
 
 ## Gate Status
 
