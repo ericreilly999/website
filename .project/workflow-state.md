@@ -65,8 +65,19 @@ QA Engineer independent validation: **95/95 passing** (21 new theme-toggle tests
 
 **Stage 4 — COMPLETE.** Note: `deploy.yml` has no `paths:` filter (pre-existing known risk, see below), so each PM docs-only commit during Stage 3 re-triggered/cancelled the in-flight staging run until the final commit's run completed — the completed run (35551660561, "docs: log CLD-13 Stage 3 complete...") is downstream of `b23d4a9` and deploys the feature correctly. Workflow run [35551660561](https://github.com/ericreilly999/website/actions/runs/35551660561): `Deploy Staging` ✅, `Deploy Prompted Staging` ✅, `E2E Tests (Staging)` ✅ (CI's own smoke gate). `Deploy Production`/`Deploy Prompted Production` correctly skipped (no tag pushed). Staging live at `staging.ericreilly.com` / `staging.prompted.ericreilly.com`.
 
+**Stage 5 — COMPLETE. QA sign-off GRANTED on staging.** 95/95 passing against live `https://staging.ericreilly.com` (21 new theme-toggle tests + 74 pre-existing), run locally per ci-discipline (never via the live-E2E CI workflow). `test-signoff.md` entry committed `68f10c2`. Non-blocking finding: pre-merge sign-off's "clean RULE-1" claim was inaccurate (3 `page.route()` mocks in the new spec, forced by `contact.html`'s hardcoded prod-only endpoint, a pre-existing constraint predating this feature) — did not withhold the gate; logged in `lessons-learned.md` (2026-09-20) and `project-status.md` risks for `CLD-14` triage.
+
+## CLD-13 — Definition of Done at staging: MET
+Per PM skill Stage 5 gate: QA sign-off ✅ in `test-signoff.md`. **Human approval of the staging gate is the remaining DoD element** — not yet given (this session's scope explicitly stopped short of asking synchronously; see Tier 3 below).
+
+## Tier 3 — queued, not executed this session
+**Production tag push (`v0.1.8` or next semver).** Prod deploys are never autonomous (autonomy-bar Tier 3) — human explicitly deferred this to a separate approval after reviewing staging ("ship to staging" was this session's full scope). Staging is ready for review:
+- `https://staging.ericreilly.com` and `https://staging.prompted.ericreilly.com`
+- What to look at: the new theme toggle (sun/moon icon) in the nav on all 3 pages — homepage, projects, contact — click to switch to light mode, confirm it looks right, reload to confirm it persists, click again to revert to dark.
+- When approved: PM tags `main` @ `49bc015` (or later) as the next semver (`v0.1.8`), pushes, DevOps confirms both prod deploy jobs green, QA/PM verify live production.
+
 ## Next Action
-Stage 5: QA Engineer dispatched for full E2E suite + regression, run locally against live `staging.ericreilly.com`, sign off in `test-signoff.md`.
+Session work for CLD-13 complete through Stage 5. Awaiting human review of staging + explicit prod-tag approval (Tier 3, not autonomous) — no further autonomous action queued for this story.
 
 ## Gate Status
 
