@@ -132,13 +132,13 @@
   - Journeys covered: 2, 5
   - Depends On: QA-07, QA-08 (shares the same spec file)
 
-- [ ] **DEV-05** — Frontend Engineer: light theme CSS in `public/shared.css`
+- [x] **DEV-05** — Frontend Engineer: light theme CSS in `public/shared.css`
   - Add `:root[data-theme="light"] { ... }` override block with all variable values from spec §5.4
   - Introduce new custom properties `--on-accent`, `--error`, `--error-text`, `--select-chevron` (dark-mode values = current hardcoded ones, unchanged visually); replace the 4 hardcoded `#0B0C0E` occurrences (`.submit-btn`, `.hero-links li:first-child a`/`.label`/`::after`, `.cta-btn`), the hardcoded `.form-message.error` colors, and the inline SVG chevron in `.field select` with `var(...)` references per spec §5.3
   - Verify final contrast of all light-mode pairs meets WCAG AA per spec §5.4 (re-check with a contrast tool, not just the spec's computed estimates, especially the `color-mix()`-derived tints)
   - Depends On: QA-07, QA-08, QA-09
 
-- [ ] **DEV-06** — Frontend Engineer: toggle markup + theme-init/persistence JS across all 3 pages
+- [x] **DEV-06** — Frontend Engineer: toggle markup + theme-init/persistence JS across all 3 pages
   - Add toggle `<button>` (sun/moon icon pair, `aria-label="Toggle color theme"`, `aria-pressed`) to `nav.top` in `index.html`, `projects.html`, `contact.html`, after the existing github link
   - Add a synchronous, render-blocking theme-init script in `<head>` (before first paint) on all 3 pages: reads `localStorage.theme`, sets `data-theme` on `<html>` accordingly, defaults to dark (no attribute) when absent or on `localStorage` failure (wrap in try/catch — do not let a thrown error block the page's other inline scripts)
   - Wire the toggle click handler: flip `data-theme`, persist to `localStorage.theme` (best-effort, tolerate write failure), update `aria-pressed` and icon

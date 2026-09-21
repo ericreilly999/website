@@ -11,9 +11,30 @@
   --fg-dimmer: #565A62;
   --line: #1E2127;
   --line-2: #2A2E36;
+  --on-accent: #0B0C0E;
+  --error: #F08A7A;
+  --error-text: #F0B4A9;
+  --select-chevron: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8' fill='none'><path d='M1 1l5 5 5-5' stroke='%238A8F98' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/></svg>");
   --mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
   --serif: 'Instrument Serif', 'Times New Roman', serif;
   --sans: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+}
+
+/* Light theme override — applied when <html data-theme="light">.
+   See spec/light-mode-toggle.md §5.4 for the source palette + contrast notes. */
+:root[data-theme="light"] {
+  --accent: #1B5FC7;
+  --bg: #FFFFFF;
+  --bg-2: #F3F4F6;
+  --fg: #14161A;
+  --fg-dim: #5B6068;
+  --fg-dimmer: #6B7178;
+  --line: #E4E6EA;
+  --line-2: #D6D9DF;
+  --on-accent: #FFFFFF;
+  --error: #C1442E;
+  --error-text: #A8321F;
+  --select-chevron: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8' fill='none'><path d='M1 1l5 5 5-5' stroke='%236B7178' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/></svg>");
 }
 
 * { box-sizing: border-box; }
@@ -93,6 +114,28 @@ nav.top {
   content: "> ";
   color: var(--accent);
 }
+.theme-toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  padding: 0;
+  background: transparent;
+  border: 1px solid var(--line-2);
+  border-radius: 8px;
+  color: var(--fg-dim);
+  transition: color .15s ease, border-color .15s ease, background .15s ease;
+}
+.theme-toggle:hover {
+  color: var(--fg);
+  border-color: color-mix(in oklab, var(--fg) 25%, var(--line-2));
+}
+.theme-toggle svg { width: 16px; height: 16px; display: block; }
+.theme-toggle .icon-sun { display: none; }
+.theme-toggle .icon-moon { display: block; }
+:root[data-theme="light"] .theme-toggle .icon-sun { display: block; }
+:root[data-theme="light"] .theme-toggle .icon-moon { display: none; }
 
 /* ============ HERO ============ */
 header.hero { padding: 64px 0 40px; }
@@ -466,7 +509,7 @@ section { padding: 64px 0; border-top: 1px solid var(--line); }
 .field select {
   appearance: none;
   -webkit-appearance: none;
-  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8' fill='none'><path d='M1 1l5 5 5-5' stroke='%238A8F98' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/></svg>");
+  background-image: var(--select-chevron);
   background-repeat: no-repeat;
   background-position: right 14px center;
   padding-right: 40px;
@@ -476,7 +519,7 @@ section { padding: 64px 0; border-top: 1px solid var(--line); }
 .submit-btn {
   margin-top: 24px;
   background: var(--accent);
-  color: #0B0C0E;
+  color: var(--on-accent);
   border: 0;
   border-radius: 8px;
   padding: 14px 24px;
@@ -506,9 +549,9 @@ section { padding: 64px 0; border-top: 1px solid var(--line); }
   color: var(--fg);
 }
 .form-message.error {
-  background: color-mix(in oklab, #F08A7A 12%, transparent);
-  border: 1px solid color-mix(in oklab, #F08A7A 40%, transparent);
-  color: #F0B4A9;
+  background: color-mix(in oklab, var(--error) 12%, transparent);
+  border: 1px solid color-mix(in oklab, var(--error) 40%, transparent);
+  color: var(--error-text);
 }
 @media (max-width: 700px) { .form-grid { grid-template-columns: 1fr; } }
 
@@ -572,12 +615,12 @@ section { padding: 64px 0; border-top: 1px solid var(--line); }
 /* first link = primary: filled accent */
 .hero-links li:first-child a {
   background: var(--accent);
-  color: #0B0C0E;
+  color: var(--on-accent);
   border-color: var(--accent);
   box-shadow: 0 4px 20px -6px color-mix(in oklab, var(--accent) 60%, transparent);
 }
-.hero-links li:first-child a .label { color: #0B0C0E; font-weight: 600; }
-.hero-links li:first-child a::after { color: #0B0C0E; }
+.hero-links li:first-child a .label { color: var(--on-accent); font-weight: 600; }
+.hero-links li:first-child a::after { color: var(--on-accent); }
 .hero-links li:first-child a:hover {
   filter: brightness(1.08);
   background: var(--accent);
@@ -671,7 +714,7 @@ section.cta {
   align-items: center;
   gap: 10px;
   background: var(--accent);
-  color: #0B0C0E;
+  color: var(--on-accent);
   text-decoration: none;
   font-family: var(--mono);
   font-size: 13px;
