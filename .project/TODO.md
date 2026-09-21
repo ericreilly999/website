@@ -109,14 +109,14 @@
 
 ### Story: Light/dark theme toggle (human-directed, spec: `spec/light-mode-toggle.md`)
 
-- [ ] **QA-07** — Write `e2e/theme-toggle.spec.js`: toggle presence & accessibility on all 3 pages
+- [x] **QA-07** — Write `e2e/theme-toggle.spec.js`: toggle presence & accessibility on all 3 pages
   - Toggle button visible in `nav.top` on `/`, `/projects`, `/contact`, with `aria-label="Toggle color theme"`
   - Asserts it is a real `<button>` element, present in natural tab order after the github nav link
   - Keyboard operability: focuses via Tab, activates via both Enter and Space, `aria-pressed` reflects state after activation
   - Journeys covered: 7
   - Depends On: —
 
-- [ ] **QA-08** — Extend `e2e/theme-toggle.spec.js`: toggle behavior + persistence
+- [x] **QA-08** — Extend `e2e/theme-toggle.spec.js`: toggle behavior + persistence
   - Clicking toggle sets `data-theme="light"` on `<html>` and writes `localStorage.theme === "light"`; clicking again reverts to dark and `localStorage.theme === "dark"`
   - No stored preference (clear storage first) → page renders dark by default regardless of `prefers-color-scheme` (use Playwright's `colorScheme` context option set to `'light'` to prove the OS preference is ignored)
   - Reload after choosing light preserves `data-theme="light"` with no intermediate dark state observable at first computed-style read (proxy for FOUC — assert theme attribute is correct on `domcontentloaded`, not just after full load)
@@ -125,20 +125,20 @@
   - Journeys covered: 1, 2, 3, 4, 5, 6
   - Depends On: —
 
-- [ ] **QA-09** — Extend `e2e/theme-toggle.spec.js`: light-mode visual/contrast regression + dark-mode non-regression
+- [x] **QA-09** — Extend `e2e/theme-toggle.spec.js`: light-mode visual/contrast regression + dark-mode non-regression
   - With `data-theme="light"` set, assert computed `background-color`/`color` on: `body`, `.hero-links a` (primary + secondary), `.grid-2 .cell`, `.rows .row`, `section.cta .cta-inner`, `.form-message.error` (contact page), `.field select` are not equal to their dark-mode computed values (proves the override block is actually applied, not just present in CSS)
   - Assert `.submit-btn`, `.cta-btn`, and `.hero-links li:first-child a` text color is NOT the old hardcoded `#0B0C0E` when `data-theme="light"` (regression guard for the §5.3 hardcoded-hex fixes — this is the case most likely to be missed by DEV)
   - Run all 5 existing spec files (`about`, `contact`, `homepage`, `navigation`, `projects`) unmodified against dark mode (default, no toggle interaction) and confirm all 74 pre-existing tests still pass — no new failures introduced by shared.css changes
   - Journeys covered: 2, 5
   - Depends On: QA-07, QA-08 (shares the same spec file)
 
-- [ ] **DEV-05** — Frontend Engineer: light theme CSS in `public/shared.css`
+- [x] **DEV-05** — Frontend Engineer: light theme CSS in `public/shared.css`
   - Add `:root[data-theme="light"] { ... }` override block with all variable values from spec §5.4
   - Introduce new custom properties `--on-accent`, `--error`, `--error-text`, `--select-chevron` (dark-mode values = current hardcoded ones, unchanged visually); replace the 4 hardcoded `#0B0C0E` occurrences (`.submit-btn`, `.hero-links li:first-child a`/`.label`/`::after`, `.cta-btn`), the hardcoded `.form-message.error` colors, and the inline SVG chevron in `.field select` with `var(...)` references per spec §5.3
   - Verify final contrast of all light-mode pairs meets WCAG AA per spec §5.4 (re-check with a contrast tool, not just the spec's computed estimates, especially the `color-mix()`-derived tints)
   - Depends On: QA-07, QA-08, QA-09
 
-- [ ] **DEV-06** — Frontend Engineer: toggle markup + theme-init/persistence JS across all 3 pages
+- [x] **DEV-06** — Frontend Engineer: toggle markup + theme-init/persistence JS across all 3 pages
   - Add toggle `<button>` (sun/moon icon pair, `aria-label="Toggle color theme"`, `aria-pressed`) to `nav.top` in `index.html`, `projects.html`, `contact.html`, after the existing github link
   - Add a synchronous, render-blocking theme-init script in `<head>` (before first paint) on all 3 pages: reads `localStorage.theme`, sets `data-theme` on `<html>` accordingly, defaults to dark (no attribute) when absent or on `localStorage` failure (wrap in try/catch — do not let a thrown error block the page's other inline scripts)
   - Wire the toggle click handler: flip `data-theme`, persist to `localStorage.theme` (best-effort, tolerate write failure), update `aria-pressed` and icon
