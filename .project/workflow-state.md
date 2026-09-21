@@ -53,8 +53,10 @@ Fleet-mode note: dispatched engineers use `isolation: "worktree"`, git-writing d
 
 **Stage 1 — COMPLETE.** QA Engineer wrote `e2e/theme-toggle.spec.js` (21 tests: QA-07 toggle presence/accessibility, QA-08 behavior/persistence/FOUC/storage-failure, QA-09 light-mode computed-style + hardcoded-hex regression) on branch `feature/light-dark-toggle` off `main` @ `042c982` (commits `7b7335b` spec file, `171d539` TODO.md). Confirmed RED for the right reason (19 failed/2 passed against prod, all "element not found"/`data-theme` unset — not broken selectors), and zero regression on the 5 pre-existing spec files (74/74 still green). `.project/TODO.md` QA-07/QA-08/QA-09 now `[x]`. Branch pushed to `origin/feature/light-dark-toggle`.
 
+**Stage 2 — COMPLETE.** Frontend Engineer implemented DEV-05 (light theme CSS override block + new `--on-accent`/`--error`/`--error-text`/`--select-chevron` variables + hardcoded-hex fixes in `shared.css`) and DEV-06 (toggle button + synchronous head theme-init script + click handler on all 3 pages), commit `1f9b17d` on `feature/light-dark-toggle`. 95/95 tests passing locally (21 new + 74 pre-existing). Contrast independently re-verified against spec §5.4 (tightest margin 4.48:1, clears 3:1 UI-component minimum). PR **#17** opened against `main`: https://github.com/ericreilly999/website/pull/17. `.project/TODO.md` DEV-05/DEV-06 now `[x]`.
+
 ## Next Action
-Stage 2: Frontend Engineer dispatched to implement DEV-05 (light theme CSS in `shared.css`) and DEV-06 (toggle markup + theme-init JS across all 3 pages) on `feature/light-dark-toggle`, then open a PR against `main`.
+Stage 3: Documentation Agent (doc-impact check on PR #17) → Code Reviewer (review + merge).
 
 ## Gate Status
 
