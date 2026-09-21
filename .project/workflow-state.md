@@ -51,8 +51,10 @@ Plan: Stage 1 (QA writes `e2e/theme-toggle.spec.js` for QA-07..QA-09 against `sp
 
 Fleet-mode note: dispatched engineers use `isolation: "worktree"`, git-writing dispatches serialized (QA → Frontend → Docs → Code Reviewer, one at a time) per this run's override instructions.
 
+**Stage 1 — COMPLETE.** QA Engineer wrote `e2e/theme-toggle.spec.js` (21 tests: QA-07 toggle presence/accessibility, QA-08 behavior/persistence/FOUC/storage-failure, QA-09 light-mode computed-style + hardcoded-hex regression) on branch `feature/light-dark-toggle` off `main` @ `042c982` (commits `7b7335b` spec file, `171d539` TODO.md). Confirmed RED for the right reason (19 failed/2 passed against prod, all "element not found"/`data-theme` unset — not broken selectors), and zero regression on the 5 pre-existing spec files (74/74 still green). `.project/TODO.md` QA-07/QA-08/QA-09 now `[x]`. Branch pushed to `origin/feature/light-dark-toggle`.
+
 ## Next Action
-Stage 1: QA Engineer dispatched to write `e2e/theme-toggle.spec.js` (QA-07, QA-08, QA-09) on a feature branch, worktree-isolated.
+Stage 2: Frontend Engineer dispatched to implement DEV-05 (light theme CSS in `shared.css`) and DEV-06 (toggle markup + theme-init JS across all 3 pages) on `feature/light-dark-toggle`, then open a PR against `main`.
 
 ## Gate Status
 
