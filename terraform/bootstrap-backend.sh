@@ -17,12 +17,21 @@ REGION="us-east-1"
 BUCKET="ericreilly-website-tfstate"
 TABLE="ericreilly-website-tfstate-lock"
 
-# Tags applied to both backend resources. Key/value style mirrors
-# `local.common_tags` in terraform/main.tf so the backend shows up alongside
-# the Terraform-managed resources in Cost Explorer and the Resource Groups
-# Tag Editor. ManagedBy is deliberately "bootstrap-script" rather than
-# "terraform": these two resources hold the remote state itself, so they must
-# exist before Terraform does and are necessarily outside its management.
+# Tags applied to both backend resources. Same key/value *style* as
+# `local.common_tags` in terraform/main.tf, but deliberately not the same key
+# set — these are not Terraform-managed resources and do not belong to one
+# environment:
+#   - ManagedBy is "bootstrap-script", not "terraform": these two resources
+#     hold the remote state itself, so they must exist before Terraform does
+#     and are necessarily outside its management. Tagging them "terraform"
+#     would misrepresent what manages them.
+#   - Environment is omitted rather than guessed: this bucket and table back
+#     *both* the prod and staging state, so no single environment value is
+#     accurate. As a result they will not appear under an Environment facet
+#     in Cost Explorer / the Resource Groups Tag Editor alongside the
+#     Terraform-managed resources — Project is the facet that groups them.
+#   - Purpose is added to make the "do not delete, this is state" intent
+#     legible from the console without opening this script.
 TAG_PROJECT="eric-reilly-website"
 TAG_MANAGED_BY="bootstrap-script"
 TAG_PURPOSE="terraform-state-backend"
