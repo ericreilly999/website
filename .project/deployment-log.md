@@ -4,6 +4,24 @@ Deployments are recorded in reverse-chronological order.
 
 ---
 
+## 2026-09-22 — `deploy.yml` staging trigger path-filtered (CLD-14 item 2)
+
+**Method:** PR #18, `chore/deploy-workflow-path-filter` → `main`. Self-merged by DevOps after local validation (config-only exception GC-7, human-approved 2026-09-20) — squash merge commit `0d946dbc17c443db08c389d6bc001a7bda56f393`. Code Reviewer post-merge comment: https://github.com/ericreilly999/website/pull/18#issuecomment-5779619273 (verdict: sound, one non-blocking WARNING, no BLOCKING findings).
+
+**Why:** Docs-only/tracking-file-only pushes to `main` (e.g. `.project/` commits) were re-triggering and cancelling in-flight staging deploys via the shared `deploy-${{ github.ref }}` concurrency group — fired twice during CLD-13 Stage 3 closeout earlier today. See `.project/workflow-state.md` "Stage 4 — COMPLETE" note.
+
+**Change:** Added a `paths:` allowlist (`public/**`, `prompted/**`, `package.json`, `package-lock.json`, `.github/workflows/deploy.yml`) to the top-level `on.push:` block. Chose allowlist over `paths-ignore:` denylist — fails safe, since a future new top-level path defaults to NOT triggering a deploy unless added, matching this repo's actual S3-synced surface. `src/` (legacy React app, unused by `npm run build`) deliberately excluded — confirmed by Code Reviewer directly reading `package.json`'s build script.
+
+**Tag-push (production) trigger verified unaffected:** GitHub Actions does not evaluate path filters for tag pushes at all, even combined with `branches:`/`tags:` in one `on.push:` block (GitHub's own workflow-syntax docs: "Path filters are not evaluated for pushes of tags"). Verified independently by DevOps before merge and re-verified independently by Code Reviewer post-merge (cross-checked against GitHub community discussions #26273/#27194). `deploy-prod`/`deploy-prompted-prod` continue to run on every matching `vX.Y.Z` tag regardless of paths changed.
+
+**Local validation before merge:** YAML parsed with the repo's own `yaml` devDependency — no syntax errors, `on.push` fields and all 5 jobs present as expected. `npm test` green (no unit-test suite by design).
+
+**Post-merge verification (this PR touched `deploy.yml` itself, which is in the allowlist, so it correctly re-triggered a staging run to validate the pipeline change):** run [35749677304](https://github.com/ericreilly999/website/actions/runs/35749677304) — `Deploy Staging` ✅, `Deploy Prompted Staging` ✅, `E2E Tests (Staging)` ✅, `Deploy Production`/`Deploy Prompted Production` correctly `skipped` (no tag pushed).
+
+**Known non-blocking follow-up (Code Reviewer finding):** `e2e/**` and `playwright.config.js` are not in the allowlist. Since `e2e-staging` runs `needs: deploy-staging` inside the same workflow, an E2E-spec-only push to `main` no longer triggers the workflow at all — this matches the task's explicit instruction that `e2e/**` is non-deployable and should not trigger a redeploy, but as a side effect new/changed E2E specs won't get exercised against live staging until an unrelated deployable change ships alongside them. Flagged to PM for a decision (not actioned this dispatch — outside this task's scope, and adding it would need PM/QA input on whether that trade-off is acceptable).
+
+---
+
 ## 2026-09-22 — Branch protection enabled on `main` (out-of-band GitHub settings change, CLD-14)
 
 **Method:** `gh api` REST (`PUT /repos/ericreilly999/website/branches/main/protection`) — GitHub repo settings, not Terraform (this repo's application infra is separate from its GitHub repo settings).
