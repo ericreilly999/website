@@ -4,6 +4,18 @@ Raw capture of project-specific trip-ups and gotchas. See `~/.claude/docs/agent-
 
 ---
 
+## 2026-09-22 — A subagent's own stale model default silently conflicted with a mid-session Fleet Decisions approval
+
+**What happened:** Mid-session, a Fleet Decisions item (`FP-3`) was approved authorizing `model: "opus"` on every dispatch fleet-wide until 21:00 ET. The PM verified it directly and switched. One dispatched DevOps subagent then sub-dispatched a Code Reviewer using its own standing "Sonnet by default" habit, not realizing `FP-3` overrode that — it only caught the conflict because it happened to read `.project/workflow-state.md` (where the PM had recorded the `FP-3` verification) before the Sonnet reviewer produced any output. It messaged the wrong-model subagent to stand down, confirmed zero GitHub writes had happened (no comment, no approval, no merge), and re-dispatched a replacement on Opus. No duplicate work landed, but it was a near-miss caught by a habit (reading the state file first), not by any structural guarantee.
+
+**Fix:** None needed this session — caught in time. But the mechanism that saved it (an agent happening to read `workflow-state.md` before acting) isn't guaranteed for every sub-dispatch a subagent makes.
+
+**Generalizes?** Yes — candidate for `[[mcp-tools]]` or a new note in the PM skill's Agent Handoff Template: when a PM verifies a session-wide Fleet Decisions override (model tier, or any other cross-cutting parameter), it should say so explicitly in every dispatch prompt for the remainder of the window, not rely on downstream agents independently re-discovering it by reading state files. A verified override should propagate by being stated, not by being findable.
+
+**Promoted to:** pending retro (no formal retro scheduled for this adhoc-cadence project — flagging directly, same as prior entries)
+
+---
+
 ## 2026-09-08 — QA-authored test files never got committed, staging E2E gate failed on genuinely-correct content
 
 **What happened:** QA updated `e2e/projects.spec.js`, `e2e/homepage.spec.js`, `e2e/contact.spec.js` to match a content refresh's target state, and validated locally that everything passed. Frontend Engineer then implemented the content and opened PR #8 — but was instructed (by PM) to commit only the application files, and nobody's task explicitly said "commit QA's test-file edits too." Every downstream agent (Frontend Engineer, Documentation Agent, Code Reviewer, even a second QA validation pass) saw the uncommitted `e2e/*.spec.js` diff sitting in the shared working tree, correctly judged it out of their own task scope, and left it alone — so it never shipped. PR #8 merged, and the post-merge `e2e-staging` CI job failed: `main`'s test file still asserted the *old* content shape against the genuinely-new, genuinely-correct live site. Required a second PR (#9) purely to ship the already-written test files.
