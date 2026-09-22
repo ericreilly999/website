@@ -66,6 +66,10 @@ $ aws dynamodb list-tags-of-resource \
 
 **Post-merge pipeline verification:** this PR touched `deploy.yml`, which is in the CLD-14 item 2 path allowlist, so it correctly re-triggered a staging run — run [35753361363](https://github.com/ericreilly999/website/actions/runs/35753361363) on `d858c59`: `Deploy Staging` ✅, `Deploy Prompted Staging` ✅, `E2E Tests (Staging)` ✅, `Deploy Production` / `Deploy Prompted Production` correctly `skipped` (no tag pushed — confirms the tightened guard did not break the skip path).
 
+**Reviewer follow-ups closed:** the one WARNING (missing out-of-band mutation trace) is closed by this entry, committed as `3dfe3da`. The two SUGGESTIONs — tag-key parity wording in `bootstrap-backend.sh`, and a comment noting that `on.push.tags` rather than the `if:` guard is what blocks pre-release tags — are closed by PR [#20](https://github.com/ericreilly999/website/pull/20), squash-merged `fc322bd34d0f0322dcf0b37eefc00b62c0fe7623` (comment-only, zero functional change; both `if:` guards and `on.push.paths` byte-identical). PR #20 also touched `deploy.yml` so it re-triggered staging — run [35754158584](https://github.com/ericreilly999/website/actions/runs/35754158584): `Deploy Staging` ✅, `Deploy Prompted Staging` ✅, `E2E Tests (Staging)` ✅, both prod jobs correctly `skipped`.
+
+**Path-filter regression check (incidental):** the tracking-file-only commit `3dfe3da` (`.project/` only) triggered **no** workflow run, re-confirming CLD-14 item 2's path filter still behaves correctly in the negative direction.
+
 ---
 
 ## 2026-09-22 — `deploy.yml` staging trigger path-filtered (CLD-14 item 2)
