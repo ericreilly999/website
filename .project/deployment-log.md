@@ -4,6 +4,70 @@ Deployments are recorded in reverse-chronological order.
 
 ---
 
+## 2026-09-22 — Infra hygiene: `prevent_destroy` guards, prod tag-guard tightening, state-backend tagging (CLD-14 item 3 — DEVOPS-04/05/06)
+
+**Method:** PR [#19](https://github.com/ericreilly999/website/pull/19), `chore/infra-hygiene-devops-04-05-06` → `main`. Self-merged by DevOps after local validation (config-only exception GC-7, human-approved 2026-09-20) — squash merge commit `d858c59dc27d444d6829a86db6c098512dc02b9d`. Code Reviewer post-merge comment: https://github.com/ericreilly999/website/pull/19#issuecomment-5780059084 (verdict: sound, no BLOCKING findings; one WARNING — the missing deployment-log entry, which this entry closes — plus two low-stakes SUGGESTIONs).
+
+**Why:** Closes the three reviewer-warning follow-ups logged as DEVOPS-04/05/06 under "Post-merge follow-ups (reviewer warnings — scope separately)" in `.project/TODO.md`. Final item of Linear epic CLD-14 "Ops & maintenance backlog".
+
+**One PR, not three:** the four touched files are disjoint, all three changes are guard-rail/tagging hygiene in the same risk class (no application code, no new resources, no spend change, no IAM change), and they share one review pass and one CI run.
+
+---
+
+### DEVOPS-04 — `prevent_destroy` lifecycle guards
+
+Added `lifecycle { prevent_destroy = true }` to `aws_s3_bucket.website` and `aws_cloudfront_distribution.website` (`terraform/modules/static_site/main.tf`) and `aws_route53_zone.website` (`terraform/modules/certificate_zone/main.tf`).
+
+**⚠️ NO `terraform apply` WAS RUN — AND NONE IS NEEDED.** A prod-affecting apply is Tier 3, so the code was landed and the apply deliberately not executed. But the apply turns out to be unnecessary rather than merely deferred: `lifecycle` is a **plan-time configuration construct and is not persisted in Terraform state**, so the guard is live for anyone planning from this code the moment it merged. Verified by `terraform plan` against the real remote state after the edits: `No changes. Your infrastructure matches the configuration.` Independently confirmed by Code Reviewer as correct by Terraform's design. **No `WS-` apply item needs to be queued for DEVOPS-04.**
+
+**Staging is guarded too — forced by Terraform, not a scope decision.** The run brief scoped this to the three prod resources and said not to touch staging. `terraform/staging.tf` was **not** modified. However `modules/static_site` is instantiated twice (`module.static_site` = prod, `module.staging_static_site` = staging), and `prevent_destroy` [only accepts literal values](https://developer.hashicorp.com/terraform/language/meta-arguments/lifecycle) — lifecycle settings are evaluated during dependency-graph construction, before expressions can be resolved — so it cannot be gated behind a per-environment variable, and `lifecycle` is not a valid meta-argument on a `module` block either. Guarding the prod bucket/distribution therefore necessarily guards the staging ones. This is additive safety: it blocks destroy/replace only and alters no resource attribute. Cost: a future change that *forces replacement* of the staging bucket or distribution (e.g. renaming the staging bucket) will error until the block is removed — a deliberate, reviewed one-line change. Code Reviewer independently confirmed the constraint is real and that no better alternative was missed. Recorded here so a future session doesn't read a staging `prevent_destroy` error as a bug.
+
+**Validation (all read-only, nothing applied):** `terraform fmt -check -recursive` exit 0 no diff; `terraform validate` success; `terraform plan` no changes **and zero pre-existing drift across the whole config**. Guards proven to actually fire via a **plan-only** destroy simulation (`terraform plan -destroy`, no apply) → `Error: Instance cannot be destroyed ... module.static_site.aws_cloudfront_distribution.website has prevent_destroy set`. The destroy graph walks CloudFront first and aborts there, so the bucket and zone guards were additionally confirmed structurally (each target resource block parsed and asserted to contain `prevent_destroy = true`).
+
+### DEVOPS-05 — tightened prod tag guards (defence-in-depth)
+
+`.github/workflows/deploy.yml`, jobs `deploy-prod` and `deploy-prompted-prod`: `startsWith(github.ref, 'refs/tags/')` → `startsWith(github.ref, 'refs/tags/v')`. The `on.push.tags` trigger is already `'v[0-9]+.[0-9]+.[0-9]+'`, so this changes **no job-run behaviour today**; it makes the second, independent check match the trigger's intent rather than being looser than it, so the guard still holds if the trigger pattern is ever loosened upstream. `on.push.paths` (CLD-14 item 2, PR #18) and the three `refs/heads/main` staging guards were **not** touched.
+
+**Local validation** (can't be tested by pushing a junk tag — that's the thing the guard exists to stop): (1) YAML parsed with `js-yaml`, parsed tree dumped to confirm the trigger pattern, the path filter and all five job guards; (2) a truth table over 11 sample refs evaluating the trigger pattern and both old and new guard. Result: all real semver tags (`v0.1.8`, `v1.2.3`, `v10.20.30`) still pass — **no prod-deploy regression**; six non-semver shapes (`latest`, `prod`, `release-2026-09`, `backup-before-migration`, `staging-snapshot`, `1.2.3`) flip from permitted to blocked at the guard, all of them already blocked by the trigger.
+
+**Residual gap, deliberately accepted:** `refs/tags/v1.2.3-rc1` still passes `startsWith(..., 'refs/tags/v')`. GitHub Actions expressions have no regex, so this is the strictest primitive available and the guard cannot fully mirror the trigger's semver pattern. Code Reviewer confirmed the gap is real but practically unreachable — GitHub's tag-trigger pattern is anchored glob matching and this workflow has no non-`push` trigger. The trigger remains the precise check.
+
+### DEVOPS-06 — Terraform state-backend resources tagged (**out-of-band mutation — executed against live resources**)
+
+**This is an out-of-band mutation trace** per `~/.claude/docs/agent-conventions/artifact-rules.md`. The tagging below was applied by direct AWS CLI from a workstation, outside any tracked deploy pipeline.
+
+**What changed:** `ericreilly-website-tfstate` (S3) and `ericreilly-website-tfstate-lock` (DynamoDB, `arn:aws:dynamodb:us-east-1:290993374431:table/ericreilly-website-tfstate-lock`) — the Terraform remote-state backend, created 2026-04-18 — were tagged `Project=eric-reilly-website`, `ManagedBy=bootstrap-script`, `Purpose=terraform-state-backend`. They were the only untagged resources in the account's website footprint.
+
+**When:** 2026-09-22, immediately before this entry was written.
+
+**Why:** DEVOPS-06. These two resources hold the remote state itself, so they must exist before Terraform does and are necessarily outside its management (chicken-and-egg) — they cannot be tagged by a `terraform apply`. `ManagedBy` is deliberately `bootstrap-script` rather than the Terraform-standard `terraform`: tagging them `terraform` would be actively misleading, since no Terraform config manages them. Key/value style otherwise mirrors `local.common_tags` in `terraform/main.tf` so the backend groups with the Terraform-managed resources in Cost Explorer and the Tag Editor.
+
+**Why this was safe to execute directly (not Tier 3):** additive and idempotent, no data or availability impact, and these are shared tooling infra — **not** the prod content-serving S3 bucket / CloudFront distribution / Route 53 zone that the Tier-3 carve-out covers. Explicitly authorized in the run brief.
+
+**How:** by running the updated `terraform/bootstrap-backend.sh` end-to-end (which also re-exercised and confirmed its "safe to re-run — all operations are idempotent" contract: both existing resources were correctly detected and skipped for creation, and only the tag calls took effect). The new `aws s3api put-bucket-tagging` and `aws dynamodb tag-resource` calls sit **outside** the create-if-absent branches so re-running always refreshes tags — confirmed by Code Reviewer. `bash -n` syntax check passes.
+
+**Pre-state (verified, not assumed):** `aws s3api get-bucket-tagging` → `NoSuchTagSet: The TagSet does not exist`; `aws dynamodb list-tags-of-resource` → `{"Tags": []}`. Both genuinely untagged.
+
+**Post-state (verified):**
+```
+$ aws s3api get-bucket-tagging --bucket ericreilly-website-tfstate
+{"TagSet":[{"Key":"Project","Value":"eric-reilly-website"},
+           {"Key":"Purpose","Value":"terraform-state-backend"},
+           {"Key":"ManagedBy","Value":"bootstrap-script"}]}
+
+$ aws dynamodb list-tags-of-resource \
+    --resource-arn arn:aws:dynamodb:us-east-1:290993374431:table/ericreilly-website-tfstate-lock
+{"Tags":[{"Key":"Project","Value":"eric-reilly-website"},
+         {"Key":"ManagedBy","Value":"bootstrap-script"},
+         {"Key":"Purpose","Value":"terraform-state-backend"}]}
+```
+
+---
+
+**Post-merge pipeline verification:** this PR touched `deploy.yml`, which is in the CLD-14 item 2 path allowlist, so it correctly re-triggered a staging run — run [35753361363](https://github.com/ericreilly999/website/actions/runs/35753361363) on `d858c59`: `Deploy Staging` ✅, `Deploy Prompted Staging` ✅, `E2E Tests (Staging)` ✅, `Deploy Production` / `Deploy Prompted Production` correctly `skipped` (no tag pushed — confirms the tightened guard did not break the skip path).
+
+---
+
 ## 2026-09-22 — `deploy.yml` staging trigger path-filtered (CLD-14 item 2)
 
 **Method:** PR #18, `chore/deploy-workflow-path-filter` → `main`. Self-merged by DevOps after local validation (config-only exception GC-7, human-approved 2026-09-20) — squash merge commit `0d946dbc17c443db08c389d6bc001a7bda56f393`. Code Reviewer post-merge comment: https://github.com/ericreilly999/website/pull/18#issuecomment-5779619273 (verdict: sound, one non-blocking WARNING, no BLOCKING findings).

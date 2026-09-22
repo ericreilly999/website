@@ -20,9 +20,9 @@
 - [x] **DEVOPS-03** — Update CI/CD pipeline for staging deploy
 
 ### Post-merge follow-ups (reviewer warnings — scope separately)
-- [ ] **DEVOPS-04** — Add `prevent_destroy` lifecycle guard on prod S3 bucket, CloudFront, Route 53 zone
-- [ ] **DEVOPS-05** — Tighten `deploy-prod` `if` guard to `refs/tags/v` (defence-in-depth)
-- [ ] **DEVOPS-06** — Add resource tags to bootstrap-backend.sh S3 bucket and DynamoDB table
+- [x] **DEVOPS-04** — Add `prevent_destroy` lifecycle guard on prod S3 bucket, CloudFront, Route 53 zone — PR #19, merged `d858c59`. No `terraform apply` needed: `lifecycle` is plan-time config, not state-persisted; `terraform plan` against real remote state reports no changes. Guard also covers staging (shared `modules/static_site`, `prevent_destroy` is literal-only) — see deployment-log.
+- [x] **DEVOPS-05** — Tighten `deploy-prod` `if` guard to `refs/tags/v` (defence-in-depth) — PR #19, merged `d858c59`. Both `deploy-prod` and `deploy-prompted-prod`. No-op for real semver tags; verified by truth table over 11 sample refs.
+- [x] **DEVOPS-06** — Add resource tags to bootstrap-backend.sh S3 bucket and DynamoDB table — PR #19, merged `d858c59`. Tags applied to the live backend resources out-of-band and verified; mutation trace in `.project/deployment-log.md`.
 
 ### QA Tasks
 
