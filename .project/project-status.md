@@ -54,7 +54,7 @@ Eric asked (~11:30 ET) whether the ops & maintenance backlog was running — it 
 
 - **Item 3 (DEVOPS-04/05/06) — COMPLETE.** PR #19 + #20 (Code Reviewer: 0 BLOCKING, all findings closed). `prevent_destroy` guards on prod S3/CloudFront/Route53 landed with **no `terraform apply` needed** — `lifecycle` is a plan-time construct, not state-persisted; a plan-only `terraform plan -destroy` proved the guard works. `deploy-prod`/`deploy-prompted-prod` `if:` guards tightened to `refs/tags/v`. Terraform state-backend bucket/table tagged live (out-of-band mutation, traced in `deployment-log.md`). Full detail in `.project/workflow-state.md`.
 
-**CLD-14 — all 3 items complete this session (2026-09-22). No further action queued for this epic.**
+**CLD-14 — all 3 items complete this session (2026-09-22), plus the WS-3 follow-on.** Item 1's status-check gap is now genuinely closed: a `pull_request`-triggered `PR Checks` job (PR #21, merge `d5c7ebf`) runs `npm test` on every PR and is now `main`'s required status check (verified enforced — an admin push reports the check is required). Human-approved via Fleet Decisions `WS-3` (`decided_by_owner === true`, `decided_at: 2026-09-22T15:58:39Z`, verified directly). No further action queued for this epic.
 
 ## What's In Progress
 
@@ -63,7 +63,6 @@ Nothing active — CLD-13 and CLD-14 both closed end-to-end this session.
 ## What's Coming Next
 
 - Non-blocking follow-up from CLD-13: `contact.html` hardcodes the same production API endpoint in every environment, forcing 3 live-E2E tests in the theme-toggle spec to mock a network abort rather than exercise a real staging endpoint (pre-existing constraint, not new risk — see `lessons-learned.md` 2026-09-20). Provision a staging-only contact endpoint, or formally document the deviation in `test-signoff.md`'s conventions.
-- Fleet Decisions `WS-3` (add a `pull_request`-triggered CI job so branch protection's required status checks can be populated) — queued, not yet human-decided. Not blocking anything.
 - The `odds-analysis` repo (source of the Football Odds Analysis Engine card) is genuinely early-stage — revisit once that project has real output.
 - `.project/TODO.md` has no entries for any prose round (PM decided not to backfill for copy-only micro-rounds; noted for traceability).
 - No new backlog items identified this session beyond `WS-3` — next session should groom `.project/backlog.md`/`TODO.md`'s unscoped section with the human before pulling new scope (not done this session — this run stayed scoped to CLD-14 per its own brief).
