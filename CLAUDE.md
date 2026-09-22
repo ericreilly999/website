@@ -10,7 +10,9 @@ Eric Reilly's personal website — `ericreilly.com` (main site) and `prompted.er
 
 ## Route-to-live
 
-`main` → staging (auto-deploy on every push, `staging.ericreilly.com` / `staging.prompted.ericreilly.com`, Playwright E2E gate) → production (`ericreilly.com` / `prompted.ericreilly.com`, semver tag push `vX.Y.Z`). See `.project/workflow-state.md` for current state and `.project/deployment-log.md` for deploy history.
+`main` → staging (auto-deploy on every push touching a deployable path, `staging.ericreilly.com` / `staging.prompted.ericreilly.com`, Playwright E2E gate) → production (`ericreilly.com` / `prompted.ericreilly.com`, semver tag push `vX.Y.Z`). See `.project/workflow-state.md` for current state and `.project/deployment-log.md` for deploy history.
+
+`main` is protected: changes land via PR with the `PR Checks` status check required (0 required approving reviews — solo-author repo, no second reviewer path exists). Admin enforcement is off, so direct pushes to `main` remain possible for trivial docs-only/`.project/`-tracking commits (this repo's established pattern); application-code and infra changes should go through a PR.
 
 ## Linear presence
 
