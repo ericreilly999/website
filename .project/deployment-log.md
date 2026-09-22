@@ -4,6 +4,105 @@ Deployments are recorded in reverse-chronological order.
 
 ---
 
+## 2026-09-22 — PR status check live: `PR Checks` job added to `deploy.yml` + branch protection `contexts` populated (CLD-14 item 1 follow-up, Fleet Decisions `WS-3`)
+
+**Two changes, logged together because neither is meaningful alone:**
+1. **Code** — PR [#21](https://github.com/ericreilly999/website/pull/21), `chore/pr-status-check` → `main`, squash merge commit `d5c7ebff289fa83880e584256d42f7634e4fb648`. Adds a `pull_request` trigger and one new job, `PR Checks`, to `.github/workflows/deploy.yml` (+57/-0, single file).
+2. **Out-of-band GitHub settings mutation** — `gh api PUT /repos/ericreilly999/website/branches/main/protection`, moving `required_status_checks.contexts` from `[]` to `["PR Checks"]`. Identical rule set to the "Branch protection enabled on `main`" entry below in every other field.
+
+**Why:** closes the follow-up that entry recorded explicitly — *"the next CLD-14 item that touches `deploy.yml` should add a `pull_request`-triggered check (lint/test job) before this rule set can meaningfully require a status check."* Until now `contexts` was necessarily empty: `deploy.yml` triggered only on `push`, so no job had ever reported a status on a PR, and requiring one would have deadlocked every PR on a check that structurally never runs. Human-approved as Fleet Decisions item `WS-3` (`answer.decided_by_owner: true`, `decided_at: 2026-09-22T15:58:39.172Z`), verified directly via `ArtifactData` rather than via a relay.
+
+### The job
+
+`pr-checks` / `name: PR Checks` — checkout → setup-node → `npm ci` → `npm test` → job summary. No build, no S3 sync, no CloudFront invalidation, no `aws-actions/configure-aws-credentials`, no `environment:` binding.
+
+Three independent layers keep a PR from ever touching AWS:
+- Job-level `permissions: {contents: read}` **replaces** (does not merge with) the workflow-level `permissions: {id-token: write}`; unlisted scopes become `none`. Confirmed on the wire — the run log shows `Contents: read` / `Metadata: read` and **no `ID Token` line**.
+- No `environment:` binding, so no environment secrets are in scope.
+- The trigger is `pull_request`, **not** `pull_request_target` — fork PRs get a read-only token and no secrets. (Code Reviewer flagged `pull_request_target` as what would have been the one BLOCKING finding had it been used.)
+
+`npm test` is the repo's existing script, already used as a pre-build step in `deploy-staging` / `deploy-prod`. No new lint tool was introduced — `package.json` has no lint script.
+
+### Decision: no `paths:` filter on the `pull_request` trigger
+
+The `push` trigger's `paths:` allowlist (CLD-14 item 2) is untouched and byte-identical to its prior state. The new `pull_request` trigger deliberately carries no filter. The load-bearing distinction, confirmed in review:
+
+- A job skipped by an `if:` guard **still emits a check-run** with conclusion `skipped` — and GitHub's branch protection counts `skipped` as passing.
+- A workflow skipped by a **path filter never starts at all**, so no check-run is ever created, and protection waits forever on a required status that can never arrive.
+
+So path-filtering a *required* check would deadlock any PR touching no listed path — e.g. a `.project/`-only or docs-only PR. A docs-only PR burning one sub-minute runner job is the cheaper failure mode by a wide margin.
+
+### Decision: job name is load-bearing
+
+`PR Checks` is the literal string in `required_status_checks.contexts`. Renaming the job silently breaks protection — the old context stays required and never reports again, deadlocking every subsequent PR. A comment above the job in `deploy.yml` records this. Do not rename without updating the protection rule in the same change.
+
+### Local validation (before push, per CI discipline)
+
+A structural harness parsed HEAD's and the branch's `deploy.yml` with the repo's own `yaml` parser and asserted 26 properties — all passed: `push` trigger serialises byte-identical to HEAD; `pull_request.branches == ["main"]` with no `paths`/`paths-ignore`; job name exactly `PR Checks`; guard `github.event_name == 'pull_request'`; `permissions == {contents: read}`; no `environment`; job body free of `aws-actions/`, `secrets.`, `aws s3`, `cloudfront`, `npm run build`, `role-to-assume`; each of the five pre-existing jobs deep-equals its HEAD definition; exactly one job added. `npm test` also run locally. Code Reviewer independently re-derived the same claims with its own 20-assertion harness.
+
+### Live proof (the point of opening a PR for this at all)
+
+On PR #21's own head SHA `3165be16aa43d567d5eaf6973ca4636b491523e8`:
+
+| Check | Conclusion |
+|---|---|
+| `PR Checks` | **success** (26s) |
+| `Deploy Staging` | skipped |
+| `Deploy Prompted Staging` | skipped |
+| `E2E Tests (Staging)` | skipped |
+| `Deploy Production` | skipped |
+| `Deploy Prompted Production` | skipped |
+
+All five pre-existing jobs remain guarded on `github.ref` (`refs/heads/main` or `refs/tags/v*`); on a PR `github.ref` is `refs/pull/N/merge`, matching neither, and `e2e-staging` is doubly guarded via `needs:`. Staging and production deploy behaviour is unchanged.
+
+**Post-merge push run** (merge landed inside the `push` paths allowlist, so it deployed): `Deploy Staging`, `Deploy Prompted Staging`, `E2E Tests (Staging)` all `success`; both prod jobs correctly skipped; `PR Checks` correctly **skipped on the push event**, confirming its `if:` guard doesn't burn a runner outside PRs.
+
+### Rule set now in force on `main` (re-GET verified, not assumed)
+
+```json
+{
+  "required_status_checks": {
+    "strict": true,
+    "contexts": ["PR Checks"],
+    "checks": [{ "app_id": 15368, "context": "PR Checks" }]
+  },
+  "enforce_admins": false,
+  "required_pull_request_reviews": {
+    "dismiss_stale_reviews": false,
+    "require_code_owner_reviews": false,
+    "required_approving_review_count": 0
+  },
+  "allow_force_pushes": false,
+  "allow_deletions": false,
+  "required_linear_history": false,
+  "lock_branch": false
+}
+```
+
+`app_id: 15368` is GitHub Actions — the context is bound to the Actions app, so an unrelated integration cannot satisfy it by posting a same-named status. Every other field is unchanged from the earlier entry; only `contexts` moved.
+
+### Code Reviewer
+
+Verdict **APPROVED**, merged by Code Reviewer per this solo-author repo's established pattern (GitHub rejects self-approval; `ericreilly999` is the only collaborator — CLD-13 / PR #17 precedent). Comment: https://github.com/ericreilly999/website/pull/21#issuecomment-5780346521 — 0 BLOCKING, 1 WARNING, 4 SUGGESTION.
+
+The WARNING was that the protection update was not in the PR diff, leaving a green check with zero enforcement until `contexts` was set — **closed by change 2 of this entry**, with the specific over-reach it warned about (adding the deploy job names, which report `skipped` and therefore count as *passing*, producing a gate that enforces nothing) deliberately avoided: `contexts` contains `PR Checks` and nothing else.
+
+Open SUGGESTIONs, none blocking, not actioned here:
+- `npm test` is a near-no-op — thin assertion surface. Worth real unit coverage now that a gate exists to run it.
+- Record the no-paths-filter rationale in `.project/decisions.md` so a future CI-minutes optimisation doesn't re-add a filter and deadlock the repo.
+- Consider `actionlint` in the PR job.
+- Consider `npm ci --ignore-scripts` as fork hardening.
+
+### Process note — reviewer dispatched on the wrong model tier, corrected mid-flight
+
+The first Code Reviewer was dispatched on Sonnet per the standing fleet default. That default is overridden by Fleet Decisions `FP-3` (human-approved, `decided_by_owner: true`, `decided_at: 2026-09-22T15:43:20.636Z`), which scopes **all** agent dispatches — reviewer dispatches explicitly included — to Opus until 21:00 ET 2026-09-22. `FP-3` was verified directly via `ArtifactData`, not taken from the relay. The Sonnet reviewer was stood down before taking any GitHub write action (no comment, no approval, no merge — confirmed in its own report) and a replacement was dispatched on Opus, which performed the review and owned the merge. No duplicate review comment and no merge race resulted.
+
+### Tooling note for future reviews
+
+`mcp__github__get_pull_request_status` reported `state: pending, total_count: 0` on a fully-green PR — it reads the legacy commit-status API, which GitHub Actions does not write to. The check-runs API (`gh pr checks` / `/commits/{sha}/check-runs`) is the authoritative source for this repo. Taking that MCP tool at face value would block a ready PR, or worse, train a future session to ignore a real red check.
+
+---
+
 ## 2026-09-22 — Infra hygiene: `prevent_destroy` guards, prod tag-guard tightening, state-backend tagging (CLD-14 item 3 — DEVOPS-04/05/06)
 
 **Method:** PR [#19](https://github.com/ericreilly999/website/pull/19), `chore/infra-hygiene-devops-04-05-06` → `main`. Self-merged by DevOps after local validation (config-only exception GC-7, human-approved 2026-09-20) — squash merge commit `d858c59dc27d444d6829a86db6c098512dc02b9d`. Code Reviewer post-merge comment: https://github.com/ericreilly999/website/pull/19#issuecomment-5780059084 (verdict: sound, no BLOCKING findings; one WARNING — the missing deployment-log entry, which this entry closes — plus two low-stakes SUGGESTIONs).
@@ -121,7 +220,7 @@ Plain English: PRs are required to merge into `main`; no approving review is req
 This is a solo-author repo — `ericreilly999` is the only collaborator, and GitHub rejects self-approval on a PR you authored. A prior Code Reviewer dispatch on this repo already hit that wall and fell back to posting findings as PR comments instead of a formal approval. Requiring ≥1 approval with no second reviewer available would deadlock every future PR merge with no escape hatch. `required_approving_review_count: 0` still enables "require a pull request before merging" (contra my working assumption at the top of this task, GitHub's classic protection API does accept 0 — verified empirically via the PUT call below) without demanding a review nobody can give.
 
 **Required status checks: deliberately left empty (`contexts: []`), not populated with the deploy.yml job names — this deviates from the dispatch's default suggestion, flagging back per its own "verify yourself" instruction.**
-The task's default suggestion was to require `Deploy Staging` / `Deploy Prompted Staging` / `E2E Tests (Staging)`. Verification (above) showed `deploy.yml` has no `pull_request` trigger, so none of those jobs ever report a status on a PR — they only fire after a push to `main` has already happened. Requiring status checks that structurally never run on a PR would leave every future PR stuck in "expected, never started" indefinitely — the same deadlock class as the self-approval problem, just via a different mechanism. So `contexts` is empty for now; `strict: true` (require branches up to date) is still enabled since that has independent value and no dependency on a PR-triggered workflow. **Follow-up needed:** the next CLD-14 item that touches `deploy.yml` (explicitly out of scope for this dispatch) should add a `pull_request`-triggered check (lint/test job) before this rule set can meaningfully require a status check. Recording this as a prerequisite, not closing it silently.
+The task's default suggestion was to require `Deploy Staging` / `Deploy Prompted Staging` / `E2E Tests (Staging)`. Verification (above) showed `deploy.yml` has no `pull_request` trigger, so none of those jobs ever report a status on a PR — they only fire after a push to `main` has already happened. Requiring status checks that structurally never run on a PR would leave every future PR stuck in "expected, never started" indefinitely — the same deadlock class as the self-approval problem, just via a different mechanism. So `contexts` is empty for now; `strict: true` (require branches up to date) is still enabled since that has independent value and no dependency on a PR-triggered workflow. **Follow-up needed:** the next CLD-14 item that touches `deploy.yml` (explicitly out of scope for this dispatch) should add a `pull_request`-triggered check (lint/test job) before this rule set can meaningfully require a status check. Recording this as a prerequisite, not closing it silently. **CLOSED 2026-09-22** — see the `PR Checks` entry at the top of this file: PR #21 (merge `d5c7ebff289fa83880e584256d42f7634e4fb648`) added the `pull_request`-triggered `PR Checks` job, and `required_status_checks.contexts` is now `["PR Checks"]`.
 
 **"Require pull request before merging" vs. established direct-to-main `.project/` tracking-file commits — surfaced explicitly, not silently overridden.**
 This project's established practice (per `.project/workflow-state.md` history and this file's own entries) has PM/QA/DevOps committing `.project/*` and `lessons-learned.md` tracking updates directly to `main`, outside a PR. GitHub's classic branch-protection API has no path-scoped "require PR for these paths only" mechanism — "require pull request before merging" is all-or-nothing per branch. Rather than let a literal "require PR" setting silently strand that established pattern, I set `enforce_admins: false`. `ericreilly999` is the repo's sole collaborator and holds `admin` role, and it's the identity every agent pushes as — so the admin bypass means direct `.project/`-only commits (like this one) can continue exactly as before, while the PR requirement is live for the general case. This is a real tradeoff (an admin bypass on a solo-author repo means "require PR" is not actually enforced against the one identity that does all the pushing) — recording it so a future session doesn't read "branch protection enabled" as "direct pushes are now blocked." Direct pushes by `ericreilly999` are still technically possible; the intent going forward is that **code** changes go through a PR (for the diff visibility / Code Reviewer comment trail this unlocks) while tracking-file-only commits keep using the existing direct-push pattern.
