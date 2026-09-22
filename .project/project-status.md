@@ -1,8 +1,8 @@
 ---
 # Project Status
 
-**Last updated:** 2026-09-21
-**Current stage:** Live / Ongoing Maintenance — CLD-13 (light/dark theme toggle) shipped to production as `v0.1.8`. All content-refresh rounds and the theme toggle are now fully live.
+**Last updated:** 2026-09-22
+**Current stage:** Live / Ongoing Maintenance — CLD-13 shipped to production as `v0.1.8`; CLD-14 (ops & maintenance backlog) in progress this session, items 1-2 complete.
 **Route-to-live:** Standard (`main` → staging auto-deploy → semver tag → prod)
 **Linear project:** [website](https://linear.app/drinkupapp/project/website-b1cbb4812a78) (team Claude's Projects)
 
@@ -45,26 +45,31 @@ The light/dark theme toggle (CLD-13, PR #17) shipped to production `v0.1.8` on 2
 - **Scope clarification:** `prompted.ericreilly.com` does not carry the toggle (fully self-contained static page, no `shared.css`/theme JS) — matches the original spec's scope (main site's 3 pages only), not a gap.
 - **CLD-13 is Done.** Definition of Done fully met: QA sign-off ✅, docs in the PR #17 merge ✅, human approval of both the staging gate and the production promotion ✅.
 
+## What We Just Completed (2026-09-22 — CLD-14 ops & maintenance backlog, in progress)
+
+Eric asked (~11:30 ET) whether the ops & maintenance backlog was running — it wasn't; pulled `CLD-14` into session.
+- **Item 1 (branch protection) — COMPLETE.** `main` now requires a PR to merge, blocks force-push/deletion, requires the branch be up to date. Required-approving-reviews deliberately `0` (no second reviewer exists on this solo-author repo — verified via API, not assumed). Required status checks deliberately empty (`deploy.yml` has no `pull_request` trigger yet). Full rule set in `.project/deployment-log.md`. Closing that status-check gap needs a new PR-triggered CI job — a new workflow trigger, Tier 3 (GH Actions minutes) — queued on the Fleet Decisions page as `WS-3` rather than built.
+- **Item 2 (deploy.yml path filter) — COMPLETE.** PR #18 added a `paths:` allowlist so docs/test-only commits on `main` no longer re-trigger a staging deploy; tag-triggered prod deploys confirmed unaffected. QA independently verified both directions live (zero runs for a docs-only commit, a run within 3s for an app-code commit, all staging jobs green). Full detail in `.project/workflow-state.md`.
+- **Item 3 (DEVOPS-04/05/06 Terraform follow-ups) — in progress**, see `.project/workflow-state.md` for scope split (prod-affecting `terraform apply` queued as Tier-3, non-prod items applied directly).
+
 ## What's In Progress
 
-Nothing active for this story — CLD-13 is closed end-to-end (staging and production).
+CLD-14 item 3 (Terraform PRs: `prevent_destroy` guards, prod-tag regex tightening, bootstrap resource tags).
 
 ## What's Coming Next
 
-No queued action for CLD-13. Open backlog items, unchanged (tracked in `CLD-14`):
-- Non-blocking follow-up from this session: `contact.html` hardcodes the same production API endpoint in every environment, forcing 3 live-E2E tests in the new theme-toggle spec to mock a network abort rather than exercise a real staging endpoint (pre-existing constraint, not new risk — see `lessons-learned.md` 2026-09-20). Provision a staging-only contact endpoint, or formally document the deviation in `test-signoff.md`'s conventions.
-- Enforce branch protection rules and required PR reviews on `main`
-- DEVOPS-04/05/06 post-merge follow-ups (prevent_destroy lifecycle guards, prod-tag regex tightening, bootstrap resource tags)
-- `deploy.yml` has no `paths:` filter — even a test-only merge re-triggers full staging deploy jobs (flagged by Code Reviewer on PR #9, still open)
-- The `odds-analysis` repo (source of the Football Odds Analysis Engine card) is genuinely early-stage — revisit once that project has real output
-- `.project/TODO.md` has no entries for any prose round (PM decided not to backfill for copy-only micro-rounds; noted for traceability)
+- Non-blocking follow-up from CLD-13: `contact.html` hardcodes the same production API endpoint in every environment, forcing 3 live-E2E tests in the theme-toggle spec to mock a network abort rather than exercise a real staging endpoint (pre-existing constraint, not new risk — see `lessons-learned.md` 2026-09-20). Provision a staging-only contact endpoint, or formally document the deviation in `test-signoff.md`'s conventions.
+- Fleet Decisions `WS-3` (add a `pull_request`-triggered CI job so branch protection's required status checks can be populated) — queued, not yet human-decided.
+- Item 3's prod-affecting `terraform apply` (DEVOPS-04, `prevent_destroy` on prod S3/CloudFront/Route53) — will be queued as its own Fleet Decisions `WS-` item once the Terraform PR is ready, per this run's brief.
+- The `odds-analysis` repo (source of the Football Odds Analysis Engine card) is genuinely early-stage — revisit once that project has real output.
+- `.project/TODO.md` has no entries for any prose round (PM decided not to backfill for copy-only micro-rounds; noted for traceability).
 
 ## Risks
 
 | Risk | Impact | Owner | Status |
 |------|--------|-------|--------|
-| No branch protection on `main` | Medium — unreviewed pushes can go live; also blocks formal self-approval on this solo-author repo (GitHub rejects it), so Code Reviewer posts findings as comments instead | PM | Open |
-| `deploy.yml` has no path filter | Low — CI-minute waste on docs/test-only commits | DevOps | Open |
+| No branch protection on `main` | **Resolved 2026-09-22** — PR now required, force-push/deletion blocked. Required-approving-reviews and required-status-checks both deliberately `0`/empty (no second reviewer, no PR-triggered check exists yet — see `WS-3`). Self-approval limitation still applies to Code Reviewer's workflow (posts findings as comments, doesn't formally approve) | PM | Closed |
+| `deploy.yml` has no path filter | **Resolved 2026-09-22** — `paths:` allowlist added (PR #18), QA-verified both directions live | DevOps | Closed |
 | Sequential PRs cut from a stale base can silently conflict | Low, now mitigated by process — see `lessons-learned.md` (2026-09-08 entry on PR #10's stale-base conflict) | PM | Watched |
 | Subagents operating in the shared primary working directory (not an isolated worktree) can run destructive git ops (branch checkout/reset) that discard other uncommitted work in that tree | **Realized 2026-09-12** — a Frontend Engineer dispatch's branch checkout wiped out PM's uncommitted `workflow-state.md`/`project-status.md` updates (recovered from conversation context) and pre-existing uncommitted content in `decisions.md`/`deployment-log.md` predating this session (~94 lines, **not recoverable**). Fix: dispatch git-mutating agents with `isolation: "worktree"` going forward. **2026-09-20: worktree isolation itself was unavailable all session (host-environment tool error)** — mitigated by strict serialization + PM commit-before-dispatch, no data loss, but two stray-commit near-misses occurred (PM committed to the wrong branch twice, caught and fixed both times). See `lessons-learned.md` 2026-09-20. | PM | Open — mitigation identified, not yet standard practice; worktree tool itself currently broken |
 | `contact.html` hardcodes the same production contact-form API endpoint in every environment (no staging-specific endpoint) | Low/Medium — `contact.spec.js` has never driven a real submission in staging; new `theme-toggle.spec.js` (CLD-13) had to mock a network abort for 2 tests rather than exercise a real endpoint. Pre-existing constraint, not new risk, but `test-signoff.md`'s pre-merge sign-off inaccurately claimed a clean RULE-1 (no-mocks) grep as a result — caught one stage later, not blocking. See `lessons-learned.md` 2026-09-20. | DevOps / QA | Open |
