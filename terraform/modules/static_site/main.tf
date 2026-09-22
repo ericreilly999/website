@@ -39,6 +39,22 @@ resource "aws_s3_bucket" "website" {
   bucket        = var.bucket_name
   force_destroy = false
   tags          = var.tags
+
+  # Guard-rail: refuse any plan that would destroy or replace the content
+  # bucket. This is the live site's origin — losing it means losing the
+  # deployed artifact and (for prod) taking ericreilly.com offline.
+  #
+  # NOTE: `prevent_destroy` only accepts literal values (lifecycle settings are
+  # evaluated during dependency-graph construction, before expressions can be
+  # resolved), so it cannot be driven by a per-environment variable. This module
+  # is instantiated twice — `module.static_site` (prod) and
+  # `module.staging_static_site` (staging) — so the guard necessarily applies to
+  # both. That is additive safety, not a behaviour change: it blocks destroys
+  # and replacements only. To intentionally replace either bucket, remove this
+  # block in a deliberate, reviewed commit.
+  lifecycle {
+    prevent_destroy = true
+  }
 }
 
 resource "aws_s3_bucket_public_access_block" "website" {
@@ -96,6 +112,16 @@ resource "aws_cloudfront_distribution" "website" {
   price_class         = "PriceClass_All"
   aliases             = var.domain_aliases
   tags                = var.tags
+
+  # Guard-rail: refuse any plan that would destroy or replace the
+  # distribution. A replacement issues a new distribution domain name and a
+  # fresh cert association, which breaks the Route 53 alias records and the
+  # deploy pipeline's hard-coded distribution ID until both are updated.
+  # Same literal-only / shared-module caveat as the bucket above: this applies
+  # to the staging instantiation as well.
+  lifecycle {
+    prevent_destroy = true
+  }
 
   origin {
     domain_name = aws_s3_bucket_website_configuration.website.website_endpoint
