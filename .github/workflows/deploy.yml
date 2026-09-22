@@ -205,6 +205,14 @@ jobs:
   # ---------------------------------------------------------------------------
   deploy-prod:
     name: Deploy Production
+    # Defence-in-depth only. The `on.push.tags` pattern above
+    # ('v[0-9]+.[0-9]+.[0-9]+', anchored — GitHub tag filters are globs, not
+    # regex, and there is no trailing wildcard) is what actually decides which
+    # tags reach this job; a pre-release tag like v1.2.3-rc1 never starts the
+    # workflow at all. This guard exists so the job still fails closed if that
+    # trigger pattern is ever loosened. GitHub Actions expressions have no
+    # regex, so `startsWith` is the strictest primitive available here and
+    # cannot fully mirror the trigger — don't try to harden it further.
     if: startsWith(github.ref, 'refs/tags/v')
     runs-on: ubuntu-latest
     environment: production
@@ -262,6 +270,7 @@ jobs:
   # ---------------------------------------------------------------------------
   deploy-prompted-prod:
     name: Deploy Prompted Production
+    # Same defence-in-depth guard as deploy-prod above — see the note there.
     if: startsWith(github.ref, 'refs/tags/v')
     runs-on: ubuntu-latest
     environment: production
