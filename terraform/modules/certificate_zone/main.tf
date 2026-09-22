@@ -22,6 +22,15 @@ resource "aws_route53_zone" "website" {
   comment       = "Managed by Terraform"
   force_destroy = false
   tags          = var.tags
+
+  # Guard-rail: refuse any plan that would destroy or replace the hosted zone.
+  # A replacement issues new NS records, which must then be updated at the
+  # registrar — until that propagates, every record in the zone (apex, www,
+  # staging, and the SES/SendGrid delegation records in the sibling .tf files)
+  # resolves to nothing. This module is instantiated once, for prod only.
+  lifecycle {
+    prevent_destroy = true
+  }
 }
 
 resource "aws_acm_certificate" "website" {

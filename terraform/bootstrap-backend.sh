@@ -17,6 +17,16 @@ REGION="us-east-1"
 BUCKET="ericreilly-website-tfstate"
 TABLE="ericreilly-website-tfstate-lock"
 
+# Tags applied to both backend resources. Key/value style mirrors
+# `local.common_tags` in terraform/main.tf so the backend shows up alongside
+# the Terraform-managed resources in Cost Explorer and the Resource Groups
+# Tag Editor. ManagedBy is deliberately "bootstrap-script" rather than
+# "terraform": these two resources hold the remote state itself, so they must
+# exist before Terraform does and are necessarily outside its management.
+TAG_PROJECT="eric-reilly-website"
+TAG_MANAGED_BY="bootstrap-script"
+TAG_PURPOSE="terraform-state-backend"
+
 echo "==> Bootstrapping Terraform remote backend in ${REGION}"
 
 # ---------------------------------------------------------------------------
@@ -54,6 +64,11 @@ aws s3api put-bucket-encryption \
     }]
   }'
 
+echo "    Applying resource tags to '${BUCKET}'"
+aws s3api put-bucket-tagging \
+  --bucket "${BUCKET}" \
+  --tagging "TagSet=[{Key=Project,Value=${TAG_PROJECT}},{Key=ManagedBy,Value=${TAG_MANAGED_BY}},{Key=Purpose,Value=${TAG_PURPOSE}}]"
+
 # ---------------------------------------------------------------------------
 # DynamoDB table
 # ---------------------------------------------------------------------------
@@ -71,6 +86,19 @@ else
   echo "    Waiting for table to become ACTIVE..."
   aws dynamodb wait table-exists --table-name "${TABLE}" --region "${REGION}"
 fi
+
+echo "    Applying resource tags to '${TABLE}'"
+TABLE_ARN="$(aws dynamodb describe-table \
+  --table-name "${TABLE}" \
+  --region "${REGION}" \
+  --query 'Table.TableArn' \
+  --output text)"
+aws dynamodb tag-resource \
+  --resource-arn "${TABLE_ARN}" \
+  --region "${REGION}" \
+  --tags "Key=Project,Value=${TAG_PROJECT}" \
+         "Key=ManagedBy,Value=${TAG_MANAGED_BY}" \
+         "Key=Purpose,Value=${TAG_PURPOSE}"
 
 echo ""
 echo "==> Backend resources are ready."
