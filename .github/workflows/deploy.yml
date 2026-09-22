@@ -1,5 +1,8 @@
 name: Deploy Website
 
+# PR check:   pull_request → main  → runs tests only (no build, no AWS creds,
+#                                     no deploy). This is the required status
+#                                     check on main's branch protection rule.
 # Staging:    push to main branch  → deploys to staging.ericreilly.com
 #                                     and staging.prompted.ericreilly.com
 #                                     (path-filtered: only runs when a
@@ -41,6 +44,15 @@ on:
       - 'package.json'
       - 'package-lock.json'
       - '.github/workflows/deploy.yml'
+  # PR gate. Deliberately carries NO `paths:` filter, unlike the `push` trigger
+  # above. A required status check that is path-filtered deadlocks any PR that
+  # does not touch a listed path: the workflow never starts, the check never
+  # reports, and branch protection waits forever on a status that can never
+  # arrive. Docs-only / `.project/`-only PRs therefore also run this gate —
+  # which is correct, since it costs one sub-minute runner job.
+  pull_request:
+    branches:
+      - main
 
 concurrency:
   group: deploy-${{ github.ref }}
@@ -55,6 +67,51 @@ env:
   NODE_VERSION: 20
 
 jobs:
+  # ---------------------------------------------------------------------------
+  # PR Checks — triggered by every pull request targeting main
+  #
+  # This is the required status check on main's branch protection rule. Its
+  # `name:` below ("PR Checks") is the exact string in
+  # required_status_checks.contexts — renaming the job breaks branch protection
+  # (the old context stays required and never reports again). Don't rename it
+  # without updating the protection rule in the same change.
+  #
+  # Scope is deliberately minimal: install + test. No AWS credentials, no
+  # build, no S3 sync, no CloudFront invalidation. The repo-level
+  # `permissions.id-token: write` above is needed by the deploy jobs' OIDC
+  # login; this job overrides it down to `contents: read` so a PR from any
+  # source can never mint an AWS token.
+  # ---------------------------------------------------------------------------
+  pr-checks:
+    name: PR Checks
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run tests
+        run: npm test
+
+      - name: Job summary
+        run: |
+          echo "## PR checks complete" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "- **PR:** #${{ github.event.pull_request.number }}" >> "$GITHUB_STEP_SUMMARY"
+          echo "- **Head commit:** \`${{ github.event.pull_request.head.sha }}\`" >> "$GITHUB_STEP_SUMMARY"
+          echo "- **Scope:** dependency install + test suite (no build, no deploy)" >> "$GITHUB_STEP_SUMMARY"
+
   # ---------------------------------------------------------------------------
   # Staging — triggered by every push to main
   # ---------------------------------------------------------------------------
