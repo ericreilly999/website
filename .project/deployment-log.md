@@ -4,6 +4,67 @@ Deployments are recorded in reverse-chronological order.
 
 ---
 
+## 2026-09-22 — Branch protection enabled on `main` (out-of-band GitHub settings change, CLD-14)
+
+**Method:** `gh api` REST (`PUT /repos/ericreilly999/website/branches/main/protection`) — GitHub repo settings, not Terraform (this repo's application infra is separate from its GitHub repo settings).
+**Why:** Closes the open risk logged in `.project/project-status.md` ("No branch protection on `main` — unreviewed pushes can go live") and the backlog item in `.project/TODO.md` ("Enforce branch protection on `main`"). Part of Linear epic CLD-14.
+
+**Pre-check (verified, not assumed):**
+- `GET .../branches/main/protection` → `404 Branch not protected` (no prior rule existed).
+- `GET .../collaborators` → exactly one collaborator, `ericreilly999` (role `admin`). `GET .../installations` → `404 Not Found`. Confirmed: **no bot/second-reviewer path exists on this repo.**
+- Read `.github/workflows/deploy.yml` `on:` block: triggers are `push` to `main` and semver tags **only** — there is **no `pull_request` trigger** anywhere in the repo's one workflow file (`deploy.yml` is the only file in `.github/workflows/`). This means the job names `Deploy Staging`, `Deploy Prompted Staging`, `E2E Tests (Staging)` never run in a PR context today — only after a push already lands on `main`.
+
+**Rule set applied:**
+```json
+{
+  "required_status_checks": { "strict": true, "contexts": [] },
+  "enforce_admins": false,
+  "required_pull_request_reviews": {
+    "dismiss_stale_reviews": false,
+    "require_code_owner_reviews": false,
+    "required_approving_review_count": 0
+  },
+  "restrictions": null,
+  "allow_force_pushes": false,
+  "allow_deletions": false
+}
+```
+Plain English: PRs are required to merge into `main`; no approving review is required (see below); the PR branch must be up to date with `main` before merge (addresses the PR #10 stale-base conflict class noted in `lessons-learned.md`); force-pushes and branch deletion on `main` are blocked; repo admins can bypass the PR requirement (`enforce_admins: false`).
+
+**Required-approving-review count: deliberately set to 0 (excluded), not omitted by oversight.**
+This is a solo-author repo — `ericreilly999` is the only collaborator, and GitHub rejects self-approval on a PR you authored. A prior Code Reviewer dispatch on this repo already hit that wall and fell back to posting findings as PR comments instead of a formal approval. Requiring ≥1 approval with no second reviewer available would deadlock every future PR merge with no escape hatch. `required_approving_review_count: 0` still enables "require a pull request before merging" (contra my working assumption at the top of this task, GitHub's classic protection API does accept 0 — verified empirically via the PUT call below) without demanding a review nobody can give.
+
+**Required status checks: deliberately left empty (`contexts: []`), not populated with the deploy.yml job names — this deviates from the dispatch's default suggestion, flagging back per its own "verify yourself" instruction.**
+The task's default suggestion was to require `Deploy Staging` / `Deploy Prompted Staging` / `E2E Tests (Staging)`. Verification (above) showed `deploy.yml` has no `pull_request` trigger, so none of those jobs ever report a status on a PR — they only fire after a push to `main` has already happened. Requiring status checks that structurally never run on a PR would leave every future PR stuck in "expected, never started" indefinitely — the same deadlock class as the self-approval problem, just via a different mechanism. So `contexts` is empty for now; `strict: true` (require branches up to date) is still enabled since that has independent value and no dependency on a PR-triggered workflow. **Follow-up needed:** the next CLD-14 item that touches `deploy.yml` (explicitly out of scope for this dispatch) should add a `pull_request`-triggered check (lint/test job) before this rule set can meaningfully require a status check. Recording this as a prerequisite, not closing it silently.
+
+**"Require pull request before merging" vs. established direct-to-main `.project/` tracking-file commits — surfaced explicitly, not silently overridden.**
+This project's established practice (per `.project/workflow-state.md` history and this file's own entries) has PM/QA/DevOps committing `.project/*` and `lessons-learned.md` tracking updates directly to `main`, outside a PR. GitHub's classic branch-protection API has no path-scoped "require PR for these paths only" mechanism — "require pull request before merging" is all-or-nothing per branch. Rather than let a literal "require PR" setting silently strand that established pattern, I set `enforce_admins: false`. `ericreilly999` is the repo's sole collaborator and holds `admin` role, and it's the identity every agent pushes as — so the admin bypass means direct `.project/`-only commits (like this one) can continue exactly as before, while the PR requirement is live for the general case. This is a real tradeoff (an admin bypass on a solo-author repo means "require PR" is not actually enforced against the one identity that does all the pushing) — recording it so a future session doesn't read "branch protection enabled" as "direct pushes are now blocked." Direct pushes by `ericreilly999` are still technically possible; the intent going forward is that **code** changes go through a PR (for the diff visibility / Code Reviewer comment trail this unlocks) while tracking-file-only commits keep using the existing direct-push pattern.
+
+**Verification (re-GET after PUT, confirms live state matches applied rule set):**
+```json
+{
+  "required_status_checks": {"strict": true, "contexts": [], "checks": []},
+  "required_pull_request_reviews": {
+    "dismiss_stale_reviews": false,
+    "require_code_owner_reviews": false,
+    "require_last_push_approval": false,
+    "required_approving_review_count": 0
+  },
+  "required_signatures": {"enabled": false},
+  "enforce_admins": {"enabled": false},
+  "required_linear_history": {"enabled": false},
+  "allow_force_pushes": {"enabled": false},
+  "allow_deletions": {"enabled": false},
+  "block_creations": {"enabled": false},
+  "required_conversation_resolution": {"enabled": false},
+  "lock_branch": {"enabled": false},
+  "allow_fork_syncing": {"enabled": false}
+}
+```
+Matches the applied rule set exactly. **Status:** ✅ Live on `main`.
+
+---
+
 ## 2026-09-21 — v0.1.8 — Production
 
 **Deployed by:** GitHub Actions (tag push, `deploy.yml`, run [35675110707](https://github.com/ericreilly999/website/actions/runs/35675110707))
