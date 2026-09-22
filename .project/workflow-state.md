@@ -112,8 +112,10 @@ Fleet-mode note: this run cannot block interactively — every Tier-3 stop is re
 
 **Non-blocking follow-ups flagged by DevOps (not actioned this session):** `npm test` is currently a no-op stub (`echo 'No unit tests' && exit 0`) — the new PR gate exists and is wired correctly but has nothing real to assert yet; consider `actionlint` for workflow-YAML linting and `npm ci --ignore-scripts` hardening. `mcp__github__get_pull_request_status` reads the legacy commit-status API and reports stale/empty results for Actions-based checks (`gh pr checks` / the check-runs endpoint is authoritative) — worth remembering for future GitHub-touching dispatches on this repo.
 
+**Linear update — INTENDED, NOT APPLIED (MCP unavailable this session).** `mcp__linear__get_issue`/other Linear calls returned "needs you to sign in again" both at session-open and re-checked at session-close. Per this run's instructions, recording the intended update here rather than blocking: `CLD-14` should move `[0%] Ops & maintenance backlog` → `[100%] Ops & maintenance backlog`, status `Planning` → `Done`, description first line `**Completion: 0%**` → `**Completion: 100%**`, and its `## Tasks` checklist refreshed to show all three items (branch protection, deploy.yml path filter, DEVOPS-04/05/06 Terraform hygiene) plus the WS-3 follow-on checked off. Next session (or once Linear MCP re-authenticates) should apply this before doing anything else that touches Linear, per the session-open ritual.
+
 ## Next Action
-CLD-13 fully shipped (staging + production, QA-confirmed live) — closed, no further action. `CLD-14` (Ops & maintenance backlog) — all 3 items complete, plus the WS-3 follow-on (PR-triggered required status check) — closed, no further action queued for this epic. No open Fleet Decisions items for `website` remain pending.
+CLD-13 fully shipped (staging + production, QA-confirmed live) — closed, no further action. `CLD-14` (Ops & maintenance backlog) — all 3 items complete, plus the WS-3 follow-on (PR-triggered required status check) — closed, no further action queued for this epic. No open Fleet Decisions items for `website` remain pending. Linear `CLD-14` update queued above, pending MCP re-auth.
 
 ## Gate Status
 
