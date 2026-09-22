@@ -2,8 +2,12 @@ name: Deploy Website
 
 # Staging:    push to main branch  → deploys to staging.ericreilly.com
 #                                     and staging.prompted.ericreilly.com
+#                                     (path-filtered: only runs when a
+#                                     deployable path changed — see `paths:`
+#                                     below)
 # Production: push of a git tag    → deploys to ericreilly.com (prod)
 #                                     and prompted.ericreilly.com (prod)
+#                                     (never path-filtered — see note below)
 
 on:
   push:
@@ -11,6 +15,32 @@ on:
       - main
     tags:
       - 'v[0-9]+.[0-9]+.[0-9]+'
+    # Scopes the `branches: [main]` staging trigger to paths that actually
+    # change the deployed artifact, so docs-only/test-only/tracking-file
+    # commits stop re-triggering (and cancelling in-flight) staging deploys.
+    # Deliberately an allowlist (`paths:`), not a denylist (`paths-ignore:`):
+    # the deployable surface is small and fixed (site content, deps, and the
+    # pipeline definition itself), so an allowlist fails safe — a future new
+    # top-level path (e.g. a `docs/` or `scripts/` dir) defaults to NOT
+    # triggering a deploy unless explicitly added here, matching this repo's
+    # actual deploy surface (only `public/`, `prompted/`, and `package*.json`
+    # are synced to S3 — everything else, including the legacy `src/` React
+    # app which the build does not consume, is not deployable).
+    #
+    # IMPORTANT — this list has NO effect on the `tags:` trigger above.
+    # GitHub Actions does not evaluate path filters for tag pushes at all
+    # (documented behavior: "Path filters are not evaluated for pushes of
+    # tags" — see the on.<push>.paths / paths-ignore section of
+    # https://docs.github.com/en/actions/reference/workflow-syntax-for-github-actions).
+    # So production deploys always run on a matching tag push regardless of
+    # which paths changed in the tagged commit — verified before adding this
+    # filter, since silently gating prod on paths would be a correctness bug.
+    paths:
+      - 'public/**'
+      - 'prompted/**'
+      - 'package.json'
+      - 'package-lock.json'
+      - '.github/workflows/deploy.yml'
 
 concurrency:
   group: deploy-${{ github.ref }}
