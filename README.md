@@ -40,11 +40,41 @@ npx serve public
 
 ---
 
+## Making a change
+
+`main` is protected. Changes land via pull request:
+
+```bash
+git checkout -b my-change
+# ...edit files...
+git commit -am "..."
+git push -u origin my-change
+gh pr create
+```
+
+Opening a PR against `main` triggers the **PR Checks** job (`npm ci` + `npm test`, no build and no AWS credentials). It is the required status check — a PR cannot merge until it passes, and `main` must be up to date with the base branch first (strict mode). Required approving reviews are set to **0**, since this is a solo-author repo; merging is gated on CI, not on a second reviewer.
+
+Branch protection on `main`:
+
+| Rule | Setting |
+|------|---------|
+| Pull request required to merge | Yes |
+| Required approving reviews | 0 |
+| Required status check | `PR Checks` |
+| Require branch up to date (`strict`) | Yes |
+| Force pushes | Blocked |
+| Branch deletion | Blocked |
+| Enforced for admins | No |
+
+Because admin enforcement is off, the repo owner can still push directly to `main` — that escape hatch exists for trivial docs-only commits, not as the normal path.
+
+---
+
 ## Environments
 
 | Environment | URL | Deploy trigger |
 |-------------|-----|----------------|
-| Staging | `https://staging.ericreilly.com` | Push to `main` |
+| Staging | `https://staging.ericreilly.com` | Push to `main` touching a deployable path (see below) |
 | Production | `https://ericreilly.com` | Semver tag (e.g. `v1.0.0`) |
 
 ---
@@ -52,15 +82,28 @@ npx serve public
 ## Deployment
 
 ```bash
-# Deploy to staging (automatic on push to main)
-git push origin main
+# Deploy to staging (automatic once a PR merges to main)
+gh pr merge --squash
 
 # Deploy to production
 git tag v1.0.0
 git push origin v1.0.0
 ```
 
+The staging trigger is path-filtered with an allowlist, so docs-only, test-only, and tracking-file commits on `main` no longer redeploy staging. A push to `main` deploys only if it touches one of:
+
+```
+public/**
+prompted/**
+package.json
+package-lock.json
+.github/workflows/deploy.yml
+```
+
+Anything else (including any future new top-level directory) does **not** trigger a staging deploy unless added to that list. The path filter does not apply to the production tag trigger — GitHub Actions does not evaluate path filters for tag pushes, so a matching semver tag always deploys prod.
+
 The `deploy.yml` workflow:
+0. On a pull request: runs the `PR Checks` job only (`npm ci` + `npm test`) — no build, no deploy, no AWS credentials
 1. Runs `npm test` (no-op for unit tests)
 2. Builds the site (`npm run build`)
 3. For staging: patches the prompted link to point at `staging.prompted.ericreilly.com`
@@ -102,4 +145,6 @@ Infrastructure in `terraform/` manages the production AWS resources:
 - ACM certificate
 - GitHub OIDC provider and deploy IAM role
 
-State is stored remotely in S3. See `terraform/` for setup instructions.
+The content S3 buckets, CloudFront distributions, and the Route 53 hosted zone carry `lifecycle { prevent_destroy = true }`. Any plan that would destroy or replace them fails until the guard is removed in a deliberate, reviewed commit.
+
+State is stored remotely in S3, in a bucket and DynamoDB lock table provisioned by `terraform/bootstrap-backend.sh`.
