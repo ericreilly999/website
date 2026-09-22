@@ -52,17 +52,21 @@ Eric asked (~11:30 ET) whether the ops & maintenance backlog was running — it 
 - **Item 2 (deploy.yml path filter) — COMPLETE.** PR #18 added a `paths:` allowlist so docs/test-only commits on `main` no longer re-trigger a staging deploy; tag-triggered prod deploys confirmed unaffected. QA independently verified both directions live (zero runs for a docs-only commit, a run within 3s for an app-code commit, all staging jobs green). Full detail in `.project/workflow-state.md`.
 - **Item 3 (DEVOPS-04/05/06 Terraform follow-ups) — in progress**, see `.project/workflow-state.md` for scope split (prod-affecting `terraform apply` queued as Tier-3, non-prod items applied directly).
 
+- **Item 3 (DEVOPS-04/05/06) — COMPLETE.** PR #19 + #20 (Code Reviewer: 0 BLOCKING, all findings closed). `prevent_destroy` guards on prod S3/CloudFront/Route53 landed with **no `terraform apply` needed** — `lifecycle` is a plan-time construct, not state-persisted; a plan-only `terraform plan -destroy` proved the guard works. `deploy-prod`/`deploy-prompted-prod` `if:` guards tightened to `refs/tags/v`. Terraform state-backend bucket/table tagged live (out-of-band mutation, traced in `deployment-log.md`). Full detail in `.project/workflow-state.md`.
+
+**CLD-14 — all 3 items complete this session (2026-09-22). No further action queued for this epic.**
+
 ## What's In Progress
 
-CLD-14 item 3 (Terraform PRs: `prevent_destroy` guards, prod-tag regex tightening, bootstrap resource tags).
+Nothing active — CLD-13 and CLD-14 both closed end-to-end this session.
 
 ## What's Coming Next
 
 - Non-blocking follow-up from CLD-13: `contact.html` hardcodes the same production API endpoint in every environment, forcing 3 live-E2E tests in the theme-toggle spec to mock a network abort rather than exercise a real staging endpoint (pre-existing constraint, not new risk — see `lessons-learned.md` 2026-09-20). Provision a staging-only contact endpoint, or formally document the deviation in `test-signoff.md`'s conventions.
-- Fleet Decisions `WS-3` (add a `pull_request`-triggered CI job so branch protection's required status checks can be populated) — queued, not yet human-decided.
-- Item 3's prod-affecting `terraform apply` (DEVOPS-04, `prevent_destroy` on prod S3/CloudFront/Route53) — will be queued as its own Fleet Decisions `WS-` item once the Terraform PR is ready, per this run's brief.
+- Fleet Decisions `WS-3` (add a `pull_request`-triggered CI job so branch protection's required status checks can be populated) — queued, not yet human-decided. Not blocking anything.
 - The `odds-analysis` repo (source of the Football Odds Analysis Engine card) is genuinely early-stage — revisit once that project has real output.
 - `.project/TODO.md` has no entries for any prose round (PM decided not to backfill for copy-only micro-rounds; noted for traceability).
+- No new backlog items identified this session beyond `WS-3` — next session should groom `.project/backlog.md`/`TODO.md`'s unscoped section with the human before pulling new scope (not done this session — this run stayed scoped to CLD-14 per its own brief).
 
 ## Risks
 
