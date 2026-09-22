@@ -6,7 +6,7 @@ Linear project: website (team Claude's Projects, workspace https://linear.app/dr
 
 ## What this is
 
-Eric Reilly's personal website — `ericreilly.com` (main site) and `prompted.ericreilly.com` (companion site) — live in production, adhoc/ongoing-maintenance cadence (not a weekly-sprint project). Plain static HTML under `public/`, shared dark-theme design system via `shared.css`. The `src/` React app is legacy and not part of the build.
+Eric Reilly's personal website — `ericreilly.com` (main site) and `prompted.ericreilly.com` (companion site) — live in production, adhoc/ongoing-maintenance cadence (not a weekly-sprint project). Plain static HTML under `public/`, shared design system via `shared.css` (dark by default, light theme available via a toggle on the main site's 3 pages — CLD-13, shipped `v0.1.8`). `prompted.ericreilly.com` is a separate self-contained static page, not on the shared design system. The `src/` React app is legacy and not part of the build.
 
 ## Route-to-live
 

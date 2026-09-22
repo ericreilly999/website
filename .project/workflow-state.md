@@ -7,7 +7,20 @@
 Push to `main` auto-deploys to `staging.ericreilly.com` (and `staging.prompted.ericreilly.com`) and runs the Playwright E2E gate against staging. A semver tag push (`vX.Y.Z`) deploys to production (`ericreilly.com` and `prompted.ericreilly.com`).
 
 ## Current Stage
-**Live / Ongoing Maintenance — all six rounds shipped to production as `v0.1.7`. Story closed.**
+**Live / Ongoing Maintenance — CLD-13 (light/dark theme toggle) shipped to production as `v0.1.8`. Story closed.**
+
+## CLD-13 — Production Promotion (2026-09-21)
+
+**Shipped end-to-end: spec → tests → dev → staging DoD → human approval → prod tag → prod deploy → prod QA confirmation.**
+
+- **Authorization:** Fleet Decisions page, decision `WS-2`, `answer.decided_by_owner === true`, decided `2026-09-21T16:57:51.703Z`. Full detail in `.project/decisions.md` (2026-09-21 entry).
+- **Tag:** `v0.1.8` (annotated), cut from `main` @ `77951eb` (docs-only since staging sign-off `b23d4a9` — zero app-code drift). Semver reconciliation (chose `v0.1.8` over the orphaned `v1.0.0`–`v1.1.3` series from an April 2026 CI-debugging episode) recorded in `.project/decisions.md`.
+- **Deploy:** Workflow run [35675110707](https://github.com/ericreilly999/website/actions/runs/35675110707) — `Deploy Production` ✅, `Deploy Prompted Production` ✅. Logged in `.project/deployment-log.md` (DevOps, commit `5f06f30`).
+- **Prod QA validation:** 95/95 passing, run locally against `https://ericreilly.com` per ci-discipline (never via live-E2E CI). Toggle confirmed present/functional/persistent on all 3 main-site pages (`/`, `/projects`, `/contact`); dark remains default. `.project/test-signoff.md` commit `b38827e`.
+- **Scope clarification:** `prompted.ericreilly.com` does not carry the toggle — it's a fully self-contained static page with no `shared.css`/theme JS, matching `spec/light-mode-toggle.md`'s scope (main site only, 3 pages). Not a gap; recorded for traceability since it wasn't obvious without checking.
+- **Definition of Done: MET.** All three elements — QA sign-off, docs in the same merge (PR #17), human approval of the staging gate (then prod promotion) — are satisfied.
+
+## Prior Rounds — Content Refresh (closed, `v0.1.7`)
 
 Prior content-refresh story shipped to prod as `v0.1.5`. Five further rounds of copy edits were made 2026-09-12/13, all merged, staged, QA-signed-off, and now live in production:
 - **Round 2** (PR #11, `9c76ac1`) — bio lede/paragraph, highlights list, skills grid.
@@ -67,28 +80,25 @@ QA Engineer independent validation: **95/95 passing** (21 new theme-toggle tests
 
 **Stage 5 — COMPLETE. QA sign-off GRANTED on staging.** 95/95 passing against live `https://staging.ericreilly.com` (21 new theme-toggle tests + 74 pre-existing), run locally per ci-discipline (never via the live-E2E CI workflow). `test-signoff.md` entry committed `68f10c2`. Non-blocking finding: pre-merge sign-off's "clean RULE-1" claim was inaccurate (3 `page.route()` mocks in the new spec, forced by `contact.html`'s hardcoded prod-only endpoint, a pre-existing constraint predating this feature) — did not withhold the gate; logged in `lessons-learned.md` (2026-09-20) and `project-status.md` risks for `CLD-14` triage.
 
-## CLD-13 — Definition of Done at staging: MET
-Per PM skill Stage 5 gate: QA sign-off ✅ in `test-signoff.md`. **Human approval of the staging gate is the remaining DoD element** — not yet given (this session's scope explicitly stopped short of asking synchronously; see Tier 3 below).
+## CLD-13 — Definition of Done: MET (staging and production)
+Per PM skill Stage 5 gate: QA sign-off ✅ in `test-signoff.md`, docs in the same merge (PR #17) ✅, human approval of the staging gate ✅ (Fleet Decisions `WS-2`, 2026-09-21T16:57:51Z). Prod promotion executed same session — tag `v0.1.8`, both prod deploy jobs green, prod QA re-confirmed 95/95 live. Story closed.
 
-## Tier 3 — queued, not executed this session
-**Production tag push (`v0.1.8` or next semver).** Prod deploys are never autonomous (autonomy-bar Tier 3) — human explicitly deferred this to a separate approval after reviewing staging ("ship to staging" was this session's full scope). Staging is ready for review:
-- `https://staging.ericreilly.com` and `https://staging.prompted.ericreilly.com`
-- What to look at: the new theme toggle (sun/moon icon) in the nav on all 3 pages — homepage, projects, contact — click to switch to light mode, confirm it looks right, reload to confirm it persists, click again to revert to dark.
-- When approved: PM tags `main` @ `49bc015` (or later) as the next semver (`v0.1.8`), pushes, DevOps confirms both prod deploy jobs green, QA/PM verify live production.
+## Tier 3 — resolved 2026-09-21
+**Production tag push, `v0.1.8`.** Was queued pending human review of staging; resolved via Fleet Decisions `WS-2` (owner-approved 2026-09-21T16:57:51Z). Executed same session — see "CLD-13 — Production Promotion" above. No Tier 3 items open for this story.
 
 ## Next Action
-Session work for CLD-13 complete through Stage 5. Awaiting human review of staging + explicit prod-tag approval (Tier 3, not autonomous) — no further autonomous action queued for this story.
+CLD-13 fully shipped (staging + production, QA-confirmed live). No further action queued for this story. `CLD-14` (Ops & maintenance backlog) holds the accumulated non-blocking follow-ups below.
 
 ## Gate Status
 
-| Gate | Round 2 (PR #11) | Round 3 (PR #12) | Round 4 (PR #13) | Round 5 (PR #14) | Round 6 (PR #15) |
-|------|------|------|------|------|------|
-| Stage 1 — Test writing | ✅ | ✅ | ✅ (commit `ddfbf29`) | ✅ (commit `ccdb092`) | ✅ (commits `d487e1b`/`6a02850`) |
-| Stage 2 — Development | ✅ | ✅ | ✅ (implemented, 62/62 local) | ✅ (implemented, 73/73 local) | ✅ (implemented, 74/74 local) |
-| Stage 3 — Code Review | ✅ (CR blocked once, resolved) | ✅ (clean first pass) | ✅ (clean first pass, merge `b99703f`) | ✅ (clean first pass, merge `f2266c7`) | ✅ (clean first pass, merge `270558e`) |
-| Stage 4 — Deploy to Staging | ✅ (run 34702470524) | ✅ (run 34704340442) | ✅ (run 34718497465) | ✅ (run 34763041660) | ✅ (run 34795666261) |
-| Stage 5 — QA Validation (staging) | ✅ (31/31) | ✅ (58/58) | ✅ (62/62) | ✅ (73/73) | ✅ (74/74) |
-| Prod Deploy | ✅ `v0.1.6` | ✅ `v0.1.6` | ✅ `v0.1.6` | ✅ `v0.1.6` | ✅ `v0.1.7` |
+| Gate | Round 2 (PR #11) | Round 3 (PR #12) | Round 4 (PR #13) | Round 5 (PR #14) | Round 6 (PR #15) | CLD-13 (PR #17) |
+|------|------|------|------|------|------|------|
+| Stage 1 — Test writing | ✅ | ✅ | ✅ (commit `ddfbf29`) | ✅ (commit `ccdb092`) | ✅ (commits `d487e1b`/`6a02850`) | ✅ (commit `7b7335b`) |
+| Stage 2 — Development | ✅ | ✅ | ✅ (implemented, 62/62 local) | ✅ (implemented, 73/73 local) | ✅ (implemented, 74/74 local) | ✅ (implemented, 95/95 local, commit `1f9b17d`) |
+| Stage 3 — Code Review | ✅ (CR blocked once, resolved) | ✅ (clean first pass) | ✅ (clean first pass, merge `b99703f`) | ✅ (clean first pass, merge `f2266c7`) | ✅ (clean first pass, merge `270558e`) | ✅ (CR blocked once, resolved, merge `b23d4a9`) |
+| Stage 4 — Deploy to Staging | ✅ (run 34702470524) | ✅ (run 34704340442) | ✅ (run 34718497465) | ✅ (run 34763041660) | ✅ (run 34795666261) | ✅ (run 35551660561) |
+| Stage 5 — QA Validation (staging) | ✅ (31/31) | ✅ (58/58) | ✅ (62/62) | ✅ (73/73) | ✅ (74/74) | ✅ (95/95) |
+| Prod Deploy | ✅ `v0.1.6` | ✅ `v0.1.6` | ✅ `v0.1.6` | ✅ `v0.1.6` | ✅ `v0.1.7` | ✅ `v0.1.8` (run 35675110707, prod QA 95/95, commit `b38827e`) |
 
 ## Known non-blocking follow-ups (not yet actioned)
 - `.project/TODO.md` has no entries for any of the prose-refresh rounds — decided (PM, Tier 1) not to backfill formal TODO tracking for copy-only micro-rounds; noted here for traceability.

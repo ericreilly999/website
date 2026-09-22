@@ -1,17 +1,19 @@
 ---
 # Project Status
 
-**Last updated:** 2026-09-19
-**Current stage:** Live / Ongoing Maintenance — all six prose-refresh rounds shipped to production as `v0.1.7`. Onboarded to fleet Linear dashboard this session.
+**Last updated:** 2026-09-21
+**Current stage:** Live / Ongoing Maintenance — CLD-13 (light/dark theme toggle) shipped to production as `v0.1.8`. All content-refresh rounds and the theme toggle are now fully live.
 **Route-to-live:** Standard (`main` → staging auto-deploy → semver tag → prod)
 **Linear project:** [website](https://linear.app/drinkupapp/project/website-b1cbb4812a78) (team Claude's Projects)
 
 ## Summary
 
-The Eric Reilly personal website is live at https://ericreilly.com, staging at https://staging.ericreilly.com. Site is plain HTML (`public/`) with a shared dark-theme design system; the `src/` React app is legacy and not part of the build.
+The Eric Reilly personal website is live at https://ericreilly.com, staging at https://staging.ericreilly.com. Site is plain HTML (`public/`) with a shared design system (`shared.css`, dark by default, light theme available via the CLD-13 toggle); the `src/` React app is legacy and not part of the build.
 
-The prior content-refresh story shipped end-to-end (three PRs, tag `v0.1.5`, verified live). Five further rounds of prose edits were made 2026-09-12/13, all merged, staged, QA-signed-off, and now shipped to production — `v0.1.6` (Rounds 2-5) then `v0.1.7` (Round 6):
+The prior content-refresh story shipped end-to-end (three PRs, tag `v0.1.5`, verified live). Five further rounds of prose edits were made 2026-09-12/13, all merged, staged, QA-signed-off, and shipped to production — `v0.1.6` (Rounds 2-5) then `v0.1.7` (Round 6):
 - **Round 2** (PR #11, `9c76ac1`), **Round 3** (PR #12, `6538352`), **Round 4** (PR #13, `b99703f`), **Round 5** (PR #14, `f2266c7`), **Round 6** (PR #15, `270558e`).
+
+The light/dark theme toggle (CLD-13, PR #17) shipped to production `v0.1.8` on 2026-09-21 — sun/moon toggle on all 3 main-site pages, `localStorage`-persisted, dark remains default. Full detail above under "What We Just Completed (2026-09-21 — production promotion)".
 
 ## What We Just Completed (this session, 2026-09-19)
 
@@ -29,20 +31,27 @@ The prior content-refresh story shipped end-to-end (three PRs, tag `v0.1.5`, ver
 - **Production deploys**: human approved twice — 2026-09-13 for `v0.1.6` ("I think this is good to ship to production") tagged from `main` @ `e400123` (workflow run [34763317301](https://github.com/ericreilly999/website/actions/runs/34763317301), both prod jobs ✅), then again for `v0.1.7` ("ship to prod immediately") tagged from `main` @ `861910f` (workflow run [34795972197](https://github.com/ericreilly999/website/actions/runs/34795972197), both prod jobs ✅). Live production verified via curl after each — all content changes confirmed present, logged in `deployment-log.md`.
 - **Resume** (`C:\Users\EricW\Downloads\Eric_Reilly_Resume_2026-09-12.docx`, outside this repo) updated in parallel to match the site's new bullet language — banking bullet merged, AWS DevOps Agent bullet, 10+ migrations bullet, Sev 1/70% bullet, AI/LLM tooling skills updated. Bullet about eliminated manual hours/client credits kept its original hard numbers (1,000+ hours / 77%) per explicit instruction, diverging intentionally from the site's softer "countless hours / MTTR" phrasing. Note: Round 6's wording tweaks (hero sub-paragraph, bio opener) postdate the resume update and are not reflected there — resume still matches the state through Round 4.
 
-## What We Just Completed (this session, 2026-09-20)
+## What We Just Completed (2026-09-20 — staging)
 
 - **CLD-13 — Light/dark theme toggle, shipped to staging.** Human direction: "build the light/dark mode toggle and ship to staging." Ran the full pipeline in one session: QA wrote 21 Playwright tests (`e2e/theme-toggle.spec.js`) against `spec/light-mode-toggle.md` → Frontend implemented the light-theme CSS override + toggle UI/JS (`public/shared.css` + all 3 HTML pages) → Documentation Agent updated `README.md` → Code Reviewer blocked once for missing independent QA validation (consistent with this project's established pattern), QA independently confirmed 95/95 passing, Code Reviewer merged **PR #17** (`b23d4a9`) → staging auto-deployed, workflow run [35551660561](https://github.com/ericreilly999/website/actions/runs/35551660561) fully green → QA validated live staging, **95/95 passing, sign-off granted** (`test-signoff.md` commit `68f10c2`).
-- Staging live now: `https://staging.ericreilly.com`, `https://staging.prompted.ericreilly.com` — new sun/moon toggle in the nav on all 3 pages, persists via `localStorage`, dark remains default.
-- **Stopped at staging by design** — no production tag pushed. Prod deploy is Tier 3 (never autonomous); Eric will review staging and approve separately.
-- Linear `CLD-13` moved `Planning` → `In Progress`, `[10%]`, checklist + comment refreshed with this session's plan.
+- Staging live: `https://staging.ericreilly.com`, `https://staging.prompted.ericreilly.com` — new sun/moon toggle in the nav on all 3 main-site pages, persists via `localStorage`, dark remains default.
+- **Stopped at staging by design** — no production tag pushed. Prod deploy is Tier 3 (never autonomous); Eric would review staging and approve separately.
+- Linear `CLD-13` moved `Planning` → `In Progress`, `[10%]`, checklist + comment refreshed.
+
+## What We Just Completed (2026-09-21 — production promotion)
+
+- **CLD-13 shipped to production.** Human approval landed on the Fleet Decisions page (decision `WS-2`, `answer.decided_by_owner === true`, decided `2026-09-21T16:57:51Z`) — verified directly, then executed: tagged `main` @ `77951eb` as `v0.1.8`, pushed; `Deploy Production` and `Deploy Prompted Production` both succeeded (workflow run [35675110707](https://github.com/ericreilly999/website/actions/runs/35675110707); logged in `.project/deployment-log.md` commit `5f06f30`). QA independently re-confirmed **95/95 passing live** against `https://ericreilly.com` (`.project/test-signoff.md` commit `b38827e`) — toggle present/functional/persistent on all 3 main-site pages, dark still the default.
+- **Semver reconciliation:** chose `v0.1.8` over a stray `v1.0.0`–`v1.1.3` tag series (created 2026-04-18/19, orphaned — never part of this project's tracked `v0.1.x` release lineage in `deployment-log.md`/`workflow-state.md`, almost certainly leftover from a CI-debugging episode). Full rationale in `.project/decisions.md` (2026-09-21 entry).
+- **Scope clarification:** `prompted.ericreilly.com` does not carry the toggle (fully self-contained static page, no `shared.css`/theme JS) — matches the original spec's scope (main site's 3 pages only), not a gap.
+- **CLD-13 is Done.** Definition of Done fully met: QA sign-off ✅, docs in the PR #17 merge ✅, human approval of both the staging gate and the production promotion ✅.
 
 ## What's In Progress
 
-Nothing active. CLD-13 is at Definition-of-Done-at-staging (QA sign-off ✅); the one remaining DoD element is human approval of the staging gate, which is a Tier 3 ask, not something this session executes autonomously.
+Nothing active for this story — CLD-13 is closed end-to-end (staging and production).
 
 ## What's Coming Next
 
-**Awaiting Eric's review of staging** and explicit approval to tag `v0.1.8` to production. Once approved: PM tags `main` @ `49bc015` (or later), DevOps confirms both prod deploy jobs green, live production verified. Otherwise, open backlog items, unchanged (tracked in `CLD-14`):
+No queued action for CLD-13. Open backlog items, unchanged (tracked in `CLD-14`):
 - Non-blocking follow-up from this session: `contact.html` hardcodes the same production API endpoint in every environment, forcing 3 live-E2E tests in the new theme-toggle spec to mock a network abort rather than exercise a real staging endpoint (pre-existing constraint, not new risk — see `lessons-learned.md` 2026-09-20). Provision a staging-only contact endpoint, or formally document the deviation in `test-signoff.md`'s conventions.
 - Enforce branch protection rules and required PR reviews on `main`
 - DEVOPS-04/05/06 post-merge follow-ups (prevent_destroy lifecycle guards, prod-tag regex tightening, bootstrap resource tags)
