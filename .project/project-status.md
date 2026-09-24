@@ -1,8 +1,8 @@
 ---
 # Project Status
 
-**Last updated:** 2026-09-22
-**Current stage:** Live / Ongoing Maintenance — CLD-13 shipped to production as `v0.1.8`; CLD-14 (ops & maintenance backlog) in progress this session, items 1-2 complete.
+**Last updated:** 2026-09-23
+**Current stage:** Live / Ongoing Maintenance — CLD-13 and CLD-14 both fully shipped/closed. This session: phase 1 of a cross-project DNS handoff for `odds-analysis`'s new `picks.ericreilly.com` site (ACM validation CNAME added; alias record queued, blocked on odds-analysis's own follow-up).
 **Route-to-live:** Standard (`main` → staging auto-deploy → semver tag → prod)
 **Linear project:** [website](https://linear.app/drinkupapp/project/website-b1cbb4812a78) (team Claude's Projects)
 
@@ -56,9 +56,14 @@ Eric asked (~11:30 ET) whether the ops & maintenance backlog was running — it 
 
 **CLD-14 — all 3 items complete this session (2026-09-22), plus the WS-3 follow-on.** Item 1's status-check gap is now genuinely closed: a `pull_request`-triggered `PR Checks` job (PR #21, merge `d5c7ebf`) runs `npm test` on every PR and is now `main`'s required status check (verified enforced — an admin push reports the check is required). Human-approved via Fleet Decisions `WS-3` (`decided_by_owner === true`, `decided_at: 2026-09-22T15:58:39Z`, verified directly). No further action queued for this epic.
 
+## What We Just Completed (2026-09-23 — OA-17 DNS handoff, phase 1)
+
+- Sibling project `odds-analysis` is publishing a new CloudFront-fronted site at `picks.ericreilly.com`; human-approved via Fleet Decisions `OA-17` (`decided_by_owner === true`, `decided_at: 2026-09-23T15:16:39Z`, verified directly). Added the ACM DNS-validation CNAME to this repo's shared `ericreilly.com` Route53 zone — PR #22, self-merged under the GC-7 config-only exception, merge `084f4635`. Independently verified the record resolves publicly (Google + Cloudflare resolvers). Logged in `.project/deployment-log.md`.
+- **Deliberately not done this session:** the final `picks.ericreilly.com` → CloudFront alias record. `OA-17`'s own recorded outcome documents this as a two-phase handoff — the alias can only go in after odds-analysis confirms the cert is `ISSUED` and re-applies with the custom domain enabled on their CloudFront distribution (their AWS account, out of this repo's reach). Full detail in `.project/workflow-state.md`.
+
 ## What's In Progress
 
-Nothing active — CLD-13 and CLD-14 both closed end-to-end this session.
+Nothing active in this repo — CLD-13 and CLD-14 both closed. `OA-17` phase 2 (alias record) is queued but blocked on odds-analysis's own follow-up, not tracked as in-progress work here.
 
 ## What's Coming Next
 
