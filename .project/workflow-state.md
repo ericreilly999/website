@@ -162,3 +162,12 @@ CLD-13 and CLD-14 both fully shipped/closed — no further action queued for eit
 **Fix going forward:** Dispatch any agent that will run branch/checkout/reset operations (Frontend, Backend, QA doing implementation-adjacent git work) with `isolation: "worktree"` on the Agent tool call, so it operates on a separate git worktree instead of the shared primary working directory. The PM's own direct edits to files it owns should also be committed promptly rather than left to accumulate uncommitted across multiple agent dispatches into the same shared tree.
 
 **Promoted to:** see `lessons-learned.md` entry same date — flagged directly to the human, no formal retro scheduled for this project.
+
+## Session — 2026-09-24 (`fleet-2026-09-24-0700`)
+
+- **FL-10 alignment:** `.project/milestones.md` written (M1–M4 done on evidence, M5 `picks.ericreilly.com` DNS handoff in_progress). Each milestone has a `- **Description**:` line, the fleet-console v21 field (FR-17.16, fleet-console `8bc34a7`). The shared `milestone-rollup.js` does not parse `Description` yet (fleet-console T-100+). The PM applied FR-17.16(a)'s documented parse (match, trim, clip at 120 code points) as a deterministic post-process on the script's output, and hand-typed nothing into the store. Milestone-tracked task rows T-01..T-03 were added to `TODO.md`. Pushed to `projects/website` (v10): `milestone_current` M5, 25%, `at_risk` true (computed ETA runs past the 2026-09-24 target).
+- **OA-17 phase 2 (owner scope addition, relayed by the coordinator; approval is OA-17 itself, `decided_by_owner` true, `decided_at` 2026-09-23T15:16:39Z):** DevOps opened PR #23 (branch `ops/picks-alias-dns`, worktree `C:\dev\gitrepos\website-picks-alias`) with the A+AAAA alias. The plan shows +2/0/0. The merge and apply wait on a readiness check: TLS for SNI `picks.ericreilly.com` must succeed against `d2pw617i58c5iw.cloudfront.net`. That check first failed at 12:26Z with `SEC_E_WRONG_PRINCIPAL`. A background poll runs every 10 minutes for up to 3 hours.
+- **Linear:** CLD-12/13/14 all `[100%]` Done; nothing stale. The Linear project has no milestones; no `save_milestone` tool is available to the PM.
+
+### RESUME
+- If PR #23 is still open: re-run the readiness check. When it passes, merge, apply (+2 only), verify with 8.8.8.8/1.1.1.1 and curl, log it, tick AC-17/AC-18 and T-02/T-03 (with QA evidence), re-run the rollup and push. Then remove worktree `C:\dev\gitrepos\website-picks-alias`.
