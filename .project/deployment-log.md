@@ -4,6 +4,30 @@ Deployments are recorded in reverse-chronological order.
 
 ---
 
+## 2026-09-24 — Alias A/AAAA records for `picks.ericreilly.com` (odds-analysis handoff, phase 2 of 2 — final)
+
+**What:** Added `aws_route53_record.picks_site_alias_a` and `aws_route53_record.picks_site_alias_aaaa` in the shared `ericreilly.com` zone (`module.certificate_zone.zone_id`, `Z09302003LDW15NJ86V5W`), extending `terraform/picks-site-dns.tf`. Both alias `picks.ericreilly.com` → `d2pw617i58c5iw.cloudfront.net` (alias zone `Z2FDTNDATAQYW2`), `evaluate_target_health = false`. Completes the OA-17 DNS handoff started in PR #22 (phase 1, ACM validation CNAME).
+
+**Why:** Final step making `picks.ericreilly.com` resolve to the odds-analysis CloudFront distribution now that its ACM certificate is issued and the hostname is registered as a CloudFront alternate domain name.
+
+**Authorization:** Fleet Decisions page, collection `decisions`, doc `OA-17` (artifact `https://claude.ai/artifact/AgEqZELaoLFLbCaWLqQUMS`). `answer.decided_by_owner === true`, `decided_at: "2026-09-23T15:16:39Z"`, `status: "approved"`. Same authorization as phase 1; the approved plan names this exact record.
+
+**Sequencing gate (why this waited a day after phase 1):** The alias could not go live before CloudFront accepted `picks.ericreilly.com` as an alternate domain with an ISSUED cert, or visitors would get a certificate/hostname mismatch. Readiness was checked directly (no cross-account creds needed) by resolving `d2pw617i58c5iw.cloudfront.net` and running `curl --resolve picks.ericreilly.com:443:<ip> https://picks.ericreilly.com/`, polled every ~10 minutes:
+- `2026-09-24T12:26:31Z` (initial) and `2026-09-24T12:26:55Z` (poll loop) — TLS handshake failed: `SEC_E_WRONG_PRINCIPAL` (cert did not yet cover this SNI). **Not ready.**
+- `2026-09-24T12:36:55Z` — TLS succeeded, `HTTP:200`. **Ready.** Independently re-confirmed at `2026-09-24T12:37:16Z` against two different resolved CloudFront IPs (`99.84.252.2`, `99.84.252.72`), both `HTTP:200`.
+
+**Method:** PR [#23](https://github.com/ericreilly999/website/pull/23), `ops/picks-alias-dns` → `main`. `terraform plan` showed exactly `2 to add, 0 to change, 0 to destroy` both when the PR was opened and again immediately before apply (re-run to guard against state drift during the wait) — only these two records, no existing prod/staging resource touched. `PR Checks` passed. Squash-merged by DevOps under the config-only exception (**GC-7**, human-approved 2026-09-20, precedent PRs #18/#19/#22) once the readiness check cleared — merge commit `f90bcb3ccc197f467c99059e1d7cd079bb8dec1a`. `terraform apply` run against the saved plan (`picks-site-alias.tfplan`) immediately after merge: `Apply complete! Resources: 2 added, 0 changed, 0 destroyed.`
+
+**Verification:**
+- `aws route53 list-resource-record-sets --hosted-zone-id Z09302003LDW15NJ86V5W` — both `picks.ericreilly.com` A and AAAA alias records present, targeting `d2pw617i58c5iw.cloudfront.net.` / `Z2FDTNDATAQYW2`, exactly as specified.
+- Public A record: `nslookup picks.ericreilly.com 8.8.8.8` and `nslookup picks.ericreilly.com 1.1.1.1` both resolve to the expected CloudFront IPs.
+- Public AAAA record: confirmed authoritatively against the zone's own nameserver (`Resolve-DnsName -Type AAAA -Server ns-1643.awsdns-13.co.uk` → 8 IPv6 addresses). At verification time, `8.8.8.8`/`1.1.1.1` still returned `NXDOMAIN` for the AAAA query specifically — a stale negative-cache artifact from before the record existed (zone `SOA` TTL is 900s/15min), not an infrastructure problem; the A query against the same two resolvers for the same name succeeded, and the record is confirmed correct at the authoritative source. Expected to clear within the SOA TTL window.
+- `curl -sSI https://picks.ericreilly.com/` (no `--resolve`) → `HTTP/1.1 200 OK`, served via CloudFront (`X-Cache: Hit from cloudfront`, `Server: AmazonS3`).
+
+**Status:** ✅ Live. `picks.ericreilly.com` now resolves publicly to the odds-analysis CloudFront distribution and serves over HTTPS with a valid certificate. OA-17 DNS handoff (both phases) complete from this repo's side.
+
+---
+
 ## 2026-09-23 — ACM DNS validation CNAME for `picks.ericreilly.com` (odds-analysis handoff, phase 1 of 2)
 
 **What:** Added `aws_route53_record.picks_site_acm_validation` — a single CNAME in the shared `ericreilly.com` zone (`module.certificate_zone.zone_id`, `Z09302003LDW15NJ86V5W`) — new file `terraform/picks-site-dns.tf`. Record: `_b3754202b86b096610d47972dee49a02.picks.ericreilly.com.` → `_0b52c853550f59e3f26b2a3124b1b791.wzccmgtwzk.acm-validations.aws.`, TTL 60.
