@@ -49,5 +49,5 @@
 - **Target**: 2026-09-24
 - **Definition of done**:
   - [x] AC-16 ACM DNS-validation CNAME for `picks.ericreilly.com` added to the shared `ericreilly.com` Route53 zone and publicly resolving — evidence: deployment-log.md "ACM DNS validation CNAME for `picks.ericreilly.com`" (2026-09-23, PR #22, merge `084f4635b2b25ea2a8175f59cfc61d652cfc769c`), publicly resolving via both `8.8.8.8` and `1.1.1.1` per workflow-state.md
-  - [ ] AC-17 `picks.ericreilly.com` A/AAAA alias record applied, pointing to `d2pw617i58c5iw.cloudfront.net` — evidence: none yet; blocked on odds-analysis confirming their ACM cert is `ISSUED` and re-applying with the custom domain enabled (workflow-state.md, deployment-log.md "Scope note — phase 2 NOT done here")
-  - [ ] AC-18 `https://picks.ericreilly.com` resolves via external resolvers and serves over valid TLS — evidence: none yet; depends on AC-17
+  - [x] AC-17 `picks.ericreilly.com` A/AAAA alias record applied, pointing to `d2pw617i58c5iw.cloudfront.net` — evidence: PR #23 (merge `f90bcb3`), applied +2/0/0, deployment-log.md via PR #25 (merge `ce35fdb`)
+  - [ ] AC-18 `https://picks.ericreilly.com` resolves via external resolvers and serves over valid TLS — evidence: pending QA sign-off (PM observed 2026-09-24: A/AAAA via 8.8.8.8/1.1.1.1, HTTP 200 over TLS; not a QA cycle)

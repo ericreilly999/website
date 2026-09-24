@@ -1,8 +1,8 @@
 ---
 # Project Status
 
-**Last updated:** 2026-09-23
-**Current stage:** Live / Ongoing Maintenance — CLD-13 and CLD-14 both fully shipped/closed. This session: phase 1 of a cross-project DNS handoff for `odds-analysis`'s new `picks.ericreilly.com` site (ACM validation CNAME added; alias record queued, blocked on odds-analysis's own follow-up).
+**Last updated:** 2026-09-24
+**Current stage:** Live / maintenance. FL-10 milestones adopted (`.project/milestones.md`, M1-M4 done). M5 `picks.ericreilly.com` DNS handoff is at 75%: the alias is live (PR #23), and the QA live sign-off (AC-18) is the only remaining step.
 **Route-to-live:** Standard (`main` → staging auto-deploy → semver tag → prod)
 **Linear project:** [website](https://linear.app/drinkupapp/project/website-b1cbb4812a78) (team Claude's Projects)
 

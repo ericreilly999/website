@@ -158,5 +158,5 @@ Tags tasks to `.project/milestones.md` M5 (OA-17 cross-project DNS handoff for `
 | Status | ID | Owner | Description | Depends On | Size | Notes |
 |---|---|---|---|---|---|---|
 | [x] | T-01 | DEVOPS | [M5] ACM DNS-validation CNAME for `picks.ericreilly.com` added to shared `ericreilly.com` Route53 zone | — | XS | Done 2026-09-23 — PR #22, merge `084f4635` |
-| [ ] | T-02 | DEVOPS | [M5] `picks.ericreilly.com` A/AAAA alias record to `d2pw617i58c5iw.cloudfront.net` | T-01 | S | PR #23 open (plan +2 to add, 0 change, 0 destroy, 2026-09-24); merge+apply gated on CloudFront accepting the hostname (odds-analysis ACM `ISSUED` + re-apply) |
-| [ ] | T-03 | QA | [M5] Verify `https://picks.ericreilly.com` resolves via external resolvers and serves over valid TLS | T-02 | XS | Depends on T-02 landing |
+| [x] | T-02 | DEVOPS | [M5] `picks.ericreilly.com` A/AAAA alias record to `d2pw617i58c5iw.cloudfront.net` | T-01 | S | Done 2026-09-24 — PR #23 merge `f90bcb3`, applied +2/0/0; log PR #25 |
+| [ ] | T-03 | QA | [M5] Verify `https://picks.ericreilly.com` resolves via external resolvers and serves over valid TLS | T-02 | XS | Unblocked 2026-09-24; QA live sign-off needed to close AC-18/M5 |
