@@ -4,6 +4,26 @@ Deployments are recorded in reverse-chronological order.
 
 ---
 
+## 2026-09-23 — ACM DNS validation CNAME for `picks.ericreilly.com` (odds-analysis handoff, phase 1 of 2)
+
+**What:** Added `aws_route53_record.picks_site_acm_validation` — a single CNAME in the shared `ericreilly.com` zone (`module.certificate_zone.zone_id`, `Z09302003LDW15NJ86V5W`) — new file `terraform/picks-site-dns.tf`. Record: `_b3754202b86b096610d47972dee49a02.picks.ericreilly.com.` → `_0b52c853550f59e3f26b2a3124b1b791.wzccmgtwzk.acm-validations.aws.`, TTL 60.
+
+**Why:** The sibling `odds-analysis` project is standing up a new CloudFront site on `picks.ericreilly.com`. Its ACM certificate lives in the odds-analysis AWS account (102429470155), but the `ericreilly.com` public hosted zone lives in this repo's account (290993374431), so the DNS validation record has to be added here — same pattern as `ses-gencast.tf`.
+
+**Authorization:** Fleet Decisions page, collection `decisions`, doc `OA-17` (artifact `https://claude.ai/artifact/AgEqZELaoLFLbCaWLqQUMS`). Verified directly: `answer.decided_by_owner === true`, `decided_at: "2026-09-23T15:16:39.280Z"`, `status: "approved"`. Cross-checked against `odds-analysis` repo's own `.project/deployment-log.md` DNS-handoff entry (~lines 1901-1927) — both sources agreed on record name/value/TTL.
+
+**Method:** PR [#22](https://github.com/ericreilly999/website/pull/22), `devops/picks-site-acm-validation-dns` → `main`. `terraform plan` showed exactly `1 to add, 0 to change, 0 to destroy` (only this record — no existing prod/staging resource touched). `PR Checks` passed. Self-merged by DevOps under the config-only exception (**GC-7**, human-approved 2026-09-20, precedent PRs #18/#19) — squash merge commit `084f4635b2b25ea2a8175f59cfc61d652cfc769c`. `terraform apply` run against the saved plan (`picks-site-dns.tfplan`) immediately after merge: `Apply complete! Resources: 1 added, 0 changed, 0 destroyed.` Change-batch/apply id: `picks-site-dns-2026-09-23`.
+
+**Verification:** `aws route53 list-resource-record-sets --hosted-zone-id Z09302003LDW15NJ86V5W` confirms the record exists exactly as specified (Name/Type/TTL/Value all match).
+
+**Certificate status — not checked from here (by design):** Attempted `aws acm describe-certificate --certificate-arn arn:aws:acm:us-east-1:102429470155:certificate/6b7629eb-c765-4599-95be-c40300112849`. This repo's session is scoped to account 290993374431 (confirmed via `aws sts get-caller-identity`); the call correctly failed with `ResourceNotFoundException` against that account, since the certificate lives in the odds-analysis account (102429470155). No cross-account role was created to force this, per scope. odds-analysis's own DevOps session needs to confirm `ISSUED` status from within their own account.
+
+**Scope note — phase 2 NOT done here:** The alias A/AAAA record (`picks.ericreilly.com` → `d2pw617i58c5iw.cloudfront.net`, zone `Z2FDTNDATAQYW2`) is deliberately not added yet. Per OA-17's own recorded outcome, that alias waits until (a) the odds-analysis cert shows `ISSUED` and (b) odds-analysis flips `picks_site_enable_custom_domain = true` and re-applies on their side to register the hostname as a CloudFront alternate domain name. Adding the alias before that would produce a certificate/hostname mismatch for anyone resolving the hostname.
+
+**Status:** ✅ CNAME live in DNS. Phase 2 (alias record) blocked on odds-analysis's own cert-issuance + apply — out of this repo's hands.
+
+---
+
 ## 2026-09-22 — PR status check live: `PR Checks` job added to `deploy.yml` + branch protection `contexts` populated (CLD-14 item 1 follow-up, Fleet Decisions `WS-3`)
 
 **Two changes, logged together because neither is meaningful alone:**
