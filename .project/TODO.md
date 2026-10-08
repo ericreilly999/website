@@ -149,6 +149,7 @@
 ## Backlog (unscoped)
 
 - [ ] Enforce branch protection on `main` (require PR review before merge)
+- [ ] **BL-01** [M6] Forward eric@ericreilly.com and contact@ericreilly.com to the owner's Gmail (address kept out of repo; stored as a protected AWS parameter). Facts 2026-10-07: zone is in Route 53, no MX today, DMARC p=none. Constraint: apex MX must not break gencast.ericreilly.com SES MAIL FROM/DKIM. Gated on page decision WS-4.
 - [x] Remove or archive `recovered-build/` directory — source now lives in `src/`
 
 ### Milestone-tracked tasks (FL-10)
@@ -160,3 +161,6 @@ Tags tasks to `.project/milestones.md` M5 (OA-17 cross-project DNS handoff for `
 | [x] | T-01 | DEVOPS | [M5] ACM DNS-validation CNAME for `picks.ericreilly.com` added to shared `ericreilly.com` Route53 zone | — | XS | Done 2026-09-23 — PR #22, merge `084f4635` |
 | [x] | T-02 | DEVOPS | [M5] `picks.ericreilly.com` A/AAAA alias record to `d2pw617i58c5iw.cloudfront.net` | T-01 | S | Done 2026-09-24 — PR #23 merge `f90bcb3`, applied +2/0/0; log PR #25 |
 | [ ] | T-03 | QA | [M5] Verify `https://picks.ericreilly.com` resolves via external resolvers and serves over valid TLS | T-02 | XS | Unblocked 2026-09-24; QA live sign-off needed to close AC-18/M5 |
+| [ ] | T-04 | DEVOPS | [M6] Read-only check of the ericreilly.com zone (existing MX/TXT/DKIM, gencast.ericreilly.com MAIL FROM records) and which AWS account owns SES inbound | WS-4 | XS | Blocked on WS-4 |
+| [ ] | T-05 | DEVOPS | [M6] SES inbound rule + private S3 (7-day expiry) + forwarder Lambda + apex MX/SPF, via pipeline, plan-first | T-04 | M | Reuse GenCast GC-114 pattern |
+| [ ] | T-06 | QA | [M6] Test mail to eric@ and contact@ arrives in owner's Gmail; gencast.ericreilly.com sending still passes | T-05 | XS | |

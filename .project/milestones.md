@@ -51,3 +51,11 @@
   - [x] AC-16 ACM DNS-validation CNAME for `picks.ericreilly.com` added to the shared `ericreilly.com` Route53 zone and publicly resolving — evidence: deployment-log.md "ACM DNS validation CNAME for `picks.ericreilly.com`" (2026-09-23, PR #22, merge `084f4635b2b25ea2a8175f59cfc61d652cfc769c`), publicly resolving via both `8.8.8.8` and `1.1.1.1` per workflow-state.md
   - [x] AC-17 `picks.ericreilly.com` A/AAAA alias record applied, pointing to `d2pw617i58c5iw.cloudfront.net` — evidence: PR #23 (merge `f90bcb3`), applied +2/0/0, deployment-log.md via PR #25 (merge `ce35fdb`)
   - [ ] AC-18 `https://picks.ericreilly.com` resolves via external resolvers and serves over valid TLS — evidence: pending QA sign-off (PM observed 2026-09-24: A/AAAA via 8.8.8.8/1.1.1.1, HTTP 200 over TLS; not a QA cycle)
+
+## M6 — Domain mailboxes forward to the owner's Gmail
+- **Status**: pending
+- **Description**: eric@ericreilly.com and contact@ericreilly.com forward to the owner's Gmail without breaking gencast.ericreilly.com sending.
+- **Definition of done**:
+  - [ ] AC-19 Decision WS-4 answered by the owner (mechanism and AWS account) — evidence: pending
+  - [ ] AC-20 MX, receipt rule and forwarder applied through the pipeline; gencast.ericreilly.com SES MAIL FROM/DKIM unchanged — evidence: pending
+  - [ ] AC-21 QA sends a test message to each address and it arrives in the owner's Gmail — evidence: pending

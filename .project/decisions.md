@@ -83,3 +83,6 @@ Decisions are recorded in reverse-chronological order.
 **Decision:** Recover source code from deployed S3 bucket (`s3://ericreilly.com-prod`) using production source maps.
 **Rationale:** Original source was not in version control; production was the only copy.
 **Alternatives considered:** Rebuild from scratch.
+
+## 2026-10-07 — Mailbox forwarding for eric@ and contact@ericreilly.com (owner chat; raised as page decision WS-4)
+**Decision:** Pending owner answer on WS-4. PM recommendation: reuse GenCast's AWS-only SES inbound, S3, forwarder Lambda pattern (GC-114, approved 2026-10-08T01:21:15Z) in the account that owns the ericreilly.com zone. The owner's Gmail address is not recorded in this repo. Searched decisions.md, WS-1..3 and GC-114: no prior ruling on domain mail. Constraint: adding an apex MX must not disturb the gencast.ericreilly.com SES MAIL FROM and DKIM records. Backlog BL-01, milestone M6, tasks T-04..T-06.
