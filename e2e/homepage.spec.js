@@ -59,6 +59,12 @@ test.describe('Homepage (consulting pitch)', () => {
     await expect(tiers.nth(0)).toContainText(/landing pages/i);
     await expect(tiers.nth(0)).toContainText(/booking/i);
     await expect(tiers.nth(0)).toContainText(/hosting/i);
+    await expect(tiers.nth(0).locator('li')).toHaveText([
+      'Websites and landing pages',
+      'Booking and forms',
+      'Hosting done right',
+      'SEO optimization',
+    ]);
     await expect(tiers.nth(1)).toContainText(/web and mobile apps/i);
     await expect(tiers.nth(1)).toContainText(/AI features/i);
     await expect(tiers.nth(1)).toContainText(/automations/i);
