@@ -14,7 +14,7 @@ const { test, expect } = require('@playwright/test');
 
 const TOGGLE_SELECTOR = '.nav-links button[aria-label="Toggle color theme"]';
 const OLD_ON_ACCENT_HEX = 'rgb(11, 12, 14)'; // #0B0C0E, the pre-fix hardcoded value from spec §5.3
-const PAGES = ['/', '/projects', '/contact'];
+const PAGES = ['/', '/about', '/projects', '/contact'];
 
 async function setStoredTheme(page, value) {
   await page.addInitScript((v) => {
@@ -238,7 +238,7 @@ test.describe('Theme toggle — visual/contrast regression (QA-09)', () => {
     const darkBody = await styleSnapshot(page.locator('body'));
     const darkHeroPrimary = await styleSnapshot(page.locator('.hero-links li:first-child a'));
     const darkHeroSecondary = await styleSnapshot(page.locator('.hero-links li:nth-child(2) a'));
-    const darkCell = await styleSnapshot(page.locator('.grid-2 .cell').first());
+    const darkCell = await styleSnapshot(page.locator('.tiers .tier').first());
     const darkCta = await styleSnapshot(page.locator('section.cta .cta-inner'));
 
     await setStoredTheme(page, 'light');
@@ -248,7 +248,7 @@ test.describe('Theme toggle — visual/contrast regression (QA-09)', () => {
     const lightBody = await styleSnapshot(page.locator('body'));
     const lightHeroPrimary = await styleSnapshot(page.locator('.hero-links li:first-child a'));
     const lightHeroSecondary = await styleSnapshot(page.locator('.hero-links li:nth-child(2) a'));
-    const lightCell = await styleSnapshot(page.locator('.grid-2 .cell').first());
+    const lightCell = await styleSnapshot(page.locator('.tiers .tier').first());
     const lightCta = await styleSnapshot(page.locator('section.cta .cta-inner'));
 
     expect(lightBody).not.toEqual(darkBody);

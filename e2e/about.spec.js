@@ -3,7 +3,7 @@ const { test, expect } = require('@playwright/test');
 
 test.describe('About page content', () => {
   test.beforeEach(async ({ page }) => {
-    await page.goto('/');
+    await page.goto('/about');
   });
 
   test('shows "the short version" section', async ({ page }) => {
@@ -53,7 +53,7 @@ test.describe('About page content', () => {
     // Rest of the paragraph, starting at "Some weeks that means cutting
     // incident noise." (fragmented ecosystem / coaching engineering teams
     // language, covered by the test above) is UNCHANGED by round 6.
-    // Expected RED until Frontend ships the copy change to public/index.html.
+    // Expected RED until Frontend ships the copy change to public/about.html.
     const bio = page.locator('.prose p').first();
     await expect(bio).toContainText("These days, I'm standardizing reliability across a big SaaS portfolio.");
     await expect(bio).not.toContainText("I'm at Togetherwork these days");
@@ -83,7 +83,7 @@ test.describe('About page content', () => {
     //   0 to 5M+ accounts in five years."
     //   -> "Appointed platform owner for an international core banking
     //   SaaS on Azure that grew from 0 to 5M+ accounts in five years."
-    // Expected RED until Frontend ships the copy change to public/index.html.
+    // Expected RED until Frontend ships the copy change to public/about.html.
     const items = page.locator('.highlights li');
     const bankingBullet = items.filter({ hasText: '0 to 5M+ accounts' });
     await expect(bankingBullet).toHaveCount(1);
@@ -141,7 +141,7 @@ test.describe('About page content', () => {
     // ("platform modernization" and "observability strategy" survive
     // unchanged; "toil reduction" is dropped outright; the other three
     // phrases are each reworded). Expected RED until Frontend ships the
-    // copy change to public/index.html.
+    // copy change to public/about.html.
     const deliveryCell = page.locator('.grid-2 .cell', { has: page.locator('h4', { hasText: 'delivery & leadership' }) });
     await expect(deliveryCell).toContainText('Technical leadership');
     await expect(deliveryCell).toContainText('cross-functional collaboration');
@@ -174,5 +174,68 @@ test.describe('About page content', () => {
 
   test('shows 7+ years in the summary text', async ({ page }) => {
     await expect(page.getByText(/7\+ years/)).toBeVisible();
+  });
+});
+
+// Q-25: the work history moved here from the old landing page, content unchanged.
+test.describe('About page (moved from homepage)', () => {
+  test.beforeEach(async ({ page }) => {
+    await page.goto('/about');
+  });
+
+  test('page title is "About · Eric Reilly" and meta description has no White Glove', async ({ page }) => {
+    await expect(page).toHaveTitle('About · Eric Reilly');
+    const content = (await page.locator('meta[name="description"]').getAttribute('content')) || '';
+    expect(content).toMatch(/Eric Reilly|Senior Cloud Architect/);
+    expect(content).not.toMatch(/white glove/i);
+  });
+
+  test('"about" nav link is active', async ({ page }) => {
+    await expect(page.locator('.nav-links a.active')).toHaveCount(1);
+    await expect(page.locator('.nav-links a.active')).toHaveAttribute('href', '/about');
+  });
+
+  test('hero keeps the original tagline and sub, without CTA buttons', async ({ page }) => {
+    await expect(page.locator('h1.headline')).toContainText('I build stuff that scales');
+    const sub = page.locator('header.hero .sub');
+    await expect(sub).toContainText('more cloud native');
+    await expect(sub).toContainText('a portfolio of PE-backed SaaS products.');
+    await expect(page.locator('.hero-links')).toHaveCount(0);
+  });
+
+  test('side panel lists role, company, base, school', async ({ page }) => {
+    const side = page.locator('.side');
+    await expect(side).toContainText('Senior Cloud Architect');
+    await expect(side).toContainText('Togetherwork');
+    await expect(side).toContainText('Tampa, FL');
+    await expect(side).toContainText('B.S. IT Management');
+    await expect(side).toContainText('Bloomsburg University');
+  });
+
+  test('personal line (football, chess, cats) is present', async ({ page }) => {
+    await expect(page.locator('.prose')).toContainText('football, chess, running, travel, food, history, cats, and video games');
+  });
+
+  test('work history bullets for all three roles are present', async ({ page }) => {
+    await expect(page.getByText('Own observability & reliability strategy across a 25+ product SaaS portfolio.')).toBeVisible();
+    await expect(page.getByText('Led a global team of ~15 SREs')).toBeVisible();
+    await expect(page.getByText('Wrote Bash + Python automation')).toBeVisible();
+  });
+
+  test('no White Glove, no availability line, no em dash', async ({ page }) => {
+    const text = await page.locator('body').innerText();
+    expect(text).not.toMatch(/white glove|part-time|open for selective/i);
+    expect(text).not.toContain('—');
+  });
+
+  test('closing CTA points to the contact form', async ({ page }) => {
+    await expect(page.locator('section.cta .cta-btn')).toHaveAttribute('href', '/contact');
+  });
+
+  test('footer has linkedin, github, and contact', async ({ page }) => {
+    const footer = page.locator('footer');
+    await expect(footer.locator('a[href="https://www.linkedin.com/in/eric-reilly-sre/"]')).toBeVisible();
+    await expect(footer.locator('a[href*="github.com"]')).toBeVisible();
+    await expect(footer.locator('a[href="/contact"]')).toBeVisible();
   });
 });

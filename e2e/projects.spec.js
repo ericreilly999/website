@@ -22,6 +22,17 @@ test.describe('Projects page', () => {
     await expect(page.locator('h1.headline')).toContainText('building');
   });
 
+  test('nav leads with about and only projects is active', async ({ page }) => {
+    await expect(page.locator('.nav-links > a').first()).toHaveAttribute('href', '/about');
+    await expect(page.locator('.nav-links a.active')).toHaveCount(1);
+  });
+
+  test('proof tiles on the landing page match the status wording here', async ({ page }) => {
+    for (const [title, status] of [['GenCast', 'In staging, building toward launch'], ['Football Odds Analysis Engine', 'Live paper-trading season in progress'], ['DrinkUp', 'Paused, built through final hardening']]) {
+      await expect(rowFor(page, title).locator('.status')).toHaveText(status);
+    }
+  });
+
   test('"projects" nav link is active', async ({ page }) => {
     await expect(page.locator('.nav-links a.active')).toContainText('projects');
   });
