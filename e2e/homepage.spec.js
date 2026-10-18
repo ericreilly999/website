@@ -65,6 +65,7 @@ test.describe('Homepage (consulting pitch)', () => {
       'Hosting done right',
       'SEO optimization',
     ]);
+    await expect(tiers.nth(1).locator('.outcome')).toHaveText('A production-ready product your customers can use.');
     await expect(tiers.nth(1)).toContainText(/web and mobile apps/i);
     await expect(tiers.nth(1)).toContainText(/AI features/i);
     await expect(tiers.nth(1)).toContainText(/automations/i);
@@ -73,9 +74,9 @@ test.describe('Homepage (consulting pitch)', () => {
     await expect(tiers.nth(2)).toContainText(/reliability/i);
     await expect(tiers.nth(2)).toContainText(/cost/i);
     const scale = tiers.nth(2);
-    await expect(scale.locator('.outcome')).toHaveText('Make the platform reliable, and the team that runs it.');
+    await expect(scale.locator('.outcome')).toHaveText('Improve the reliability of your platform, processes, and people.');
     await expect(scale.locator('li')).toHaveText([
-      'Cloud architecture and cost',
+      'Cloud architecture and cost optimization',
       'Reliability, Observability, and incident response',
       'Fractional technical leadership (team structure, delivery process, hiring support, operating cadence)',
     ]);
