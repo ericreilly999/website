@@ -4,7 +4,7 @@
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>Contact · Eric Reilly</title>
-<meta name="description" content="Work with me: SRE and cloud architecture consulting via White Glove Solutions." />
+<meta name="description" content="Work with me: websites, apps, and cloud reliability from one senior engineer. Tell me what you need and get a fixed quote." />
 <script>
 (function () {
   try {
@@ -14,7 +14,7 @@
   } catch (e) {}
 })();
 </script>
-<link rel="icon" type="image/png" href="whiteglovesolutions.png" />
+<link rel="icon" type="image/svg+xml" href="favicon.svg" />
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Instrument+Serif:ital@0;1&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
@@ -31,7 +31,7 @@
       <span><b>eric reilly</b><span class="path">&nbsp;·&nbsp;tampa, fl</span></span>
     </a>
     <div class="nav-links">
-      <a href="/">about</a>
+      <a href="/about">about</a>
       <a href="/projects">projects</a>
       <a href="/contact" class="active">contact</a>
       <a href="https://www.linkedin.com/in/eric-reilly-sre/" target="_blank" rel="noopener noreferrer">linkedin ↗</a>
@@ -44,17 +44,17 @@
   </nav>
 
   <header class="hero reveal">
-    <p class="kicker">white glove solutions · sre &amp; cloud architecture</p>
+    <p class="kicker">websites · apps · cloud &amp; reliability</p>
     <h1 class="headline">
       Let's <span class="token">work together.</span><span class="cursor" aria-hidden="true"></span>
     </h1>
     <p class="sub">
-      I take on a small number of consulting engagements alongside my full-time role, projects where there's a clear fit with my background in SRE, cloud architecture, and observability, and where I can do the work properly without it competing with my day job. If that sounds like what you need, fill out the form and I'll get back to you.
+      Tell me what you need and I will come back with a fixed quote. One senior engineer from first sketch to production, no handoffs, no agency overhead.
     </p>
   </header>
 
   <section class="reveal">
-    <div class="section-label">Project inquiry <span class="num">01 / 01</span></div>
+    <div class="section-label">Tell me what you need <span class="num">01 / 01</span></div>
     <div class="split">
       <div>
         <div id="formMessage"></div>
@@ -73,8 +73,18 @@
               <input type="text" id="company" name="company" />
             </div>
             <div class="field full">
+              <label for="need">What do you need?</label>
+              <select id="need" name="need">
+                <option value="">Select one</option>
+                <option value="Website">Website</option>
+                <option value="App">App</option>
+                <option value="Cloud &amp; reliability">Cloud &amp; reliability</option>
+                <option value="Not sure">Not sure</option>
+              </select>
+            </div>
+            <div class="field full">
               <label for="project">Project description <span class="req">*</span></label>
-              <textarea id="project" name="project" rows="5" placeholder="Describe your project, goals, and how I can help..." required></textarea>
+              <textarea id="project" name="project" rows="5" placeholder="Describe what you want to build or fix, and what a good result looks like..." required></textarea>
             </div>
             <div class="field full">
               <label for="term">Project term</label>
@@ -96,9 +106,8 @@
       </div>
       <div class="side">
         <dl>
-          <div><dt>Practice</dt><dd>White Glove Solutions</dd></div>
-          <div><dt>Focus</dt><dd>Premium SRE &amp; cloud architecture consulting</dd></div>
-          <div><dt>Availability</dt><dd>Part-time, selective</dd></div>
+          <div><dt>Focus</dt><dd>Websites, apps, cloud &amp; reliability</dd></div>
+          <div><dt>Pricing</dt><dd>Fixed quote</dd></div>
           <div><dt>Based</dt><dd>Tampa, FL · remote-friendly</dd></div>
           <div><dt>Elsewhere</dt><dd>
             <a href="https://www.linkedin.com/in/eric-reilly-sre/" target="_blank" rel="noopener noreferrer">linkedin</a><br/>
@@ -160,14 +169,16 @@
     const originalLabel = submitBtn.innerHTML;
     submitBtn.innerHTML = 'sending...';
 
+    const need = form.need.value;
     const data = {
       name: form.name.value,
       email: form.email.value,
       company: form.company.value,
-      project: form.project.value,
+      // Also prefix the message so the need reaches the inbox even if the API ignores unknown fields.
+      project: need ? "[What I need: " + need + "]\n\n" + form.project.value : form.project.value,
+      need: need,
       term: form.term.value
     };
-
     try {
       const res = await fetch('https://k7cpfmv07e.execute-api.us-east-1.amazonaws.com/prod/contact', {
         method: 'POST',

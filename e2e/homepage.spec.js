@@ -4,134 +4,154 @@ const { test, expect } = require('@playwright/test');
 const EM_DASH = '—';
 const LINKEDIN_URL = 'https://www.linkedin.com/in/eric-reilly-sre/';
 
-test.describe('Homepage', () => {
+// Q-25: the landing page is the consulting pitch. Work history lives on /about.
+test.describe('Homepage (consulting pitch)', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/');
   });
 
-  test('page title is "Eric Reilly"', async ({ page }) => {
-    await expect(page).toHaveTitle('Eric Reilly');
+  test('page title leads with the name and describes the offer', async ({ page }) => {
+    await expect(page).toHaveTitle('Eric Reilly · Websites, apps, and cloud reliability');
   });
 
-  test('hero headline is visible and has token-highlighted spans', async ({ page }) => {
-    // Structural check only. Exact copy is pinned by the dedicated tagline
-    // test below, which supersedes the old `/break|reliab/i` theme regex
-    // from .project/decisions.md 2026-09-07 #2 — that regex is retired here
-    // because the 2026-09-12 tagline tweak (dropping "and doesn't break")
-    // means the headline no longer guarantees either word.
+  test('meta description is on-pitch and has no White Glove or availability wording', async ({ page }) => {
+    const content = (await page.locator('meta[name="description"]').getAttribute('content')) || '';
+    expect(content.length).toBeGreaterThan(40);
+    expect(content).toMatch(/website/i);
+    expect(content).not.toMatch(/white glove|part-time|selective/i);
+    expect(content).not.toContain(EM_DASH);
+  });
+
+  test('hero leads with the name, then the headline and one-line sub', async ({ page }) => {
+    const name = page.locator('header.hero .hero-name');
+    await expect(name).toHaveText('Eric Reilly');
     const headline = page.locator('h1.headline');
-    await expect(headline).toBeVisible();
+    await expect(headline).toHaveText("From a simple website to a full product, built by someone who's kept platforms running at scale");
     await expect(headline.locator('.token')).not.toHaveCount(0);
-    const text = (await headline.innerText()).trim();
-    expect(text.length).toBeGreaterThan(0);
+    await expect(page.locator('header.hero .sub')).toHaveText('One senior engineer from first sketch to production. No handoffs, no agency overhead.');
+    const nameBox = await name.boundingBox();
+    const headlineBox = await headline.boundingBox();
+    expect(nameBox.y).toBeLessThan(headlineBox.y);
   });
 
-  test('hero tagline capitalizes the leading "I"', async ({ page }) => {
-    // TDD gate for the 2026-09-12 round-4 copy tweak:
-    //   "i build stuff that scales" -> "I build stuff that scales"
-    // Supersedes the round-3 "drops the and doesn't break clause" test (that
-    // wording change already shipped in PR #12 / commit 6538352 and is no
-    // longer at risk of regressing without a dedicated assertion — the
-    // "and doesn't break" substring can't silently reappear from a
-    // case-only edit). toContainText does a case-SENSITIVE substring match,
-    // so this fails against the current lowercase "i build stuff that
-    // scales" and only passes once the leading letter is capitalized.
-    // Expected RED until Frontend ships the copy change to public/index.html.
-    const headline = page.locator('h1.headline');
-    await expect(headline).toContainText('I build stuff that scales');
-    const text = (await headline.innerText()).trim();
-    expect(text.startsWith('I ')).toBe(true);
-    expect(text.startsWith('i ')).toBe(false);
+  test("hero has exactly two CTA buttons: Work with me (/contact) and What I'm building (/projects)", async ({ page }) => {
+    const links = page.locator('.hero-links li a');
+    await expect(links).toHaveCount(2);
+    await expect(links.nth(0).locator('.label')).toHaveText('Work with me');
+    await expect(links.nth(0)).toHaveAttribute('href', '/contact');
+    await expect(links.nth(1).locator('.label')).toHaveText("What I'm building");
+    await expect(links.nth(1)).toHaveAttribute('href', '/projects');
   });
 
-  test('hero sub-paragraph reflects the round-4 "PE-backed SaaS" reframe', async ({ page }) => {
-    // TDD gate for the 2026-09-12 round-4 copy tweak to the hero `.sub`
-    // paragraph (an unrelated hero-section paragraph near the tagline,
-    // never previously pinned by any test — only loosely covered by
-    // about.spec.js's generic "shows 7+ years" regex, which still passes
-    // either way since both old and new copy open with "7+ years"):
-    //   "7+ years making SaaS platforms more reliable, more scalable, and a
-    //   little more AI-native. These days that's at Togetherwork, where I
-    //   own reliability and observability across a big portfolio of
-    //   products."
-    //   ->
-    //   "7+ years making SaaS platforms more reliable, more scalable, and a
-    //   little more cloud native. Right now, I own reliability and
-    //   observability across a portfolio of products for a PE-backed SaaS."
-    // Shipped to prod as v0.1.6 (round 4, PR #13) — no longer at risk of
-    // regressing without a dedicated assertion, so this stays green as a
-    // guard against the "AI-native"/"that's at" wording reappearing.
-    const sub = page.locator('header.hero .sub');
-    await expect(sub).toContainText('more cloud native');
-    await expect(sub).toContainText('PE-backed SaaS');
-    await expect(sub).not.toContainText('AI-native');
-    await expect(sub).not.toContainText("that's at");
+  test('three tier cards: Launch, Build, Scale, each with items and a one-line outcome', async ({ page }) => {
+    const tiers = page.locator('#tiers .tier');
+    await expect(tiers).toHaveCount(3);
+    const names = ['Launch', 'Build', 'Scale'];
+    for (let i = 0; i < 3; i++) {
+      const tier = tiers.nth(i);
+      await expect(tier.locator('h3')).toHaveText(names[i]);
+      expect(await tier.locator('li').count()).toBeGreaterThanOrEqual(3);
+      const outcome = tier.locator('.outcome');
+      await expect(outcome).toHaveCount(1);
+      expect((await outcome.innerText()).trim().length).toBeGreaterThan(10);
+    }
+    await expect(tiers.nth(0)).toContainText(/websites/i);
+    await expect(tiers.nth(0)).toContainText(/landing pages/i);
+    await expect(tiers.nth(0)).toContainText(/booking/i);
+    await expect(tiers.nth(0)).toContainText(/hosting/i);
+    await expect(tiers.nth(1)).toContainText(/web and mobile apps/i);
+    await expect(tiers.nth(1)).toContainText(/AI features/i);
+    await expect(tiers.nth(1)).toContainText(/automations/i);
+    await expect(tiers.nth(1)).toContainText(/integrations/i);
+    await expect(tiers.nth(2)).toContainText(/cloud architecture/i);
+    await expect(tiers.nth(2)).toContainText(/reliability/i);
+    await expect(tiers.nth(2)).toContainText(/cost/i);
+    const scale = tiers.nth(2);
+    await expect(scale.locator('.outcome')).toHaveText('Make the platform reliable, and the team that runs it.');
+    await expect(scale.locator('li')).toHaveText([
+      'Cloud architecture and cost',
+      'Reliability, on-call and incident response',
+      'Fractional technical leadership (team structure, delivery process, hiring support, operating cadence)',
+    ]);
+    expect(await scale.innerText()).not.toMatch(/—|–/);
   });
 
-  test('hero sub-paragraph reflects the round-6 "PE-backed SaaS products" reorder', async ({ page }) => {
-    // TDD gate for the 2026-09-13 round-6 copy tweak to the hero `.sub`
-    // paragraph's final clause. The round-4 test above still passes
-    // unchanged for this edit (it only asserts the substring "PE-backed
-    // SaaS", which remains present either way, and the "more cloud
-    // native" / "AI-native" / "that's at" assertions are untouched by
-    // this clause) — so a new, more specific gate is needed to actually
-    // turn red against the currently-live production wording:
-    //   "...Right now, I own reliability and observability across a
-    //   portfolio of products for a PE-backed SaaS."
-    //   ->
-    //   "...Right now, I own reliability and observability across a
-    //   portfolio of PE-backed SaaS products."
-    // Note the added trailing period is unchanged (both old and new copy
-    // already end the sentence with one) — only the clause order changes.
-    // Expected RED until Frontend ships the copy change to public/index.html.
-    const sub = page.locator('header.hero .sub');
-    await expect(sub).toContainText('a portfolio of PE-backed SaaS products.');
-    await expect(sub).not.toContainText('portfolio of products for a PE-backed SaaS');
+  test('no prices, no White Glove, no availability line', async ({ page }) => {
+    const text = await page.locator('body').innerText();
+    expect(text).not.toMatch(/\$\s?\d/);
+    expect(text).not.toMatch(/white glove/i);
+    expect(text).not.toMatch(/part-time/i);
+    expect(text).not.toMatch(/open for selective/i);
   });
 
-  test('hero has three CTA links', async ({ page }) => {
-    await expect(page.locator('.hero-links li')).toHaveCount(3);
+  test('proof strip: GenCast, Football Odds Analysis Engine, DrinkUp tiles link to /projects', async ({ page }) => {
+    const tiles = page.locator('#proof a.tile');
+    await expect(tiles).toHaveCount(3);
+    const expected = [
+      ['GenCast', 'In staging, building toward launch'],
+      ['Football Odds Analysis Engine', 'Live paper-trading season in progress'],
+      ['DrinkUp', 'Paused, built through final hardening'],
+    ];
+    for (let i = 0; i < 3; i++) {
+      await expect(tiles.nth(i)).toHaveAttribute('href', '/projects');
+      await expect(tiles.nth(i).locator('.tile-title')).toHaveText(expected[i][0]);
+      await expect(tiles.nth(i).locator('.tile-status')).toHaveText(expected[i][1]);
+    }
+    await expect(tiles.nth(0)).not.toContainText(/\$\d|customers|launched|live in production/i);
   });
 
-  test('hero contact CTA reads "Work with me", not "Get in touch"', async ({ page }) => {
-    // TDD gate for the 2026-09-13 CTA copy tweak: the first hero-links item
-    // (which links to /contact) is relabeled from "Get in touch" to
-    // "Work with me". Expected RED until Frontend ships the copy change to
-    // public/index.html.
-    const ctaLabel = page.locator('.hero-links a[href="/contact"] .label');
-    await expect(ctaLabel).toHaveText('Work with me');
-    await expect(ctaLabel).not.toHaveText('Get in touch');
+  test('how it works has four ordered steps', async ({ page }) => {
+    const steps = page.locator('#how ol.steps li');
+    await expect(steps).toHaveCount(4);
+    await expect(steps.nth(0)).toContainText(/intro call/i);
+    await expect(steps.nth(1)).toContainText(/fixed quote/i);
+    await expect(steps.nth(2)).toContainText(/build/i);
+    await expect(steps.nth(3)).toContainText(/handoff/i);
+    await expect(steps.nth(3)).toContainText(/ongoing support/i);
   });
 
-  test('prompted podcast link points to prompted.ericreilly.com', async ({ page }) => {
-    await expect(page.locator('.hero-links a[href*="prompted.ericreilly.com"]')).toBeVisible();
+  test('sections appear in order: hero, tiers, proof, how it works, CTA', async ({ page }) => {
+    const ys = [];
+    for (const sel of ['header.hero', '#tiers', '#proof', '#how', 'section.cta']) {
+      const box = await page.locator(sel).boundingBox();
+      ys.push(box.y);
+    }
+    expect(ys).toEqual([...ys].sort((a, b) => a - b));
   });
 
-  test('"about" nav link is active', async ({ page }) => {
-    await expect(page.locator('.nav-links a.active')).toContainText('about');
-  });
-
-  test('nav includes projects, contact, linkedin, github links', async ({ page }) => {
-    await expect(page.locator('.nav-links a[href="/projects"]')).toBeVisible();
-    await expect(page.locator('.nav-links a[href="/contact"]')).toBeVisible();
-    await expect(page.locator(`.nav-links a[href="${LINKEDIN_URL}"]`)).toBeVisible();
-    await expect(page.locator('.nav-links a[href*="github.com"]')).toBeVisible();
-  });
-
-  test('experience section shows Togetherwork and FIS Global', async ({ page }) => {
-    await expect(page.getByText('Togetherwork').first()).toBeVisible();
-    await expect(page.getByText('FIS Global').first()).toBeVisible();
-  });
-
-  test('consulting CTA section is visible with button', async ({ page }) => {
+  test('CTA section links to the contact form', async ({ page }) => {
     await expect(page.locator('section.cta')).toBeVisible();
     await expect(page.locator('.cta-btn')).toBeVisible();
+    await expect(page.locator('.cta-btn')).toHaveAttribute('href', '/contact');
+    await expect(page.locator('section.cta')).toContainText(/fixed quote/i);
   });
 
-  test('footer renders with current year, linkedin, github', async ({ page }) => {
+  test('work history is no longer on the landing page', async ({ page }) => {
+    await expect(page.locator('.highlights')).toHaveCount(0);
+    await expect(page.locator('.rows .row')).toHaveCount(0);
+    await expect(page.getByText('FIS Global')).toHaveCount(0);
+    await expect(page.getByText('Bloomsburg')).toHaveCount(0);
+  });
+
+  test('hero has no prompted podcast link', async ({ page }) => {
+    await expect(page.locator('.hero-links a[href*="prompted.ericreilly.com"]')).toHaveCount(0);
+  });
+
+  test('nav has about, projects, contact, linkedin, github; none active on the landing page', async ({ page }) => {
+    const nav = page.locator('.nav-links');
+    await expect(nav.locator('a[href="/about"]')).toBeVisible();
+    await expect(nav.locator('a[href="/projects"]')).toBeVisible();
+    await expect(nav.locator('a[href="/contact"]')).toBeVisible();
+    await expect(nav.locator(`a[href="${LINKEDIN_URL}"]`)).toBeVisible();
+    await expect(nav.locator('a[href*="github.com"]')).toBeVisible();
+    await expect(nav.locator('a.active')).toHaveCount(0);
+  });
+
+  test('footer renders with current year, linkedin, github, contact link', async ({ page }) => {
     const footer = page.locator('footer');
     await expect(footer.locator(`a[href="${LINKEDIN_URL}"]`)).toBeVisible();
     await expect(footer.locator('a[href*="github.com"]')).toBeVisible();
+    await expect(footer.locator('a[href="/contact"]')).toBeVisible();
     await expect(footer).toContainText(new Date().getFullYear().toString());
   });
 

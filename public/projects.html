@@ -14,7 +14,7 @@
   } catch (e) {}
 })();
 </script>
-<link rel="icon" type="image/png" href="whiteglovesolutions.png" />
+<link rel="icon" type="image/svg+xml" href="favicon.svg" />
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Instrument+Serif:ital@0;1&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
@@ -31,7 +31,7 @@
       <span><b>eric reilly</b><span class="path">&nbsp;·&nbsp;tampa, fl</span></span>
     </a>
     <div class="nav-links">
-      <a href="/">about</a>
+      <a href="/about">about</a>
       <a href="/projects" class="active">projects</a>
       <a href="/contact">contact</a>
       <a href="https://www.linkedin.com/in/eric-reilly-sre/" target="_blank" rel="noopener noreferrer">linkedin ↗</a>
@@ -49,32 +49,32 @@
       Things I'm <span class="token">building.</span><span class="cursor" aria-hidden="true"></span>
     </h1>
     <p class="sub">
-      Six projects, three of them with public repos on GitHub. Each section calls out the current state of the work, repo included where I can share one.
+      Eight projects, three of them with public repos on GitHub. Each section calls out the current state of the work, repo included where I can share one.
     </p>
   </header>
 
   <section class="reveal">
     <div class="section-label">Active &amp; recent <span class="num">01 / 01</span></div>
     <div class="rows">
-
       <div class="row">
         <div class="n">P01</div>
         <div>
-          <div class="title">DrinkUp</div>
+          <div class="title">GenCast</div>
           <div class="meta">
-            drinkupapp (private) <span class="sep">·</span>
-            <span class="status">Pre-launch, final hardening before first prod deploy</span> <span class="sep">·</span>
-            Updated Jun 3, 2026
+            gencast (private) <span class="sep">·</span>
+            <span class="status">In staging, building toward launch</span> <span class="sep">·</span>
+            Updated Oct 18, 2026
           </div>
-          <p class="desc">A mobile ordering and payment platform for bars. A customer orders and pays for a drink right in the app, gets a pickup code, and hands the code to the bartender, who fulfills the order on the spot. No flagging down a bartender, no card swipe at pickup.</p>
+          <p class="desc">A self-serve way to turn a topic into a produced podcast episode, and to keep a series going with memory across episodes.</p>
           <ul class="bullets">
-            <li>FastAPI backend with Stripe Connect handling in-app payments and payouts to bar accounts.</li>
-            <li>React and Vite web portal for bartenders and bar admins, running on AWS Fargate, RDS, and ElastiCache, all provisioned through Terraform across dev, staging, and prod.</li>
-            <li>Full pytest and Playwright suite, including live end-to-end tests, gating every deploy.</li>
+            <li>Sign-up and account flow tested against real email delivery, not just mocks.</li>
+            <li>An episode wizard that creates real episodes from a topic.</li>
+            <li>Stripe billing set up.</li>
+            <li>Evolved from the Prompted pipeline, taking the same idea from my own show to something anyone can use.</li>
           </ul>
           <div class="why">
             <div class="why-label">Why I built this</div>
-            <p>I have stood in enough bar lines wondering why paying for a drink still means flagging someone down and waving a card around. DrinkUp lets a customer order and pay from their phone, then just show a code at the bar. Getting the payment and fulfillment flow right, and making a small production system safe enough to run real money through, has been the most demanding project I have shipped outside of work.</p>
+            <p>Prompted proved to me that a topic can become a produced episode with very little hand work. I wanted to see if that could be a product other people use, not just a pipeline I run for my own show. GenCast is that attempt, and it is the project that takes most of my time right now.</p>
           </div>
         </div>
         <div class="right">private repo</div>
@@ -83,11 +83,34 @@
       <div class="row">
         <div class="n">P02</div>
         <div>
+          <div class="title">Football Odds Analysis Engine</div>
+          <div class="meta">
+            odds-analysis (private) <span class="sep">·</span>
+            <span class="status">Live paper-trading season in progress</span> <span class="sep">·</span>
+            Updated Oct 18, 2026
+          </div>
+          <p class="desc">A batch pipeline for NFL and NCAAF sportsbook odds. It ingests lines from multiple books, devigs and blends them into a sharp-book consensus fair line, runs that through a deterministic rules engine to produce an adjusted probability estimate, and publishes a small number of value picks each week, each with a fully auditable explanation of how the estimate was reached.</p>
+          <ul class="bullets">
+            <li>No machine learning and no LLM anywhere in the reasoning path. Every pick traces back through a versioned, explicit rules engine, so the rationale is fully explainable rather than a black-box score.</li>
+            <li>The 2026 season is under way. Picks are posted with timestamps on a public track-record site, <a href="https://picks.ericreilly.com" target="_blank" rel="noopener noreferrer">picks.ericreilly.com</a>, so the record cannot be quietly rewritten.</li>
+            <li>Still paper trading only, with no money at risk. The goal is to answer one question by February 2027: does this approach produce positive closing line value.</li>
+          </ul>
+          <div class="why">
+            <div class="why-label">Why I built this</div>
+            <p>Sports betting analytics has no shortage of people selling picks on vibes and a good week. I wanted the opposite: a disciplined, deterministic process I could actually audit, with a track record that is public and timestamped so there is nowhere to hide a bad stretch. Win or lose, the record stays honest, and that is the part of this project I actually care about proving.</p>
+          </div>
+        </div>
+        <div class="right">private repo</div>
+      </div>
+
+      <div class="row">
+        <div class="n">P03</div>
+        <div>
           <div class="title">Stock Analysis Engine</div>
           <div class="meta">
             stock-analysis (private) <span class="sep">·</span>
-            <span class="status">Built, full test suite passing, live sign-off pending</span> <span class="sep">·</span>
-            Updated May 28, 2026
+            <span class="status">Built and in regular use, run each quarter</span> <span class="sep">·</span>
+            Updated Oct 18, 2026
           </div>
           <p class="desc">A local, rules-based Python engine for personal market research. It pulls free market data, scores a universe of tickers against a set of technical and fundamental rules, and turns that into a ranked, auditable list of proposed trades.</p>
           <ul class="bullets">
@@ -104,30 +127,30 @@
       </div>
 
       <div class="row">
-        <div class="n">P03</div>
+        <div class="n">P04</div>
         <div>
-          <div class="title">Football Odds Analysis Engine</div>
+          <div class="title">Fleet tooling</div>
           <div class="meta">
-            odds-analysis (private) <span class="sep">·</span>
-            <span class="status">Just kicked off, Sprint 01 building the data pipeline</span> <span class="sep">·</span>
-            Updated Sep 7, 2026
+            internal (private) <span class="sep">·</span>
+            <span class="status">Internal tooling, in daily use</span> <span class="sep">·</span>
+            Updated Oct 18, 2026
           </div>
-          <p class="desc">A batch pipeline for NFL and NCAAF sportsbook odds. It ingests lines from multiple books, devigs and blends them into a sharp-book consensus fair line, runs that through a deterministic rules engine to produce an adjusted probability estimate, and publishes a small number of value picks each week, each with a fully auditable explanation of how the estimate was reached.</p>
+          <p class="desc">The workspace I use to run several projects with AI agents: a private approvals-and-status page, plus shared cloud account standards and infrastructure modules.</p>
           <ul class="bullets">
-            <li>No machine learning and no LLM anywhere in the reasoning path. Every pick traces back through a versioned, explicit rules engine, so the rationale is fully explainable rather than a black-box score.</li>
-            <li>The goal for the 2026 season is a public, timestamped, tamper-evident paper-trading track record, built to answer one question by February 2027: does this approach produce positive closing line value.</li>
-            <li>Day one as of this writing. Sprint 01 is building the data ingestion spine and a zero-rules baseline, consensus line passed through unchanged, no live API calls, no real money, no AWS spend yet.</li>
+            <li>A private page where agents surface decisions and status, and I approve or answer from my phone.</li>
+            <li>Shared standards and reusable infrastructure modules, so each project starts from the same safe baseline.</li>
+            <li>Built for my own use. It is not a product and the code stays private.</li>
           </ul>
           <div class="why">
             <div class="why-label">Why I built this</div>
-            <p>Sports betting analytics has no shortage of people selling picks on vibes and a good week. I wanted the opposite: a disciplined, deterministic process I could actually audit, with a track record that is public and timestamped from day one so there is nowhere to hide a bad stretch. Win or lose, the record stays honest, and that is the part of this project I actually care about proving.</p>
+            <p>Running several projects at once only works if I can see what needs me and trust that everything else is moving. I built this so the agents handle the routine work and ask me only when a call is really mine to make.</p>
           </div>
         </div>
         <div class="right">private repo</div>
       </div>
 
       <div class="row">
-        <div class="n">P04</div>
+        <div class="n">P05</div>
         <div>
           <div class="title">Prompted: Tech Talks</div>
           <div class="meta">
@@ -154,7 +177,57 @@
       </div>
 
       <div class="row">
-        <div class="n">P05</div>
+        <div class="n">P06</div>
+        <div>
+          <div class="title">Personal Website</div>
+          <div class="meta">
+            website <span class="sep">·</span>
+            <span class="status">Production live</span> <span class="sep">·</span>
+            Updated Oct 18, 2026
+          </div>
+          <p class="desc">The site you are looking at now. It is a simple home base for who I am, what I work on, and how people can reach me, with infrastructure and deployment wired so updates are easy to ship.</p>
+          <ul class="bullets">
+            <li>Static HTML with a shared design system: Instrument Serif headlines, JetBrains Mono accents, and a light and dark theme toggle.</li>
+            <li>A staging site that every change must pass browser tests on before it can go to production, with a protected main branch so nothing lands without a pull request.</li>
+            <li>Production AWS resources modeled in Terraform with local modules for CloudFront, S3, Route 53, ACM, and the GitHub OIDC deploy role. Tag pushes deploy through GitHub Actions with OIDC instead of long-lived AWS secrets.</li>
+            <li>The <a href="https://picks.ericreilly.com" target="_blank" rel="noopener noreferrer">picks.ericreilly.com</a> track-record site for the odds project is hosted from the same AWS setup.</li>
+          </ul>
+          <div class="why">
+            <div class="why-label">Why I built this</div>
+            <p>This is just a simple website to showcase what I do, highlight some of my projects, and give people a way to work with me. Personal brand matters a lot now, and I wanted a place on the internet that felt like mine.</p>
+          </div>
+        </div>
+        <div class="right">
+          <a href="https://github.com/ericreilly999/website" target="_blank" rel="noopener noreferrer">repo ↗</a>
+        </div>
+      </div>
+
+      <div class="row">
+        <div class="n">P07</div>
+        <div>
+          <div class="title">DrinkUp</div>
+          <div class="meta">
+            drinkupapp (private) <span class="sep">·</span>
+            <span class="status">Paused, built through final hardening</span> <span class="sep">·</span>
+            Updated Oct 18, 2026
+          </div>
+          <p class="desc">A mobile ordering and payment platform for bars. A customer orders and pays for a drink right in the app, gets a pickup code, and hands the code to the bartender, who fulfills the order on the spot. No flagging down a bartender, no card swipe at pickup.</p>
+          <ul class="bullets">
+            <li>FastAPI backend with Stripe Connect handling in-app payments and payouts to bar accounts.</li>
+            <li>React and Vite web portal for bartenders and bar admins, running on AWS Fargate, RDS, and ElastiCache, all provisioned through Terraform across dev, staging, and prod.</li>
+            <li>Full pytest and Playwright suite, including live end-to-end tests, gating every deploy.</li>
+            <li>Paused before launch; the cloud footprint is switched off until I pick it back up.</li>
+          </ul>
+          <div class="why">
+            <div class="why-label">Why I built this</div>
+            <p>I have stood in enough bar lines wondering why paying for a drink still means flagging someone down and waving a card around. DrinkUp lets a customer order and pay from their phone, then just show a code at the bar. Getting the payment and fulfillment flow right, and making a small production system safe enough to run real money through, has been the most demanding project I have shipped outside of work.</p>
+          </div>
+        </div>
+        <div class="right">private repo</div>
+      </div>
+
+      <div class="row">
+        <div class="n">P08</div>
         <div>
           <div class="title">Pokemon Tuxedo</div>
           <div class="meta">
@@ -175,31 +248,6 @@
         </div>
         <div class="right">
           <a href="https://github.com/ericreilly999/pokemon-tuxedo" target="_blank" rel="noopener noreferrer">repo ↗</a>
-        </div>
-      </div>
-
-      <div class="row">
-        <div class="n">P06</div>
-        <div>
-          <div class="title">Personal Website</div>
-          <div class="meta">
-            website <span class="sep">·</span>
-            <span class="status">Production live</span> <span class="sep">·</span>
-            Updated May 12, 2026
-          </div>
-          <p class="desc">The site you are looking at now. It is a simple home base for who I am, what I work on, and how people can reach me, with infrastructure and deployment wired so updates are easy to ship.</p>
-          <ul class="bullets">
-            <li>Static HTML with a shared design system: dark theme, Instrument Serif headlines, JetBrains Mono accents.</li>
-            <li>Production AWS resources modeled in Terraform with local modules for CloudFront, S3, Route 53, ACM, and the GitHub OIDC deploy role.</li>
-            <li>Tag pushes deploy to production through GitHub Actions with OIDC instead of long-lived AWS secrets.</li>
-          </ul>
-          <div class="why">
-            <div class="why-label">Why I built this</div>
-            <p>This is just a simple website to showcase what I do, highlight some of my projects, and give people a way to work with me. Personal brand matters a lot now, and I wanted a place on the internet that felt like mine.</p>
-          </div>
-        </div>
-        <div class="right">
-          <a href="https://github.com/ericreilly999/website" target="_blank" rel="noopener noreferrer">repo ↗</a>
         </div>
       </div>
 

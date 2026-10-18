@@ -8,11 +8,12 @@ Personal website for [ericreilly.com](https://ericreilly.com) — static HTML wi
 
 ```
 public/
-  index.html       # About / homepage
+  index.html       # Landing page (consulting pitch)
+  about.html       # About / work history
   projects.html    # Projects listing
   contact.html     # Contact form
   shared.css       # Design system (light/dark theme via CSS custom properties, JetBrains Mono, Instrument Serif)
-  whiteglovesolutions.png  # Favicon
+  favicon.svg      # Favicon
   robots.txt
 terraform/         # Production AWS infrastructure (Terraform)
 .github/workflows/
