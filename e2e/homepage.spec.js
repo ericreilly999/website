@@ -74,6 +74,9 @@ test.describe('Homepage (consulting pitch)', () => {
     await expect(tiers.nth(2)).toContainText(/reliability/i);
     await expect(tiers.nth(2)).toContainText(/cost/i);
     const scale = tiers.nth(2);
+    await expect(scale.locator('.tier-sub')).toHaveText('Mature your Enterprise');
+    await expect(page.locator('.section-label').first()).toContainText('what i offer');
+    await expect(page.locator('body')).not.toContainText(/what i build/i);
     await expect(scale.locator('.outcome')).toHaveText('Improve the reliability of your platform, processes, and people.');
     await expect(scale.locator('li')).toHaveText([
       'Cloud architecture and cost optimization',
