@@ -89,8 +89,11 @@ test.describe('Homepage', () => {
     await expect(sub).not.toContainText('portfolio of products for a PE-backed SaaS');
   });
 
-  test('hero has three CTA links', async ({ page }) => {
-    await expect(page.locator('.hero-links li')).toHaveCount(3);
+  test('hero has exactly two CTA buttons', async ({ page }) => {
+    const labels = page.locator('.hero-links li a .label');
+    await expect(labels).toHaveCount(2);
+    await expect(labels.nth(0)).toHaveText('Work with me');
+    await expect(labels.nth(1)).toHaveText("What I'm building");
   });
 
   test('hero contact CTA reads "Work with me", not "Get in touch"', async ({ page }) => {
@@ -103,8 +106,12 @@ test.describe('Homepage', () => {
     await expect(ctaLabel).not.toHaveText('Get in touch');
   });
 
-  test('prompted podcast link points to prompted.ericreilly.com', async ({ page }) => {
-    await expect(page.locator('.hero-links a[href*="prompted.ericreilly.com"]')).toBeVisible();
+  test('hero has no prompted podcast link', async ({ page }) => {
+    await expect(page.locator('.hero-links a[href*="prompted.ericreilly.com"]')).toHaveCount(0);
+  });
+
+  test('MTTR incident-response bullet is absent', async ({ page }) => {
+    await expect(page.locator('.highlights')).not.toContainText(/MTTR|incident response workflows/i);
   });
 
   test('"about" nav link is active', async ({ page }) => {

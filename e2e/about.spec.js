@@ -17,11 +17,10 @@ test.describe('About page content', () => {
     expect(count).toBeGreaterThanOrEqual(5);
   });
 
-  test('shows key metrics: 70% Sev 1 reduction and AI-driven MTTR improvement', async ({ page }) => {
+  test('shows key metric: 70% Sev 1 reduction, and no MTTR bullet', async ({ page }) => {
     await expect(page.getByText(/70%/)).toBeVisible();
     await expect(page.getByText(/Sev 1/)).toBeVisible();
-    await expect(page.getByText(/MTTR/)).toBeVisible();
-    await expect(page.getByText(/countless hours/i)).toBeVisible();
+    await expect(page.getByText(/MTTR/)).toHaveCount(0);
   });
 
   test('lede reflects new value framing, not the old demo framing', async ({ page }) => {
