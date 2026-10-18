@@ -89,3 +89,6 @@ Decisions are recorded in reverse-chronological order.
 
 ## 2026-10-17 — Q-24 projects refresh: draft sent as WS-5 (no publish)
 **Decision:** Drafted updated entries (DrinkUp, Stock Analysis, Odds, Personal Website) and two new ones (GenCast, combined fleet tooling) and sent one decision card, `WS-5`, recommending option A (eight entries). Nothing published; prod needs a second owner go-ahead. Public-exposure rules applied: private repos stay unlinked, no costs/accounts/decision ids, GenCast claims limited to what is live (charter). Finding: `src/pages/Projects.js` is legacy React and stale (5 projects); the live page is `public/projects.html` (6).
+
+## 2026-10-18 — WS-5 + Q-25 on staging
+WS-5 option A approved (page answer, channel chat, quote "I'm good with A", decided_at 2026-10-18T00:48:56Z). Shipped to STAGING (PR #28 fcb2ce2, PR #29 cb059ce; staging E2E 130/130, run 39085490204). Owner additions applied: hero Prompted button and MTTR bullet removed; Scale card reworded; White Glove removed everywhere. PM call: removed the Prompted repo link (private repo, link was already broken for visitors). Production (tag) awaits owner go.

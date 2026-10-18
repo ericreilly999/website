@@ -179,3 +179,6 @@ CLD-13 and CLD-14 both fully shipped/closed — no further action queued for eit
 
 ### RESUME
 - On WS-5 answer (`decided_by_owner`): dispatch QA to update `e2e/projects.spec.js` (RED), Frontend edits `public/projects.html` in a worktree per chosen option, local tests + preview build, then a second owner card for prod deploy. Then T-03 / AC-18 picks QA sign-off.
+- 2026-10-18: WS-5 + Q-25 merged to main, staging live and E2E green. Not tagged.
+### RESUME
+- On owner go: tag next vX.Y.Z (after v0.1.8 line; check deployment-log), watch prod deploy, QA live sign-off of /, /about, /projects, /contact (send one test inquiry to verify form path), log deployment-log + test-signoff. Then T-03 / AC-18. Open: AC-18 picks QA sign-off; Contact "Work with me" rework is a separate queue item.
