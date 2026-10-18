@@ -66,7 +66,14 @@ test.describe('Homepage (consulting pitch)', () => {
     await expect(tiers.nth(2)).toContainText(/cloud architecture/i);
     await expect(tiers.nth(2)).toContainText(/reliability/i);
     await expect(tiers.nth(2)).toContainText(/cost/i);
-    await expect(tiers.nth(2)).toContainText(/SRE/);
+    const scale = tiers.nth(2);
+    await expect(scale.locator('.outcome')).toHaveText('Make the platform reliable, and the team that runs it.');
+    await expect(scale.locator('li')).toHaveText([
+      'Cloud architecture and cost',
+      'Reliability, on-call and incident response',
+      'Fractional technical leadership (team structure, delivery process, hiring support, operating cadence)',
+    ]);
+    expect(await scale.innerText()).not.toMatch(/—|–/);
   });
 
   test('no prices, no White Glove, no availability line', async ({ page }) => {
