@@ -26,9 +26,9 @@ test.describe('Homepage (consulting pitch)', () => {
     const name = page.locator('header.hero .hero-name');
     await expect(name).toHaveText('Eric Reilly');
     const headline = page.locator('h1.headline');
-    await expect(headline).toHaveText("From a simple website to a full product, built by someone who's kept platforms running at scale");
+    await expect(headline).toHaveText('Launch it. Build it. Scale it.');
     await expect(headline.locator('.token')).not.toHaveCount(0);
-    await expect(page.locator('header.hero .sub')).toHaveText('One senior engineer from first sketch to production. No handoffs, no agency overhead.');
+    await expect(page.locator('header.hero .sub')).toHaveText('Websites, custom apps, and reliable platforms, plus the leadership to keep them running.');
     const nameBox = await name.boundingBox();
     const headlineBox = await headline.boundingBox();
     expect(nameBox.y).toBeLessThan(headlineBox.y);
