@@ -92,3 +92,6 @@ Decisions are recorded in reverse-chronological order.
 
 ## 2026-10-18 — WS-5 + Q-25 on staging
 WS-5 option A approved (page answer, channel chat, quote "I'm good with A", decided_at 2026-10-18T00:48:56Z). Shipped to STAGING (PR #28 fcb2ce2, PR #29 cb059ce; staging E2E 130/130, run 39085490204). Owner additions applied: hero Prompted button and MTTR bullet removed; Scale card reworded; White Glove removed everywhere. PM call: removed the Prompted repo link (private repo, link was already broken for visitors). Production (tag) awaits owner go.
+
+## 2026-10-18 — Q-24/Q-25 parked in staging (owner chat)
+Owner instruction (relayed by coordinator, chat): "don't deploy anything to production, leave parked in staging to revisit later." No tag, no release. Staging (staging.ericreilly.com, main @ 192e8ec + docs) stays as is: WS-5 Projects refresh, Q-25 consulting landing/About/contact, all owner copy changes. The hero sub-line is ON HOLD: the owner is still choosing the wording, so do not change it until he sends it.

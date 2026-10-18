@@ -184,3 +184,9 @@ CLD-13 and CLD-14 both fully shipped/closed — no further action queued for eit
 - On owner go: tag next vX.Y.Z (after v0.1.8 line; check deployment-log), watch prod deploy, QA live sign-off of /, /about, /projects, /contact (send one test inquiry to verify form path), log deployment-log + test-signoff. Then T-03 / AC-18. Open: AC-18 picks QA sign-off; Contact "Work with me" rework is a separate queue item.
 - 2026-10-18: PR #30 (Launch card SEO bullet) merged 7ec7c32, staging E2E 130/130. Prod still awaits owner go.
 - 2026-10-18: PRs #31 #32 #33 (tier, offer, hero copy) merged; staging run 39087637197 E2E 130/130. Prod awaits owner go (tag after v0.1.8 line; check deployment-log for latest).
+
+### RESUME (supersedes the prod-go RESUME above)
+- PARKED IN STAGING by owner (chat, 2026-10-18): do NOT tag or deploy to production. Staging stays as-is. Hero sub-line change on hold until owner sends final wording (then PR, staging deploy, E2E gate, still no prod).
+- When the owner says go: tag next vX.Y.Z (check deployment-log for latest), watch the prod deploy, QA live sign-off of /, /about, /projects, /contact (incl. one real form inquiry), log deployment-log + test-signoff.
+- Other open: T-03 / AC-18 picks.ericreilly.com QA live sign-off; Contact/"Work with me" rework is a separate queue item; WS-4 mail forwarding pending.
+- Worktrees: only main registered. Undeletable folders (locked, remove manually): C:\dev\gitrepos\website-q25-followup, website-launch-seo, website-tier-copy, website-hero-copy, website-offer-copy.
