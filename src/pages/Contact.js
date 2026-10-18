@@ -67,24 +67,10 @@ function Contact() {
       <section className="contact">
         <div className="container">
           <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
-            <img
-              src="/whiteglovesolutions.png"
-              alt="White Glove Solutions"
-              style={{
-                maxWidth: '200px',
-                height: 'auto',
-                marginBottom: '1rem'
-              }}
-            />
             <h2>Get In Touch</h2>
-            <p style={{ fontStyle: 'italic', color: '#888', marginTop: '0.5rem' }}>
-              White Glove Solutions - Premium SRE &amp; Cloud Architecture Consulting
-            </p>
           </div>
           <p>
-            Interested in consulting services? I'm open to part-time projects that align with my
-            expertise in SRE, cloud architecture, and observability. Fill out the form below and
-            I'll get back to you.
+            Tell me what you need and I'll come back with a fixed quote.
           </p>
 
           {message && (
