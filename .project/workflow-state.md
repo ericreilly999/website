@@ -173,3 +173,9 @@ CLD-13 and CLD-14 both fully shipped/closed — no further action queued for eit
 
 ### RESUME
 - Dispatch QA for T-03 / AC-18: a live sign-off of `https://picks.ericreilly.com` (external resolvers, valid TLS) in `test-signoff.md`. Then tick AC-18, set M5 `done`, re-run the rollup, and push. No other open work; worktrees at close: none besides main.
+
+## Session — 2026-10-17 (`fleet-2026-10-15-1952`)
+- Q-24 worked first: decision card `WS-5` created (pending, label later); T-04 logged in TODO.md. Page `projects/website` v13 pushed. WS-4 (mail forwarding) untouched.
+
+### RESUME
+- On WS-5 answer (`decided_by_owner`): dispatch QA to update `e2e/projects.spec.js` (RED), Frontend edits `public/projects.html` in a worktree per chosen option, local tests + preview build, then a second owner card for prod deploy. Then T-03 / AC-18 picks QA sign-off.

@@ -164,3 +164,7 @@ Tags tasks to `.project/milestones.md` M5 (OA-17 cross-project DNS handoff for `
 | [ ] | T-04 | DEVOPS | [M6] Read-only check of the ericreilly.com zone (existing MX/TXT/DKIM, gencast.ericreilly.com MAIL FROM records) and which AWS account owns SES inbound | WS-4 | XS | Blocked on WS-4 |
 | [ ] | T-05 | DEVOPS | [M6] SES inbound rule + private S3 (7-day expiry) + forwarder Lambda + apex MX/SPF, via pipeline, plan-first | T-04 | M | Reuse GenCast GC-114 pattern |
 | [ ] | T-06 | QA | [M6] Test mail to eric@ and contact@ arrives in owner's Gmail; gencast.ericreilly.com sending still passes | T-05 | XS | |
+
+## Q-24 — Projects page refresh (queued by owner 2026-10-17; worked first)
+
+- [ ] **T-04** — Refresh `public/projects.html` with latest project status; add GenCast and fleet tooling. Milestone: none (maintenance). Gate: owner picks an option on decision card `WS-5` (draft entries in its details), then QA-first test update (`e2e/projects.spec.js` counts 6 to 8 and status regexes), implementation, local tests + preview build, a second owner go-ahead, then tag deploy to prod.
