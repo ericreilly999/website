@@ -41,10 +41,10 @@ test.describe('Projects page', () => {
     await expect(page.locator('.rows .row')).toHaveCount(8);
   });
 
-  test('hero sub line says eight projects and three public repos', async ({ page }) => {
+  test('hero sub line says eight projects and two public repos', async ({ page }) => {
     const sub = page.locator('header.hero .sub');
     await expect(sub).toContainText(/eight projects/i);
-    await expect(sub).toContainText(/three of them with public repos/i);
+    await expect(sub).toContainText(/two of them with public repos/i);
   });
 
   test('shows all eight titles in order, numbered P01 to P08', async ({ page }) => {
@@ -69,9 +69,9 @@ test.describe('Projects page', () => {
     await expect(why).not.toContainText('give people a way to get in touch');
   });
 
-  test('exactly 3 repo links point to github.com and open in new tab', async ({ page }) => {
+  test('exactly 2 repo links point to github.com and open in new tab', async ({ page }) => {
     const repoLinks = page.locator('.row .right a[href*="github.com"]');
-    await expect(repoLinks).toHaveCount(3);
+    await expect(repoLinks).toHaveCount(2);
     const count = await repoLinks.count();
     for (let i = 0; i < count; i++) {
       await expect(repoLinks.nth(i)).toHaveAttribute('target', '_blank');
@@ -79,7 +79,7 @@ test.describe('Projects page', () => {
   });
 
   test('private-repo rows have no github.com link', async ({ page }) => {
-    for (const title of ['GenCast', 'Fleet tooling', 'DrinkUp', 'Stock Analysis Engine', 'Football Odds Analysis Engine']) {
+    for (const title of ['GenCast', 'Fleet tooling', 'DrinkUp', 'Prompted: Tech Talks', 'Stock Analysis Engine', 'Football Odds Analysis Engine']) {
       await expect(rowFor(page, title).locator('a[href*="github.com"]')).toHaveCount(0);
     }
   });

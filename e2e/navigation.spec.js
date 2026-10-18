@@ -111,8 +111,13 @@ test.describe('Q-25 site-wide hygiene', () => {
   });
 
   test('white glove logo file is gone', async ({ request }) => {
+    // Hosts may SPA-fallback unknown paths to 200 text/html, so assert it is not served as an image.
     const res = await request.get('/whiteglovesolutions.png');
-    expect(res.status()).not.toBe(200);
+    expect(res.headers()['content-type'] || '').not.toMatch(/image\/png/i);
+    const pub = path.join(__dirname, '..', 'public');
+    expect(fs.existsSync(path.join(pub, 'whiteglovesolutions.png'))).toBe(false);
+    const stray = fs.readdirSync(pub).filter((f) => /white\s?-?glove/i.test(f));
+    expect(stray).toEqual([]);
   });
 
   test('every page declares a resolvable favicon', async ({ page, request, baseURL }) => {
