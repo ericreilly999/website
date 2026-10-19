@@ -87,7 +87,12 @@ test.describe('Homepage (consulting pitch)', () => {
   });
 
   test('no prices, no White Glove, no availability line', async ({ page }) => {
-    const text = await page.locator('body').innerText();
+    // #experience (owner request 2026-10-18) cites a career savings figure; that is not a service price.
+    const text = await page.locator('body').evaluate((b) => {
+      const c = b.cloneNode(true);
+      c.querySelectorAll('#experience').forEach((n) => n.remove());
+      return c.innerText;
+    });
     expect(text).not.toMatch(/\$\s?\d/);
     expect(text).not.toMatch(/white glove/i);
     expect(text).not.toMatch(/part-time/i);
@@ -136,10 +141,11 @@ test.describe('Homepage (consulting pitch)', () => {
     await expect(page.locator('section.cta')).toContainText(/fixed quote/i);
   });
 
-  test('work history is no longer on the landing page', async ({ page }) => {
-    await expect(page.locator('.highlights')).toHaveCount(0);
+  test('full work history is not on the landing page (only the #experience summary)', async ({ page }) => {
+    await expect(page.locator('.highlights')).toHaveCount(1);
+    await expect(page.locator('#experience .highlights')).toHaveCount(1);
     await expect(page.locator('.rows .row')).toHaveCount(0);
-    await expect(page.getByText('FIS Global')).toHaveCount(0);
+    await expect(page.locator('section:not(#experience)').getByText('FIS Global')).toHaveCount(0);
     await expect(page.getByText('Bloomsburg')).toHaveCount(0);
   });
 
