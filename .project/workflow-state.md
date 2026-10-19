@@ -190,3 +190,10 @@ CLD-13 and CLD-14 both fully shipped/closed — no further action queued for eit
 - When the owner says go: tag next vX.Y.Z (check deployment-log for latest), watch the prod deploy, QA live sign-off of /, /about, /projects, /contact (incl. one real form inquiry), log deployment-log + test-signoff.
 - Other open: T-03 / AC-18 picks.ericreilly.com QA live sign-off; Contact/"Work with me" rework is a separate queue item; WS-4 mail forwarding pending.
 - Worktrees: only main registered. Undeletable folders (locked, remove manually): C:\dev\gitrepos\website-q25-followup, website-launch-seo, website-tier-copy, website-hero-copy, website-offer-copy.
+
+## Session - 2026-10-19 (`fleet-2026-10-19-website`)
+- Owner request: work-experience summary before the projects section. PR #34 merged (4bc6c248) to main; staging deploy run 39192614882, E2E green. Facts sourced from about.html; one unsupported FIS attribution caught in review and removed. Prod NOT deployed (still parked).
+- Note: PR #34 edited two homepage.spec.js tests to exempt #experience (reviewed OK). Section sits between #tiers and #proof.
+
+### RESUME
+- Prod still awaits owner go (see prior RESUME). Locked folder to delete manually: C:\dev\gitrepos\website-wt-work-experience (plus the five listed earlier).
