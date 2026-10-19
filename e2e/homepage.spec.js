@@ -67,9 +67,11 @@ test.describe('Homepage (consulting pitch)', () => {
     ]);
     // Owner copy 2026-10-19: one shared supporting line on every card, plus a typical term.
     const SUPPORT = 'A production-ready app your customers and employees can use.';
+    const SCALE_SUPPORT = 'From requirements gathering to deliverables to results. A multi-month engagement that can run open-ended.';
+    const supports = [SUPPORT, SUPPORT, SCALE_SUPPORT];
     const terms = ['Typical term: 2-3 months', 'Typical term: 1 month', 'Typical term: 3+ months'];
     for (let i = 0; i < 3; i++) {
-      await expect(tiers.nth(i).locator('.outcome')).toHaveText(SUPPORT);
+      await expect(tiers.nth(i).locator('.outcome')).toHaveText(supports[i]);
       await expect(tiers.nth(i).locator('.tier-term')).toHaveText(terms[i]);
     }
     await expect(tiers.nth(1)).toContainText(/web and mobile apps/i);
