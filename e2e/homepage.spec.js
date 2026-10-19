@@ -69,7 +69,7 @@ test.describe('Homepage (consulting pitch)', () => {
     const SUPPORT = 'A production-ready app your customers and employees can use.';
     const SCALE_SUPPORT = 'From requirements gathering to deliverables to results. A multi-month engagement that can run open-ended.';
     const supports = [SUPPORT, SUPPORT, SCALE_SUPPORT];
-    const terms = ['Typical term: 2-3 months', 'Typical term: 1 month', 'Typical term: 3+ months'];
+    const terms = ['Typical term: 1 month', 'Typical term: 2-3 months', 'Typical term: 3+ months'];
     for (let i = 0; i < 3; i++) {
       await expect(tiers.nth(i).locator('.outcome')).toHaveText(supports[i]);
       await expect(tiers.nth(i).locator('.tier-term')).toHaveText(terms[i]);
