@@ -201,3 +201,6 @@ CLD-13 and CLD-14 both fully shipped/closed — no further action queued for eit
 - about.html NOT changed; mismatches flagged to owner: still names Togetherwork/FIS Global with roles Senior Cloud Architect/Senior SRE Manager/Programmer Analyst, "10+ migrations", "25+ product", "~15 SREs", Azure/5M accounts, EZRA coaching, Datadog $10K/mo; owner copy says Principal SRE ($250M ARR PE-backed), SRE Manager, ~10 migrations.
 ### RESUME
 - Prod awaits owner go. Owner to decide whether about.html should align with the new home copy. Locked folders to delete manually: website-wt-work-experience, website-splash (+ five earlier).
+- 2026-10-19: PR #36 (Scale card text, 5213c65, run 39329354074) and PR #37 (Build/Launch terms swapped, "migrations" wording, bea8622, run 39330258564) merged; staging E2E green both. Prod NOT deployed (parked).
+### RESUME (latest)
+- Prod awaits owner go. Open owner questions: should about.html align with home copy; should Build/Launch supporting text differ; card order. Locked empty folders to delete manually: website-scale-card-text, website-terms-swap, website-splash, website-wt-work-experience (+ five earlier).
