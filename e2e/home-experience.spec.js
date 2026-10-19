@@ -43,7 +43,7 @@ test.describe('Homepage work-experience summary', () => {
     await expect(exp.getByText('Key achievements')).toHaveCount(1);
     await expect(exp.locator('.achievements li')).toHaveText([
       /~?70% fewer Sev 1s in one year/,
-      /~?10 successful cloud migrations spanning on-prem, cloud, containerization and data/,
+      /~?10 successful migrations spanning on-prem, cloud, containerization and data/,
       /participant in multiple executive coaching programs for high-potential leaders/i,
     ]);
     expect(await exp.innerText()).not.toMatch(/selected outcomes/i);
