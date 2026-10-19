@@ -65,7 +65,13 @@ test.describe('Homepage (consulting pitch)', () => {
       'Hosting done right',
       'SEO optimization',
     ]);
-    await expect(tiers.nth(1).locator('.outcome')).toHaveText('A production-ready product your customers can use.');
+    // Owner copy 2026-10-19: one shared supporting line on every card, plus a typical term.
+    const SUPPORT = 'A production-ready app your customers and employees can use.';
+    const terms = ['Typical term: 2-3 months', 'Typical term: 1 month', 'Typical term: 3+ months'];
+    for (let i = 0; i < 3; i++) {
+      await expect(tiers.nth(i).locator('.outcome')).toHaveText(SUPPORT);
+      await expect(tiers.nth(i).locator('.tier-term')).toHaveText(terms[i]);
+    }
     await expect(tiers.nth(1)).toContainText(/web and mobile apps/i);
     await expect(tiers.nth(1)).toContainText(/AI features/i);
     await expect(tiers.nth(1)).toContainText(/automations/i);
@@ -77,7 +83,6 @@ test.describe('Homepage (consulting pitch)', () => {
     await expect(scale.locator('.tier-sub')).toHaveText('Mature your Enterprise');
     await expect(page.locator('.section-label').first()).toContainText('what i offer');
     await expect(page.locator('body')).not.toContainText(/what i build/i);
-    await expect(scale.locator('.outcome')).toHaveText('Improve the reliability of your platform, processes, and people.');
     await expect(scale.locator('li')).toHaveText([
       'Cloud architecture and cost optimization',
       'Reliability, Observability, and incident response',
@@ -87,7 +92,8 @@ test.describe('Homepage (consulting pitch)', () => {
   });
 
   test('no prices, no White Glove, no availability line', async ({ page }) => {
-    // #experience (owner request 2026-10-18) cites a career savings figure; that is not a service price.
+    // #experience (owner copy 2026-10-19) cites "$250M ARR" for the employer; that is not a service price.
+    // The exemption is scoped to #experience only.
     const text = await page.locator('body').evaluate((b) => {
       const c = b.cloneNode(true);
       c.querySelectorAll('#experience').forEach((n) => n.remove());
@@ -145,7 +151,8 @@ test.describe('Homepage (consulting pitch)', () => {
     await expect(page.locator('.highlights')).toHaveCount(1);
     await expect(page.locator('#experience .highlights')).toHaveCount(1);
     await expect(page.locator('.rows .row')).toHaveCount(0);
-    await expect(page.locator('section:not(#experience)').getByText('FIS Global')).toHaveCount(0);
+    await expect(page.getByText('FIS Global')).toHaveCount(0);
+    await expect(page.getByText('Togetherwork')).toHaveCount(0);
     await expect(page.getByText('Bloomsburg')).toHaveCount(0);
   });
 
