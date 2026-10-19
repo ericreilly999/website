@@ -197,3 +197,7 @@ CLD-13 and CLD-14 both fully shipped/closed — no further action queued for eit
 
 ### RESUME
 - Prod still awaits owner go (see prior RESUME). Locked folder to delete manually: C:\dev\gitrepos\website-wt-work-experience (plus the five listed earlier).
+- 2026-10-19 (owner chat copy changes): PR #35 merged 8bad342; staging run 39322881475 E2E green. Tier cards: Typical term lines + shared .outcome sentence; #experience now two unnamed roles + Key achievements. Prod NOT deployed (parked).
+- about.html NOT changed; mismatches flagged to owner: still names Togetherwork/FIS Global with roles Senior Cloud Architect/Senior SRE Manager/Programmer Analyst, "10+ migrations", "25+ product", "~15 SREs", Azure/5M accounts, EZRA coaching, Datadog $10K/mo; owner copy says Principal SRE ($250M ARR PE-backed), SRE Manager, ~10 migrations.
+### RESUME
+- Prod awaits owner go. Owner to decide whether about.html should align with the new home copy. Locked folders to delete manually: website-wt-work-experience, website-splash (+ five earlier).
