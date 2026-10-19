@@ -2,7 +2,8 @@
 const { test, expect } = require('@playwright/test');
 
 // Owner request 2026-10-18: work-experience SUMMARY on the home page, ahead of the
-// "things I've built" (#proof) section. Facts sourced from public/about.html.
+// "things I've built" (#proof) section.
+// Owner copy 2026-10-19: no company names, exactly two roles, plus Key achievements.
 test.describe('Homepage work-experience summary', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/');
@@ -23,17 +24,32 @@ test.describe('Homepage work-experience summary', () => {
     expect(before).toBe(true);
   });
 
-  test('summary names the real employers from /about', async ({ page }) => {
-    const text = await page.locator('#experience').innerText();
-    expect(text).toContain('Togetherwork');
-    expect(text).toContain('FIS Global');
+  test('role list is exactly the two owner-approved roles, verbatim', async ({ page }) => {
+    await expect(page.locator('#experience .roles li')).toHaveText([
+      'Principal SRE for a $250M ARR PE-backed SaaS. Own reliability and observability strategy.',
+      'SRE Manager for a cloud-native core-banking platform with serious uptime and regulatory requirements.',
+    ]);
   });
 
-  test('summary is short (3-5 lines) and has no em dash', async ({ page }) => {
-    const items = page.locator('#experience li');
-    const n = await items.count();
-    expect(n).toBeGreaterThanOrEqual(3);
-    expect(n).toBeLessThanOrEqual(5);
-    expect(await page.locator('#experience').innerText()).not.toContain('—');
+  test('no company names appear in #experience', async ({ page }) => {
+    const text = await page.locator('#experience').innerText();
+    for (const name of ['Togetherwork', 'FIS Global', 'FIS', 'Datadog']) {
+      expect(text).not.toContain(name);
+    }
+  });
+
+  test('Key achievements list has the three owner items, and "Selected outcomes" is gone', async ({ page }) => {
+    const exp = page.locator('#experience');
+    await expect(exp.getByText('Key achievements')).toHaveCount(1);
+    await expect(exp.locator('.achievements li')).toHaveText([
+      /~?70% fewer Sev 1s in one year/,
+      /~?10 successful cloud migrations spanning on-prem, cloud, containerization and data/,
+      /participant in multiple executive coaching programs for high-potential leaders/i,
+    ]);
+    expect(await exp.innerText()).not.toMatch(/selected outcomes/i);
+  });
+
+  test('summary has no em dash or en dash', async ({ page }) => {
+    expect(await page.locator('#experience').innerText()).not.toMatch(/—|–/);
   });
 });
