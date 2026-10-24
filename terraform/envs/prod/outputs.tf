@@ -16,6 +16,7 @@ output "site_cloudfront_domain_name" {
 output "site_deploy_role_arn" {
   value       = module.site_deploy.role_arn
   description = "Main site deploy role. Set as AWS_ROLE_ARN on the GitHub production environment."
+  sensitive   = true
 }
 
 output "prompted_bucket_name" {
@@ -36,9 +37,11 @@ output "prompted_cloudfront_domain_name" {
 output "prompted_deploy_role_arn" {
   value       = module.prompted_deploy.role_arn
   description = "Prompted deploy role. Set as PROMPTED_AWS_ROLE_ARN on the GitHub production environment."
+  sensitive   = true
 }
 
 output "contact_form_invoke_url" {
   value       = module.contact_form.invoke_url
   description = "POST URL of the new contact API. Used by the page repoint (B-Q43-04, owner card T3-3)."
+  sensitive   = true
 }
