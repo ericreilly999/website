@@ -56,3 +56,5 @@
 {"ts":"2026-10-24T11:13:15Z","run_id":"fleet-2026-10-24-1028","project":"website","task":"adhoc","agent":"frontend-engineer","outcome":"partial","pr":44,"notes":"honeypot PR opened, 152 pass 2 skipped, in review"}
 {"ts":"2026-10-24T11:14:22Z","run_id":"fleet-2026-10-24-1028","project":"website","task":"adhoc","agent":"devops-engineer","model":"claude-sonnet-5-5","tokens":72688,"tool_uses":12,"minutes":1.2,"outcome":"usage","source":"hook","agent_id":"ab16d017f3947a6ea"}
 {"ts":"2026-10-24T11:14:33Z","run_id":"fleet-2026-10-24-1028","project":"website","task":"adhoc","agent":"devops-engineer","outcome":"partial","pr":45,"notes":"hmac missing-file message PR opened, in review"}
+{"ts":"2026-10-24T11:19:00Z","run_id":"fleet-2026-10-24-1028","project":"website","task":"adhoc","agent":"code-reviewer","model":"claude-sonnet-5-5","tokens":65455,"tool_uses":11,"minutes":4.6,"outcome":"usage","source":"hook","agent_id":"a825fc4c6e605c685"}
+{"ts":"2026-10-24T11:19:04Z","run_id":"fleet-2026-10-24-1028","project":"website","task":"adhoc","agent":"code-reviewer","outcome":"merged","pr":45,"notes":"PR 45 squash merged 4a8422f; 0 findings"}
