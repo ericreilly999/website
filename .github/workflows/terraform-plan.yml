@@ -17,10 +17,12 @@ name: Terraform Plan
 #     TF_VAR_CONTACT_FROM_EMAIL (prod)
 #   Environment variable (non-identifying): AWS_REGION
 # The saved plan embeds all of those values, so it is uploaded ONLY as an
-# AES-256 encrypted file (key = TF_PLAN_ENCRYPTION_KEY), kept 1 day. The job
-# summary lists resource addresses and actions only; the reviewer reads that.
+# AES-256 encrypted file (key = TF_PLAN_ENCRYPTION_KEY), kept 1 day, with a
+# keyed HMAC (tfplan.enc.hmac, bound to env + commit) that Terraform Apply
+# verifies before decrypting. The job summary lists resource addresses and
+# actions only; the reviewer reads that.
 # Note: planning production waits on the production environment reviewer, the
-# same as applying it, because the environment owns the role variables.
+# same as applying it, because the environment owns the role secrets.
 
 on:
   workflow_dispatch:
@@ -71,12 +73,24 @@ jobs:
           BUCKET: ${{ secrets.TF_STATE_BUCKET }}
           REGION: ${{ vars.AWS_REGION }}
           PLAN_KEY: ${{ secrets.TF_PLAN_ENCRYPTION_KEY }}
+          TF_VAR_AWS_ACCOUNT_ID: ${{ secrets.TF_VAR_AWS_ACCOUNT_ID }}
+          TF_VAR_DNS_ZONE_ID: ${{ secrets.TF_VAR_DNS_ZONE_ID }}
+          TF_VAR_CONTACT_TO_EMAIL: ${{ secrets.TF_VAR_CONTACT_TO_EMAIL }}
+          TF_VAR_CONTACT_FROM_EMAIL: ${{ secrets.TF_VAR_CONTACT_FROM_EMAIL }}
+          TARGET_ENV: ${{ inputs.env }}
         run: |
-          for v in ROLE BUCKET REGION PLAN_KEY; do
+          REQUIRED="ROLE BUCKET REGION PLAN_KEY TF_VAR_AWS_ACCOUNT_ID TF_VAR_DNS_ZONE_ID"
+          # Production also needs the contact-form emails (staging has no contact form).
+          if [ "$TARGET_ENV" = "prod" ]; then REQUIRED="$REQUIRED TF_VAR_CONTACT_TO_EMAIL TF_VAR_CONTACT_FROM_EMAIL"; fi
+          for v in $REQUIRED; do
             if [ -z "${!v}" ]; then
               echo "::error::Environment secret/variable for $v is not set; this environment is not provisioned yet"; exit 1
             fi
           done
+          # Length only is reported, never the value.
+          if [ "${#PLAN_KEY}" -lt 32 ]; then
+            echo "::error::TF_PLAN_ENCRYPTION_KEY must be at least 32 characters"; exit 1
+          fi
 
       - name: Configure AWS credentials (OIDC, read-only plan role)
         uses: aws-actions/configure-aws-credentials@7474bc4690e29a8392af63c5b98e7449536d5c3a # v4
@@ -166,11 +180,22 @@ jobs:
         run: |
           openssl enc -aes-256-cbc -pbkdf2 -iter 600000 -salt -in tfplan -out tfplan.enc -pass env:PLAN_KEY
           rm -f tfplan
+          # AES-CBC is not authenticated, so also record a keyed HMAC over
+          # env + commit + ciphertext. Terraform Apply verifies it before
+          # decrypting. It reveals nothing without the key.
+          PLAN_ENV="${{ inputs.env }}" python3 - <<'PY'
+          import hashlib, hmac, os
+          key = hashlib.sha256(b"tfplan-mac\0" + os.environ["PLAN_KEY"].encode()).digest()
+          msg = (os.environ["PLAN_ENV"] + "\n" + os.environ["GITHUB_SHA"] + "\n").encode() + open("tfplan.enc", "rb").read()
+          open("tfplan.enc.hmac", "w").write(hmac.new(key, msg, hashlib.sha256).hexdigest() + "\n")
+          PY
 
       - name: Upload plan (encrypted)
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: tfplan-${{ inputs.env }}-${{ github.sha }}
-          path: terraform/envs/${{ inputs.env }}/tfplan.enc
+          path: |
+            terraform/envs/${{ inputs.env }}/tfplan.enc
+            terraform/envs/${{ inputs.env }}/tfplan.enc.hmac
           if-no-files-found: error
           retention-days: 1
