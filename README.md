@@ -15,9 +15,9 @@ public/
   shared.css       # Design system (light/dark theme via CSS custom properties, JetBrains Mono, Instrument Serif)
   favicon.svg      # Favicon
   robots.txt
-terraform/         # Production AWS infrastructure (Terraform)
+terraform/         # AWS infrastructure (Terraform): envs/staging, envs/prod, legacy
 .github/workflows/
-  deploy.yml       # CI/CD pipeline
+  pr-checks.yml, deploy-staging.yml, deploy-prod.yml  # CI/CD
 e2e/               # Playwright end-to-end tests
 ```
 
@@ -75,49 +75,41 @@ Because admin enforcement is off, the repo owner can still push directly to `mai
 
 | Environment | URL | Deploy trigger |
 |-------------|-----|----------------|
-| Staging | `https://staging.ericreilly.com` | Push to `main` touching a deployable path (see below) |
-| Production | `https://ericreilly.com` | Semver tag (e.g. `v1.0.0`) |
+| Staging | `https://staging.ericreilly.com` | Manual: dispatch `Deploy Staging` (nothing deploys on push) |
+| Production | `https://ericreilly.com` | Manual: dispatch `Deploy Production` with a release tag and sign-off reference |
 
 ---
 
 ## Deployment
 
+Deploys are `workflow_dispatch` only (owner scope, Q-43). Merging to `main` runs `PR Checks` on the PR but does not deploy.
+
 ```bash
-# Deploy to staging (automatic once a PR merges to main)
-gh pr merge --squash
+# Deploy a ref to staging (default main); runs tests, both sites, then E2E
+gh workflow run deploy-staging.yml -f ref=main
 
-# Deploy to production
-git tag v1.0.0
-git push origin v1.0.0
+# Deploy a release tag to production (after staging is green on that commit)
+git tag v1.0.0 && git push origin v1.0.0
+gh workflow run deploy-prod.yml -f tag=v1.0.0 -f signoff=<verifier PR or record id>
 ```
 
-The staging trigger is path-filtered with an allowlist, so docs-only, test-only, and tracking-file commits on `main` no longer redeploy staging. A push to `main` deploys only if it touches one of:
+Workflows in `.github/workflows/`:
 
-```
-public/**
-prompted/**
-package.json
-package-lock.json
-.github/workflows/deploy.yml
-```
+- `pr-checks.yml`: the required `PR Checks` job (`npm ci` + `npm test`), no AWS credentials.
+- `deploy-staging.yml`: test, deploy main site and Prompted in parallel, then Playwright E2E against `vars.SITE_URL`.
+- `deploy-prod.yml`: `verify` (semver tag, commit on `main`, a green `Deploy Staging` run on that commit), then deploy main site and Prompted, then a smoke check. The `production` GitHub environment must have a required reviewer; that setting is the approval gate.
 
-Anything else (including any future new top-level directory) does **not** trigger a staging deploy unless added to that list. The path filter does not apply to the production tag trigger — GitHub Actions does not evaluate path filters for tag pushes, so a matching semver tag always deploys prod.
+Every deploy job has `timeout-minutes`, job-level `permissions` (`id-token: write` only on jobs that assume a role) and a per-site `concurrency` group with `cancel-in-progress: false`, so an in-flight `s3 sync --delete` is never cancelled. Rollback is a re-dispatch of the previous good tag; the new buckets are versioned.
 
-The `deploy.yml` workflow:
-0. On a pull request: runs the `PR Checks` job only (`npm ci` + `npm test`) — no build, no deploy, no AWS credentials
-1. Runs `npm test` (no-op for unit tests)
-2. Builds the site (`npm run build`)
-3. For staging: patches the prompted link to point at `staging.prompted.ericreilly.com`
-4. Syncs `build/` to the S3 bucket
-5. Uploads HTML pages without `.html` extension so `/projects` and `/contact` resolve cleanly
-6. Invalidates the CloudFront distribution
+AWS credentials come from OIDC; no long-lived secrets. Nothing environment-specific is in the workflow files. Set these variables on each GitHub environment (`staging`, `production`) from the matching `terraform/envs/<env>` outputs:
 
-AWS credentials are obtained via OIDC — no long-lived secrets required.
-
-| Environment | IAM role | S3 bucket | CloudFront ID |
-|-------------|----------|-----------|---------------|
-| Staging | `${{ secrets.STAGING_DEPLOY_ROLE_ARN }}` | `ericreilly.com-staging` | `${{ vars.STAGING_CF_DIST_ID }}` |
-| Production | `arn:aws:iam::290993374431:role/eric-reilly-website-prod-deploy` | `ericreilly.com-prod` | `EU0P2OBAYXZSI` |
+| Variable | Meaning |
+|----------|---------|
+| `AWS_ROLE_ARN` / `PROMPTED_AWS_ROLE_ARN` | deploy roles (main site / Prompted) |
+| `AWS_REGION` | region (`us-east-1`) |
+| `S3_BUCKET` / `PROMPTED_S3_BUCKET` | content buckets |
+| `CF_DIST_ID` / `PROMPTED_CF_DIST_ID` | CloudFront distributions to invalidate |
+| `SITE_URL` / `PROMPTED_URL` | public base URLs (E2E target, smoke check, staging link rewrite) |
 
 ---
 
@@ -138,14 +130,16 @@ The same API handles prompt submissions from `prompted.ericreilly.com` (uses `{ 
 
 ## Terraform
 
-Infrastructure in `terraform/` manages the production AWS resources:
+```
+terraform/
+  envs/staging   # website-staging account: sites, certs, deploy roles (module calls only)
+  envs/prod      # website-prod account: same plus the contact-form backend
+  modules/       # static_site, certificate, dns_alias, dns_aliases, github_deploy, contact_form, certificate_zone
+  legacy/        # frozen management-account root and its state; deleted after cutover
+```
 
-- S3 bucket (`ericreilly.com-prod`)
-- CloudFront distribution (`EU0P2OBAYXZSI`)
-- Route 53 hosted zone (`Z09302003LDW15NJ86V5W`) and records
-- ACM certificate
-- GitHub OIDC provider and deploy IAM role
+Each env root uses an S3 backend with native locking (`use_lockfile`, Terraform >= 1.11). The state bucket is created per account by a bootstrap step, and its name is supplied at init time: copy `backend.hcl.example` to `backend.hcl`, then `terraform init -backend-config=backend.hcl`. Account-specific inputs (account id, DNS zone id, record role, contact emails) come from `platform.auto.tfvars` (copy the `.example`) or `TF_VAR_*`; both files are gitignored and no account id is committed. `attach_domain_aliases` stays `false` until the cutover runbook step, because a hostname can be an alias of only one CloudFront distribution.
 
-The content S3 buckets, CloudFront distributions, and the Route 53 hosted zone carry `lifecycle { prevent_destroy = true }`. Any plan that would destroy or replace them fails until the guard is removed in a deliberate, reviewed commit.
+Staging and prod are applied through the pipeline only. `terraform/legacy` still holds the original state (bucket `ericreilly-website-tfstate`); see `terraform/legacy/README.md` and `docs/migration/q43-inventory.md`.
 
-State is stored remotely in S3, in a bucket and DynamoDB lock table provisioned by `terraform/bootstrap-backend.sh`.
+The content buckets and CloudFront distributions carry `lifecycle { prevent_destroy = true }`. Any plan that would destroy or replace them fails until the guard is removed in a deliberate, reviewed commit.

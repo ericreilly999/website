@@ -25,3 +25,8 @@ project-status/
 .claude/worktrees/
 .project/ledger.pending.jsonl*
 # fleet:managed end
+
+# Terraform env roots: real values stay out of git
+terraform/envs/*/platform.auto.tfvars
+terraform/envs/*/backend.hcl
+terraform/modules/contact_form/build/

@@ -1,0 +1,212 @@
+name: Deploy Staging
+
+# Dispatch-only (owner scope, Q-43). Nothing deploys on push. Run it from the
+# Actions tab or `gh workflow run deploy-staging.yml -f ref=main`.
+#
+# Everything environment-specific comes from variables on the GitHub
+# `staging` environment (set from the envs/staging Terraform outputs):
+#   AWS_ROLE_ARN, PROMPTED_AWS_ROLE_ARN, AWS_REGION,
+#   S3_BUCKET, CF_DIST_ID, PROMPTED_S3_BUCKET, PROMPTED_CF_DIST_ID,
+#   SITE_URL, PROMPTED_URL
+# No account ids, bucket names or distribution ids live in this file.
+
+on:
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: Branch, tag or SHA to deploy to staging
+        required: true
+        default: main
+        type: string
+
+permissions:
+  contents: read
+
+env:
+  NODE_VERSION: 20
+
+jobs:
+  test:
+    name: Test
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          ref: ${{ inputs.ref }}
+
+      - name: Set up Node.js
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run tests
+        run: npm test
+
+  deploy-site:
+    name: Deploy Staging
+    needs: test
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    environment: staging
+    # Never cancel an in-flight `s3 sync --delete`: a half-synced site is worse than a queued run.
+    concurrency:
+      group: deploy-staging-site
+      cancel-in-progress: false
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          ref: ${{ inputs.ref }}
+
+      - name: Set up Node.js
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Configure AWS credentials (staging)
+        uses: aws-actions/configure-aws-credentials@7474bc4690e29a8392af63c5b98e7449536d5c3a # v4
+        with:
+          role-to-assume: ${{ vars.AWS_ROLE_ARN }}
+          role-session-name: github-actions-website-staging-deploy
+          aws-region: ${{ vars.AWS_REGION }}
+
+      - name: Build website
+        run: npm run build
+
+      - name: Point the prompted link at the staging prompted site
+        env:
+          PROMPTED_URL: ${{ vars.PROMPTED_URL }}
+        run: |
+          sed -i "s|https://prompted\.ericreilly\.com|${PROMPTED_URL}|g" build/*.html
+
+      - name: Upload assets to S3 (staging)
+        env:
+          S3_BUCKET: ${{ vars.S3_BUCKET }}
+        run: |
+          CACHE="no-cache, no-store, must-revalidate"
+          aws s3 sync build/ "s3://${S3_BUCKET}" --delete --cache-control "$CACHE"
+          for page in about projects contact; do
+            aws s3 cp "build/${page}.html" "s3://${S3_BUCKET}/${page}" \
+              --content-type "text/html" --cache-control "$CACHE"
+          done
+
+      - name: Invalidate CloudFront cache (staging)
+        env:
+          CF_DIST_ID: ${{ vars.CF_DIST_ID }}
+        run: aws cloudfront create-invalidation --distribution-id "$CF_DIST_ID" --paths "/*"
+
+      - name: Job summary
+        env:
+          SITE_URL: ${{ vars.SITE_URL }}
+          REF: ${{ inputs.ref }}
+        run: |
+          {
+            echo "## Staging deployment complete"
+            echo ""
+            echo "- **URL:** ${SITE_URL}"
+            echo "- **Ref:** \`${REF}\` (\`${GITHUB_SHA}\`)"
+            echo "- **Triggered by:** \`${GITHUB_ACTOR}\`"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+  deploy-prompted:
+    name: Deploy Prompted Staging
+    needs: test
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    environment: staging
+    concurrency:
+      group: deploy-staging-prompted
+      cancel-in-progress: false
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          ref: ${{ inputs.ref }}
+
+      - name: Configure AWS credentials (prompted staging)
+        uses: aws-actions/configure-aws-credentials@7474bc4690e29a8392af63c5b98e7449536d5c3a # v4
+        with:
+          role-to-assume: ${{ vars.PROMPTED_AWS_ROLE_ARN }}
+          role-session-name: github-actions-website-prompted-staging-deploy
+          aws-region: ${{ vars.AWS_REGION }}
+
+      - name: Upload static files to S3 (prompted staging)
+        env:
+          PROMPTED_S3_BUCKET: ${{ vars.PROMPTED_S3_BUCKET }}
+        run: |
+          aws s3 sync prompted/ "s3://${PROMPTED_S3_BUCKET}" \
+            --delete \
+            --cache-control "no-cache, no-store, must-revalidate"
+
+      - name: Invalidate CloudFront cache (prompted staging)
+        env:
+          PROMPTED_CF_DIST_ID: ${{ vars.PROMPTED_CF_DIST_ID }}
+        run: aws cloudfront create-invalidation --distribution-id "$PROMPTED_CF_DIST_ID" --paths "/*"
+
+      - name: Job summary
+        env:
+          PROMPTED_URL: ${{ vars.PROMPTED_URL }}
+          REF: ${{ inputs.ref }}
+        run: |
+          {
+            echo "## Prompted staging deployment complete"
+            echo ""
+            echo "- **URL:** ${PROMPTED_URL}"
+            echo "- **Ref:** \`${REF}\` (\`${GITHUB_SHA}\`)"
+            echo "- **Triggered by:** \`${GITHUB_ACTOR}\`"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+  e2e:
+    name: E2E Tests (Staging)
+    needs: [deploy-site, deploy-prompted]
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    environment: staging
+    permissions:
+      contents: read
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          ref: ${{ inputs.ref }}
+
+      - name: Set up Node.js
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Playwright browsers
+        run: npx playwright install --with-deps chromium
+
+      - name: Run E2E tests against staging
+        env:
+          PLAYWRIGHT_BASE_URL: ${{ vars.SITE_URL }}
+        run: npm run test:e2e
+
+      - name: Upload Playwright report
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: playwright-report
+          path: playwright-report/
+          retention-days: 30

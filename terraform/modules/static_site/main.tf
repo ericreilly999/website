@@ -18,6 +18,23 @@ variable "tags" {
   description = "Tags applied to all resources created by this module."
 }
 
+variable "enable_versioning" {
+  type        = bool
+  description = "Enable S3 versioning (and a noncurrent-version expiry rule) on the content bucket. Defaults to false so existing instantiations plan with no change."
+  default     = false
+}
+
+variable "noncurrent_version_expiry_days" {
+  type        = number
+  description = "Days after which noncurrent object versions are expired. Only used when enable_versioning is true."
+  default     = 30
+
+  validation {
+    condition     = var.noncurrent_version_expiry_days >= 1
+    error_message = "noncurrent_version_expiry_days must be at least 1."
+  }
+}
+
 data "aws_iam_policy_document" "website_bucket_policy" {
   statement {
     sid    = "PublicReadGetObject"
@@ -84,6 +101,37 @@ resource "aws_s3_bucket_server_side_encryption_configuration" "website" {
 
     bucket_key_enabled = false
   }
+}
+
+resource "aws_s3_bucket_versioning" "website" {
+  count  = var.enable_versioning ? 1 : 0
+  bucket = aws_s3_bucket.website.id
+
+  versioning_configuration {
+    status = "Enabled"
+  }
+}
+
+resource "aws_s3_bucket_lifecycle_configuration" "website" {
+  count  = var.enable_versioning ? 1 : 0
+  bucket = aws_s3_bucket.website.id
+
+  rule {
+    id     = "expire-noncurrent-versions"
+    status = "Enabled"
+
+    filter {}
+
+    noncurrent_version_expiration {
+      noncurrent_days = var.noncurrent_version_expiry_days
+    }
+
+    abort_incomplete_multipart_upload {
+      days_after_initiation = 7
+    }
+  }
+
+  depends_on = [aws_s3_bucket_versioning.website]
 }
 
 resource "aws_s3_bucket_website_configuration" "website" {

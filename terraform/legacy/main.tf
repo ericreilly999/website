@@ -39,7 +39,7 @@ locals {
 }
 
 module "certificate_zone" {
-  source = "./modules/certificate_zone"
+  source = "../modules/certificate_zone"
 
   domain_name     = local.domain_name
   www_domain_name = local.www_domain_name
@@ -47,7 +47,7 @@ module "certificate_zone" {
 }
 
 module "static_site" {
-  source = "./modules/static_site"
+  source = "../modules/static_site"
 
   bucket_name     = local.bucket_name
   domain_aliases  = [local.domain_name, local.www_domain_name]
@@ -56,7 +56,7 @@ module "static_site" {
 }
 
 module "dns_aliases" {
-  source = "./modules/dns_aliases"
+  source = "../modules/dns_aliases"
 
   zone_id                = module.certificate_zone.zone_id
   domain_name            = local.domain_name
@@ -66,7 +66,7 @@ module "dns_aliases" {
 }
 
 module "github_deploy" {
-  source = "./modules/github_deploy"
+  source = "../modules/github_deploy"
 
   github_repository           = local.github_repository
   deploy_role_name            = local.deploy_role_name
