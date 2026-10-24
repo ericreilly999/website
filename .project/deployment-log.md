@@ -4,6 +4,14 @@ Deployments are recorded in reverse-chronological order.
 
 ---
 
+## 2026-10-24 - Out-of-band: GitHub environment protection (no deploy)
+
+**What:** Via `gh api` on `ericreilly999/website`: environments `staging` and `production` changed from no protection to deployment branch policy "selected branches" with the single branch `main` (policy ids 64189704, 64189705); `production` additionally requires reviewer `ericreilly999` (user 241388049), self-review allowed (solo repo). No environment variables or secrets set; no AWS role values.
+**Why:** Q-43 follow-ups from PR #40 review; the `production` gate that deploy-prod.yml and terraform-apply.yml rely on did not exist.
+**Also:** deleted stale gitignored local files terraform/terraform.tfstate (0 B), terraform.tfstate.backup and website.tfplan in the primary checkout; remote state s3://ericreilly-website-tfstate/website/terraform.tfstate confirmed present (head-object, 115300 B, modified 2026-09-24).
+
+---
+
 ## 2026-09-24 — Alias A/AAAA records for `picks.ericreilly.com` (odds-analysis handoff, phase 2 of 2 — final)
 
 **What:** Added `aws_route53_record.picks_site_alias_a` and `aws_route53_record.picks_site_alias_aaaa` in the shared `ericreilly.com` zone (`module.certificate_zone.zone_id`, `Z09302003LDW15NJ86V5W`), extending `terraform/picks-site-dns.tf`. Both alias `picks.ericreilly.com` → `d2pw617i58c5iw.cloudfront.net` (alias zone `Z2FDTNDATAQYW2`), `evaluate_target_health = false`. Completes the OA-17 DNS handoff started in PR #22 (phase 1, ACM validation CNAME).

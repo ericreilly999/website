@@ -2,4 +2,5 @@
 # The placeholders below are NOT real ids; variable validation rejects them on purpose.
 aws_account_id      = "<WEBSITE_STAGING_ACCOUNT_ID>"
 dns_zone_id         = "<STAGING_ZONE_ID_FROM_PLATFORM>"
+dns_account_id      = "<PLATFORM_ACCOUNT_ID>"
 dns_assume_role_arn = null # or "arn:aws:iam::<PLATFORM_ACCOUNT_ID>:role/<RECORD_ROLE_NAME>"

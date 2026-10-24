@@ -29,6 +29,13 @@ export const handler = async (event) => {
     return respond(400, { error: "Invalid JSON body." }, origin);
   }
 
+  // Honeypot: the form carries a hidden "website" field that people never fill
+  // in. A non-empty value is a bot; answer as if it worked and send nothing.
+  // (Per-client throttling stays on the API Gateway stage; see the module.)
+  if (clean(data.website)) {
+    return respond(200, { message: "Message sent. I will get back to you soon." }, origin);
+  }
+
   // Two payload shapes are in use: the contact page sends
   // { name, email, company, project, need, term }; prompted.ericreilly.com
   // sends { message }.
