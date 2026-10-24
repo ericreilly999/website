@@ -127,9 +127,14 @@ jobs:
           python3 - <<'PY'
           import hashlib, hmac, os, sys
           key = hashlib.sha256(b"tfplan-mac\0" + os.environ["PLAN_KEY"].encode()).digest()
-          msg = (os.environ["PLAN_ENV"] + "\n" + os.environ["GITHUB_SHA"] + "\n").encode() + open("tfplan.enc", "rb").read()
+          try:
+              ct = open("tfplan.enc", "rb").read()
+              have = open("tfplan.enc.hmac").read().strip()
+          except FileNotFoundError as e:
+              print("::error::Plan artifact is missing " + os.path.basename(e.filename) + " (plans created before the integrity check cannot be applied); re-run Terraform Plan")
+              sys.exit(1)
+          msg = (os.environ["PLAN_ENV"] + "\n" + os.environ["GITHUB_SHA"] + "\n").encode() + ct
           want = hmac.new(key, msg, hashlib.sha256).hexdigest()
-          have = open("tfplan.enc.hmac").read().strip()
           if not hmac.compare_digest(want, have):
               print("::error::Plan artifact failed its integrity check (HMAC mismatch); re-run Terraform Plan")
               sys.exit(1)
