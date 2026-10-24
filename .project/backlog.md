@@ -69,6 +69,7 @@
 - **Outcome**: moving the contact backend between accounts does not require a page release.
 - **Acceptance**:
   - custom domain for the API; both pages call it
+  - contact.html and prompted/index.html add a visually hidden `website` honeypot input (tabindex -1, autocomplete off) and send it in the JSON body; the Lambda already drops non-empty values silently (added with the Q-43 follow-ups). API stage throttling (burst 10, 2 rps) is unchanged. Needs an E2E case for the hidden field.
   - form submission verified live on staging and prod
 
 ## Q-43: execute the cutover (staging, then prod site, then DNS)

@@ -90,6 +90,9 @@ jobs:
         env:
           PROMPTED_URL: ${{ vars.PROMPTED_URL }}
         run: |
+          if [ -z "${PROMPTED_URL}" ]; then
+            echo "::error::PROMPTED_URL variable is not set on the staging environment"; exit 1
+          fi
           sed -i "s|https://prompted\.ericreilly\.com|${PROMPTED_URL}|g" build/*.html
 
       - name: Upload assets to S3 (staging)

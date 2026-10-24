@@ -1,7 +1,7 @@
 name: Deploy Production
 
 # Dispatch-only. Never runs on a tag push. Run it with
-#   gh workflow run deploy-prod.yml -f tag=vX.Y.Z -f signoff=<verifier PR or record id>
+#   gh workflow run deploy-prod.yml -f tag=vX.Y.Z -f signoff=<PR number>
 #
 # Gates, in order:
 #   1. `verify` job: the tag is a semver tag, its commit is on main, and
@@ -26,7 +26,7 @@ on:
         required: true
         type: string
       signoff:
-        description: Verifier sign-off reference (PR number or record id) for this tag
+        description: PR number whose verifier sign-off record (.project/verification/<PR>.md on main) covers this tag
         required: true
         type: string
 
@@ -64,12 +64,25 @@ jobs:
           if ! [[ "$TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
             echo "::error::Tag '$TAG' is not vMAJOR.MINOR.PATCH"; exit 1
           fi
-          if [ -z "${SIGNOFF// /}" ]; then
-            echo "::error::signoff reference is required"; exit 1
+          if [ "$GITHUB_REF" != "refs/heads/main" ]; then
+            echo "::error::Dispatch this workflow from main (got $GITHUB_REF)"; exit 1
+          fi
+          if ! [[ "$SIGNOFF" =~ ^[0-9]+$ ]]; then
+            echo "::error::signoff must be a PR number"; exit 1
           fi
           SHA="$(git rev-parse --verify "refs/tags/${TAG}^{commit}")"
           git merge-base --is-ancestor "$SHA" origin/main \
             || { echo "::error::Tag commit $SHA is not on main"; exit 1; }
+          # Verifier record: .project/verification/<PR>.md on main, result PASS,
+          # recorded sha reachable from the tag commit.
+          REC=".project/verification/${SIGNOFF}.md"
+          git show "origin/main:${REC}" > /tmp/signoff.md 2>/dev/null             || { echo "::error::No sign-off record ${REC} on main"; exit 1; }
+          fm() { awk -v k="$1" 'NR==1&&$0!="---"{exit} NR>1&&$0=="---"{exit} $1==k":"{print $2}' /tmp/signoff.md | tr -d "\"'"; }
+          [ "$(fm verify)" = "signoff" ] && [ "$(fm result)" = "PASS" ]             || { echo "::error::${REC} is not a PASS sign-off"; exit 1; }
+          [ "$(fm pr)" = "$SIGNOFF" ]             || { echo "::error::${REC} pr field does not match $SIGNOFF"; exit 1; }
+          REC_SHA="$(fm sha)"
+          [[ "$REC_SHA" =~ ^[0-9a-f]{7,40}$ ]]             || { echo "::error::${REC} has no valid sha"; exit 1; }
+          git merge-base --is-ancestor "$REC_SHA" "$SHA"             || { echo "::error::Signed-off commit $REC_SHA is not in tag $TAG"; exit 1; }
           OK="$(gh run list --repo "$GITHUB_REPOSITORY" --workflow deploy-staging.yml \
             --commit "$SHA" --status success --json databaseId --jq length)"
           if [ "$OK" -lt 1 ]; then
@@ -80,7 +93,7 @@ jobs:
             echo "## Release tag verified"
             echo ""
             echo "- **Tag:** \`${TAG}\` (\`${SHA}\`)"
-            echo "- **Sign-off ref:** ${SIGNOFF}"
+            echo "- **Sign-off:** PR #${SIGNOFF} PASS @ ${REC_SHA}"
             echo "- **Staging runs green on this SHA:** ${OK}"
           } >> "$GITHUB_STEP_SUMMARY"
 

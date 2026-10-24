@@ -37,6 +37,17 @@ variable "dns_zone_id" {
   description = "Route 53 hosted zone ID, in the DNS account, holding the staging names (a delegated subzone or the Platform zone). Provided by Platform."
 }
 
+variable "dns_account_id" {
+  type        = string
+  description = "12-digit id of the account that owns the hosted zone; pins the aws.dns provider. Provided by Platform."
+  default     = null
+
+  validation {
+    condition     = var.dns_account_id == null || can(regex("^[0-9]{12}$", var.dns_account_id))
+    error_message = "dns_account_id must be a 12-digit AWS account id or null."
+  }
+}
+
 variable "dns_assume_role_arn" {
   type        = string
   description = "Platform record role to assume for DNS writes. Null when the zone is in this account."

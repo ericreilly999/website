@@ -5,15 +5,15 @@ $ErrorActionPreference = "Stop"
 # If this is the first time running after the S3 backend was added to main.tf,
 # you must first run the bootstrap script to create the backend resources:
 #
-#   bash terraform/bootstrap-backend.sh
+#   bash terraform/bootstrap-backend.sh   (run from the repo root)
 #
 # Then run the ONE-TIME migration (replaces the plain `terraform init` below):
 #
-#   cd terraform
+#   cd terraform/legacy
 #   terraform init -migrate-state
 #
 # Terraform will prompt you to confirm — type 'yes'.
-# After a successful migration you can delete terraform/terraform.tfstate locally
+# After a successful migration you can delete terraform/legacy/terraform.tfstate locally
 # (it is gitignored, but removing it prevents accidental reuse).
 #
 # On subsequent runs this script handles init normally.
