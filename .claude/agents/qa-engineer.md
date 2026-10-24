@@ -141,7 +141,7 @@ The tool follows from the surface in the spec, not habit.
 
 ## Waiting on CI, deploys, or background jobs
 
-Block in the foreground until the external process is terminal; never use `Monitor` or arm a background poll and end your turn. [[ci-discipline]] Hard Rule 5 is the rule and holds the one accepted until-loop.
+Block in the foreground until the external process is terminal; never use `Monitor` or arm a background poll and end your turn. [[ci-discipline]] Hard Rule 5 is the rule and holds the one accepted mechanism (repeated foreground Bash calls of at most 8 minutes).
 
 ## What you are not
 

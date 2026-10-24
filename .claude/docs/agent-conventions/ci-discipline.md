@@ -28,15 +28,19 @@ The canonical project-level incident (paraphrased from `CLAUDE.md` if present): 
 
 5. **On 403 rate-limit errors, do NOT retry** ([[github-api]] rule 4 is the rule).
 
-   **Block on the wait — never arm a watcher and exit.** When an agent must wait for an external process (a CI run, a deploy, a background job) to reach a terminal state, it MUST **block** in the foreground until then. Do NOT arm a watcher (`Monitor`, a backgrounded poll loop) and end the turn — a watcher orphaned at agent exit forces a re-dispatch, which wastes context. Block with a foreground until-loop, polling at the interval above (≥ 240 s; deploy/CI pipelines take 15–25 min):
+   **Block on the wait — never arm a watcher and exit.** When an agent must wait for an external process (a CI run, a deploy, a background job) to reach a terminal state, it MUST **block** in the foreground until then. Do NOT arm a watcher (`Monitor`, a `run_in_background` poll loop, `ScheduleWakeup`) and end the turn — a watcher orphaned at agent exit forces a re-dispatch, which wastes context. Wait in **bounded foreground Bash calls**: one call lasts at most 8 minutes (set `timeout: 600000`; a Bash call is capped at 10), polls every 60–120 s through REST ([[github-api]]: `gh pr view` is GraphQL, blocked in cloud sessions), and stops early on a terminal state. If the call returns with the run still going, make the same call again, inside the same turn. Deploy/CI pipelines take 15–25 min, so expect three or four calls; past about 40 minutes, report the run as stuck to the PM instead of calling again.
 
    ```bash
-   until [[ "$(gh pr view <N> --json statusCheckRollup --jq '<terminal-check>')" == "true" ]]; do sleep 240; done
+   # one foreground Bash call (timeout: 600000): up to 6 polls x 75 s, about 7.5 min. Not terminal yet: run it again.
+   for i in $(seq 6); do
+     python .claude/scripts/lib/github.py status-poll --owner O --repo R --ref <sha> | grep -q '"terminal": true' && break
+     sleep 75
+   done
    ```
 
    Exiting the turn before the wait condition is terminal = re-dispatch = wasted context.
 
-   This rule is also enforced at the **agent-definition level** (devops-engineer, qa-engineer, code-reviewer) because prompt-level reminders alone failed: the arm-a-watcher-and-exit anti-pattern recurred ~5× across sessions despite explicit per-dispatch guidance, including a deploy-remediation agent that armed a `Monitor` and ended its turn mid-apply, leaving a staging deploy in flight with no reported verdict. The `Monitor` tool is forbidden for terminal-state waits by name; the foreground `run_in_background` until-loop is the only accepted mechanism.
+   This rule is also enforced at the **agent-definition level** (devops-engineer, qa-engineer, code-reviewer) because prompt-level reminders alone failed: the arm-a-watcher-and-exit anti-pattern recurred ~5× across sessions despite explicit per-dispatch guidance, including a deploy-remediation agent that armed a `Monitor` and ended its turn mid-apply, leaving a staging deploy in flight with no reported verdict. `Monitor`, `ScheduleWakeup` and `run_in_background` loops are forbidden for terminal-state waits by name; the repeated bounded foreground Bash call above is the only accepted mechanism.
 
 6. **Pre-push validation includes linters CI runs, not just tests.** "Tests pass locally" is necessary but not sufficient — CI also runs project linters (`ruff` for Python, `eslint` + `tsc` for TypeScript, `terraform fmt` / `tflint` for HCL, etc.). The project's `CLAUDE.md` lists the exact linters. Run them all locally before push. A force-push to fix a lint error wastes a CI cycle the same way a tag-push iteration does.
 

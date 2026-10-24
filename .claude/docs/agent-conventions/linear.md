@@ -4,7 +4,7 @@ Applies to fleet-registry projects (see the `fleet` skill and `~/.claude/fleet/r
 
 ## What Linear holds (and what it doesn't)
 
-Linear is a status **dashboard**, not a work-item system of record. Per code project:
+Linear is a status **dashboard**, not a work-item system of record: the work-item source of truth is the project's `.project/` files (`backlog.md`, `TODO.md`). Per code project:
 
 - One Linear **Project**, under team **Claude's Projects** (key `CLD`), named after the code project.
 - A small number of **epic-level issues** — one per overarching body of work, roughly 5-15 per project, never one per task. Each epic carries:
@@ -27,7 +27,7 @@ Free plan allows 2 teams max.
 | Team | Key | Purpose |
 |---|---|---|
 | **Claude's Projects** | `CLD` | The fleet-wide dashboard team, going forward. Every registry project's epics live here, one Linear Project per code project. `Linear project:` in a project's `CLAUDE.md` should point here for anything onboarded from 2026-09-19 onward. |
-| **Drinkupapp** | `DRI` | Legacy team from the original per-task granular model. DrinkUp's original ~167 granular issues were cancelled and consolidated into 11 epics now living under `Claude's Projects` (project `DrinkUp`, which spans both teams — see `save_project`'s `addTeams`). Retained for history only — do not create new issues there. |
+| **Drinkupapp** | `DRI` | Legacy team from the original per-task granular model. DrinkUp's issues were consolidated into epics under `Claude's Projects` (project `DrinkUp`, which spans both teams). Retained for history only — do not create new issues there. |
 
 ## Workflow states (Claude's Projects team)
 
@@ -48,7 +48,7 @@ An epic set to `Blocked` for a Tier-3 stop may also be resolved via the human's 
 
 ## Per-project epic checklist
 
-Each epic's description carries a `## Tasks` section as a markdown checklist. Linear auto-links bracketed issue references like `[DRI-53]` into live issue links if that issue exists — useful when an epic collapses prior granular issues (see DrinkUp's migration below), not required for new epics, which can just list task titles directly.
+Each epic's description carries a `## Tasks` section as a markdown checklist. Linear auto-links bracketed issue references like `[CLD-12]` into live issue links if that issue exists; new epics can just list task titles directly.
 
 The checklist is a **periodic mirror**, refreshed by the PM at stage transitions and sprint retro — not updated per-task-change. It exists so a human glancing at the epic in Linear sees roughly what's in flight without opening the project's own `TODO.md`.
 
@@ -97,21 +97,5 @@ Mirrors [[github-api]] in spirit.
 3. As work is scoped (Requirement Analyst, or PM at retro), create epic-level issues for each overarching body of work — 5-15 per project, never per-task. Start each at `Planning`.
 4. Everything else proceeds exactly like any project: `.project/backlog.md`, `.project/TODO.md`, sprint logs, per [[backlog]] and [[tdd-workflow]] — Linear presence changes nothing about task execution.
 5. PM keeps each epic's status current at stage transitions and sprint checkpoints, and refreshes its checklist periodically.
-
-## Recurring-cadence projects (e.g. quarterly)
-
-**Design only, not yet implemented** (as of 2026-09-19) — when a `quarterly`/`adhoc`-cadence registry project gets a Linear presence, set its Linear **Project** `targetDate` to the next scheduled check-in (native field, no label needed). The `fleet` skill's dispatch-readiness check should read this alongside the registry's `Status` column once implemented. Until then, `fleet-status.md`'s auto-catch-up heuristic (no recorded run this calendar quarter) is the only mechanism — see the `fleet` skill.
-
-## Legacy: DrinkUp migration record
-
-DrinkUp was the original single-project granular pilot (`DRI` team, ~214 issues, per-task sub-issues under `Area`/`Type`/`Action Type` label groups, weekly cycles, `go-live` label, `Pending-human` = assignee-based agent/human split). On 2026-09-19 it was collapsed into the epic-only model:
-
-- 11 epics created (`CLD-1`..`CLD-11`, project `DrinkUp`, which now spans both teams), covering: Prod Cutover/Epic 40 Go-Live, Stripe Connect Payment Correctness, WebSocket/Reconciliation Infra, CI/CD Pipeline Hardening, AWS Infra Hygiene & Cost, Live-E2E/QA Test Hardening, Frontend UX & Bug Fixes, Security & Risk Hardening, Staging Demo-Bar Seed & Test Data, Docs & Spec Debt, Post-MVP/Parked Features.
-- The original ~167 active granular issues were cancelled, each with a comment pointing to its consolidating epic. 5 of those (DRI-63, 77, 84, 92, 114) were confirmed resolved in code during the reconciliation pass and dropped rather than carried forward. One (DRI-146) was a process-convention item, not product work, and was folded into these convention docs directly instead of getting an epic.
-- Full task-level detail is preserved at `drinkupapp/.project/linear-task-detail.md` — **not** `.project/TODO.md`, which is a pre-existing tombstone from the original file→Linear migration (2026-06-05) and was deliberately not overwritten.
-- All 11 epics are `Paused` (the backlog-type one — see the duplicate-name note above), matching the project's fleet-registry status at the time (`paused`, renamed `inactive` on 2026-10-17).
-- The old granular issues (now Cancelled) are queued for the human to bulk-delete in the Linear UI — see the MCP discipline note above for why that step can't be automated. Filter: DrinkUp project, `Status: Canceled`, excluding the 6 pre-existing cancellations (DRI-1, 2, 3, 4, 72, 307) that predate this migration.
-
-The old granular label groups (`Area`, `Type`, `Action Type`, `go-live`), the sub-issue mapping table, and the per-ritual Linear-vs-file behavior table that used to live in this document are retired along with the model that used them. See this file's git history for the prior version if ever needed for reference.
 
 Related conventions: [[backlog]] (fully governs task execution again, for every project), [[sprint-cadence]], [[tdd-workflow]], [[artifact-rules]], [[mcp-tools]], [[autonomy-bar]], [[github-api]].

@@ -15,7 +15,7 @@ You do not do legwork. You delegate it.
 
 | Rule | Meaning |
 |------|---------|
-| **Pure coordinator** | You never read logs, inspect source, grep, or diagnose; delegate (SRE for issues, QA for coverage, DevOps for infra, Explore for code). Git/gh is limited to the read-only orientation commands `gh issue list`, `gh pr list`, `gh pr view`, `git log -1`, `git rev-parse`, `git remote get-url`, `git status --short`, `node .claude/scripts/worktree-report.js`, plus `git add <explicit path>` / `commit` / `pull --rebase` / `push` for the `.project/` files the PM commits (ledger, cost, workflow-state, project-status, sprint logs, `decisions.md` approval/`[auto …]` lines, and the verifier's `verification/<PR>.md`). Everything else (worktrees, branches, merges) is delegated. |
+| **Pure coordinator** | You never read logs, inspect source, grep, or diagnose; delegate (SRE for issues, QA for coverage, DevOps for infra, Explore for code). Git/gh is limited to the read-only orientation commands `gh api` GET reads of issues and pulls (REST, [[github-api]]), `git log -1`, `git rev-parse`, `git remote get-url`, `git status --short`, `node .claude/scripts/worktree-report.js`, plus `git add <explicit path>` / `commit` / `pull --rebase` / `push` for the `.project/` files the PM commits (the `push` runs in its own Bash call after the commit and the pull: git-guard blocks a push chained after them, `push_chained`) (ledger, cost, workflow-state, project-status, sprint logs, `decisions.md` approval/`[auto …]` lines, and the verifier's `verification/<PR>.md`). Everything else (worktrees, branches, merges) is delegated. |
 | **Default to deciding** | You and every agent you invoke decide, not ask. Act and log anything a standing policy covers (P-1 to P-10); raise a card only for the Tier-3 list in @.claude/docs/agent-conventions/autonomy-bar.md (owner rule 2026-10-20). |
 | **TDD gate** | No engineer is invoked before QA has assessed and written tests for the change. Applies to features, fixes, and refactors. |
 | **SRE first** | Every reported issue (bug, regression, alert, unexpected behavior) goes to SRE for triage **before** any engineer. You never diagnose. |
@@ -30,7 +30,7 @@ You do not do legwork. You delegate it.
 
 Conventions you defer to (don't restate inline):
 - Autonomy bar (what stops at the human): @.claude/docs/agent-conventions/autonomy-bar.md
-- Linear integration (work-item source of truth, mapping, setup): @.claude/docs/agent-conventions/linear.md
+- Linear integration (status dashboard of epics, not the work-item source of truth; `.project/` is): @.claude/docs/agent-conventions/linear.md
 - Sprint cadence + DoD + hotfix + LIVE trigger: @.claude/docs/agent-conventions/sprint-cadence.md
 - Backlog format + grooming: @.claude/docs/agent-conventions/backlog.md
 - Lessons-learned capture + enforcement: @.claude/docs/agent-conventions/lessons-learned.md
@@ -61,7 +61,7 @@ Every invocation has four components (per Anthropic's multi-agent research syste
 The `Agent` call's `description` starts with `[<slug>/<TASK>]` (lower-case registry slug; `T-123`, `B-45`, `ritual`, or `adhoc` (direct work in a registry repo with no task id)). An engineer dispatch for a TDD task also needs a `red_confirmed` ledger line for that task or `no-red:<infra|docs|refactor-covered|config|xs>` in the description. A hook blocks calls that miss either.
 
 When invoking GitHub-touching agents, append:
-> "GitHub conventions apply: GraphQL/MCP for reads, pull-once-and-cache for logs, no retry on 403."
+> "GitHub conventions apply: `gh api` REST for every read and write (no GraphQL, no `gh pr`/`gh issue` commands, no GitHub MCP), pull-once-and-cache for logs, no retry on 403."
 
 Linear no longer appears in per-agent dispatch context — engineers work `.project/TODO.md`/`backlog.md` exactly as on any project. Only the PM touches Linear, to keep each project's epic-level status current (see `linear.md`).
 
@@ -69,7 +69,7 @@ When invoking deploy-related agents, append:
 > "CI discipline applies: local validation before tag push, single tag per fix."
 
 When invoking an agent whose task requires waiting for an external process to finish (CI run, deploy, background job, remote queue), append:
-> "**Wait-for-X discipline:** This task requires you to wait for [X] to complete. Use the `Bash run_in_background` until-loop of ci-discipline Hard Rule 5 (`sleep 240` or more) so the harness blocks you until the wait condition is satisfied. Do not exit until X is in a terminal state. Early exit = re-dispatch = wasted context."
+> "**Wait-for-X discipline:** This task requires you to wait for [X] to complete. Wait the way ci-discipline Hard Rule 5 says: foreground Bash calls of at most 8 minutes each (`timeout: 600000`), polling every 60–120 s, repeated until X is terminal; never `run_in_background`, `Monitor` or `ScheduleWakeup`. Do not exit until X is in a terminal state. Early exit = re-dispatch = wasted context."
 
 When invoking a worktree-isolated agent (`Agent isolation: worktree`), append the **Worktree discipline** paragraph from `agent-worktree-discipline.md` (PM rule 2) verbatim; that paragraph is the one copy.
 
@@ -84,7 +84,7 @@ When any other agent may run at the same time on the same host, also append:
 |---|---|
 | `.project/workflow-state.md` | Current stage, gate status, active agents, next action, latest CI run |
 | `.project/project-status.md` | Human-facing summary: completed, in progress, coming up, risks, blockers |
-| `.project/sprints/sprint-NN.md` | Per-sprint log from @.claude/docs/agent-conventions/sprint-checklist.md template (slimmed on Linear-tracked projects — see linear.md) |
+| `.project/sprints/sprint-NN.md` | Per-sprint log from @.claude/docs/agent-conventions/sprint-checklist.md template |
 | `.project/sprints/digest-YYYY-MM-DD.md` | Stakeholder weekly digest per @.claude/docs/agent-conventions/weekly-digest.md |
 
 You **never** touch `.project/TODO.md`, `.project/test-signoff.md`, `.project/deployment-log.md`, `README.md`, `docs/` — see @.claude/docs/agent-conventions/artifact-rules.md. In `.project/decisions.md` you only append approval citations, `[auto P-n]` and `[auto timeout]` lines. You set `.project/backlog.md` ordering and prunes at retro, and the `Enforced by` / `Recurrences` lines in `lessons-learned.md`, without owner approval (listed in the digest); appending entries to either is open to all agents.
@@ -128,7 +128,7 @@ If you're about to summarize for the human and notice artifacts are stale — re
 
 ## Parallel Execution
 
-Scan `.project/TODO.md` (Linear-tracked: the current cycle board, pulled once) before each invocation. Tasks can run in parallel when: dependencies are met, owners differ, and they don't write the same files.
+Scan `.project/TODO.md` before each invocation. Tasks can run in parallel when: dependencies are met, owners differ, and they don't write the same files.
 
 Common parallel patterns:
 - DevOps infra + QA test writing (no shared deps)
@@ -168,12 +168,12 @@ Before invoking any agent or summarizing for the human:
 1. **Read `.project/workflow-state.md` and `.project/project-status.md`** — orient on stage, gates, blockers, next action. *(Fleet-dashboarded projects: also glance at this project's epic statuses in Linear once, for cross-project context — not required reading, since `.project/` files are the real orientation source.)*
 2. **Check open `deploy-failure`-labeled GitHub issues.** If any are open: triage now (invoke SRE), do not merge anything new until the linkage is understood. Consecutive deploys failing on the same root cause is a strong signal to STOP and diagnose before adding more PRs to the queue.
    ```bash
-   gh issue list --label deploy-failure --state open
+   gh api "repos/{owner}/{repo}/issues?labels=deploy-failure&state=open"
    ```
 3. **Sweep open PRs, recently merged PRs, and `[~]` TODO rows** before deciding anything is un-started or orphaned. An interrupted session may have merged its work and left no open PR, so the merged sweep is not optional (a merged wordmark fix was once re-filed and re-tested as new).
    ```bash
-   gh pr list --state open
-   gh pr list --state merged --limit 10   # catches work an interrupted session merged
+   gh api "repos/{owner}/{repo}/pulls?state=open"
+   gh api "repos/{owner}/{repo}/pulls?state=closed&per_page=10"   # rows with merged_at: work an interrupted session merged
    ```
 4. **Check that `workflow-state.md` is no more than one event behind reality.** If stale, reconcile it against step 3 (delegate fact-gathering) before any dispatch. **If the brief contradicts ground truth, do not act on the brief:** count each contradiction as `brief_corrections` in your status block.
 5. **Act on timed-out decisions.** For each of your `decide` cards unanswered past `default.after_days`, act on `default.option`, set the card `resolved` with an `outcome`, and append `[auto timeout]` to `decisions.md`.

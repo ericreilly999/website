@@ -4,17 +4,19 @@
 
 ## GitHub
 
-| Operation | Preferred (MCP) | Last Resort (CLI) |
+The exception to the rule above: GitHub goes through `gh api` REST in every session, never `mcp__github__*` or GraphQL, because cloud sessions can only use REST ([[github-api]] has the commands).
+
+| Operation | Use | Never |
 |---|---|---|
-| Get PR / PR files / PR comments / PR reviews | `mcp__github__get_pull_request*` | `gh pr view/diff` |
-| List PRs / issues | `mcp__github__list_pull_requests` / `mcp__github__list_issues` | `gh pr/issue list` |
-| Create PR | `mcp__github__create_pull_request` | `gh pr create` |
-| Merge PR | never `mcp__github__merge_pull_request` (the merge gate cannot check it; git-guard blocks it) | `gh api -X PUT repos/O/R/pulls/N/merge -f merge_method=squash`, the only merge path (standard CLOUD-04) |
-| Create issue / branch | `mcp__github__create_issue` / `mcp__github__create_branch` | `gh issue create` / `git push` |
-| Post PR review (approve / request changes / comment) | `mcp__github__create_pull_request_review` / `mcp__github__add_issue_comment` | `gh pr review/comment` |
-| Push / update files | `mcp__github__push_files` / `mcp__github__create_or_update_file` | `git push` |
-| Search code / repos | `mcp__github__search_code` / `mcp__github__search_repositories` | `gh search` |
-| Set GitHub secrets / variables | — (no MCP equivalent) | `gh secret set` / `gh variable set` |
+| Get PR / PR files / PR comments / PR reviews | `gh api repos/O/R/pulls/N`, `.../pulls/N/files`, `.../issues/N/comments`, `.../pulls/N/reviews` | `mcp__github__get_pull_request*`, `gh pr view/diff` |
+| List PRs / issues | `gh api 'repos/O/R/pulls?state=open'` / `gh api 'repos/O/R/issues?state=open'` | `mcp__github__list_*`, `gh pr/issue list` |
+| Create PR | `gh api repos/O/R/pulls -f title=… -f head=<branch> -f base=main -F body=@pr-body.md` | `mcp__github__create_pull_request`, `gh pr create` |
+| Merge PR | `gh api -X PUT repos/O/R/pulls/N/merge -f merge_method=squash`, the only merge path (standard CLOUD-04) | `mcp__github__merge_pull_request` (the merge gate cannot check it; git-guard blocks it) |
+| Create issue / branch | `gh api repos/O/R/issues -f title=… -F body=@issue.md` / `git push origin <branch>` | `mcp__github__create_issue` / `mcp__github__create_branch` |
+| Post PR review (approve / request changes / comment) | `gh api repos/O/R/pulls/N/reviews -f event=… -F body=@review.md` / `gh api repos/O/R/issues/N/comments -F body=@comment.md` | `mcp__github__create_pull_request_review`, `gh pr review/comment` |
+| Push / update files | `git push origin <branch>`, then a PR | `mcp__github__push_files` / `create_or_update_file(s)` / `delete_file` to the default branch, or `git push` to main/master (git-guard blocks both, `push_main`; a push of `.project/`-only commits, or to fleet-state, passes) |
+| Search code / repos | `gh api 'search/code?q=…'` / `gh api 'search/repositories?q=…'` | `mcp__github__search_*` |
+| Set GitHub secrets / variables | `gh secret set` / `gh variable set` | — |
 
 ## Linear (fleet-dashboard epics only — see [[linear]])
 
