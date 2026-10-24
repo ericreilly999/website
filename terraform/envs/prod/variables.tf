@@ -1,6 +1,7 @@
 variable "aws_account_id" {
   type        = string
   description = "12-digit id of the website-prod account that owns this stack. Provided by Platform; no default on purpose."
+  sensitive   = true
 
   validation {
     condition     = can(regex("^[0-9]{12}$", var.aws_account_id))
@@ -35,11 +36,13 @@ variable "github_repository" {
 variable "dns_zone_id" {
   type        = string
   description = "Route 53 hosted zone ID of ericreilly.com in the DNS account. Provided by Platform."
+  sensitive   = true
 }
 
 variable "dns_account_id" {
   type        = string
   description = "12-digit id of the account that owns the hosted zone; pins the aws.dns provider. Provided by Platform."
+  sensitive   = true
   default     = null
 
   validation {
@@ -51,6 +54,7 @@ variable "dns_account_id" {
 variable "dns_assume_role_arn" {
   type        = string
   description = "Platform record role to assume for DNS writes (apex, www, ACM validation, prompted). Null only if the zone is in this account."
+  sensitive   = true
   default     = null
 }
 
@@ -97,11 +101,13 @@ variable "contact_form_name" {
 variable "contact_to_email" {
   type        = string
   description = "Address that receives contact-form submissions (SES identity; the owner must click the verification link)."
+  sensitive   = true
 }
 
 variable "contact_from_email" {
   type        = string
   description = "Sender address of the contact form (SES identity; the owner must click the verification link)."
+  sensitive   = true
 }
 
 variable "contact_allowed_origins" {
