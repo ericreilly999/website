@@ -40,5 +40,7 @@ A PM that needs something from another project writes a relay instead of waiting
 |---|---|---|
 | Coordinator (local fleet session) | creates items from owner chat; when the owner approved Tier 3 work in that chat, first records the chat decision on a `decisions/` card (fleet skill, Chat decisions) and puts its id in `decision_id`; may close `dropped` on the owner's word | reads only |
 | Project session (PM) | updates its own items' status fields only (`status`, `logged_*`, `updated_at`, `note`) | creates its own outgoing (edits `ask` while `open`; sets `closed` once it has acted on the answer); updates incoming ones' `status`, `backlog_id`, `response` |
+| Weekly standards routine (`skills/fleet-standards`) | never | creates one relay from `"fleet"` (`R-fleet-<YYYYMMDD>-<n>`, `created_run: "standards-<day>"`) per project with a newly failing standards rule; never updates one. The receiver handles it like any relay and ends at `done` or `declined` with its `response`; no sender acts on the answer, so it never moves to `closed` |
+| Weekly improvement routine (`skills/fleet-improve`) | reads only (lists stale items in its issue) | creates one relay from `"fleet"` (`R-fleet-<YYYYMMDD>-<n>`, `created_run: "improve-<day>"`) per project-lane finding that isn't the owner's call; never updates one, so like the standards relays it ends at `done` or `declined` |
 
 Every write after creation is pinned with `if_version` from the read. Documents are small; read them with `query` and no `out_dir`.

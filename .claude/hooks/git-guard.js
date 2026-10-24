@@ -663,7 +663,7 @@ const PROTECTED_PATHS = [
   'agents/code-reviewer.md', 'agents/verifier.md', 'skills/code-reviewer/',
   'docs/agent-conventions/autonomy-bar.md', 'docs/agent-conventions/decision-card.md', 'docs/agent-conventions/verification-checks.md',
   'docs/agent-conventions/ci-discipline.md', 'docs/agent-conventions/github-api.md', 'docs/cloud-environment.md',
-  'skills/fleet/', 'skills/fleet-improve/', 'skills/fleet-cost/', 'docs/standards/',
+  'skills/fleet/', 'skills/fleet-improve/', 'skills/fleet-cost/', 'skills/fleet-standards/', 'docs/standards/',
 ];
 const isProtected = (f) => { const l = f.toLowerCase(); return PROTECTED_PATHS.some((p) => (p.endsWith('/') ? l.startsWith(p) : l === p)); };
 
