@@ -59,3 +59,16 @@
   - [ ] AC-19 Decision WS-4 answered by the owner (mechanism and AWS account) — evidence: pending
   - [ ] AC-20 MX, receipt rule and forwarder applied through the pipeline; gencast.ericreilly.com SES MAIL FROM/DKIM unchanged — evidence: pending
   - [ ] AC-21 QA sends a test message to each address and it arrives in the owner's Gmail — evidence: pending
+
+## M7 — Website runs in its own staging and prod AWS accounts
+- **Status**: in_progress
+- **Started**: 2026-10-24
+- **Description**: The site, deploy roles and pipeline run in website-staging and website-prod, with DNS in the platform account and nothing left in management.
+- **Epics**: Q-43 (owner queue), decisions WS-6/7/8
+- **Definition of done**:
+  - [x] AC-22 Inventory of every Terraform-owned and unmanaged resource, with runbook draft — evidence: PR #39 (merge `3b2d14f`), docs/migration/q43-inventory.md
+  - [ ] AC-23 Per-env staging and prod roots with remote state in each new account, applied — evidence: pending
+  - [ ] AC-24 Deploy workflows dispatch-only, OIDC into new accounts, timeout-minutes and concurrency set — evidence: pending
+  - [ ] AC-25 Staging verified live in website-staging (QA + verifier) — evidence: pending
+  - [ ] AC-26 Prod cutover per runbook, site and DNS live from new accounts, QA live sign-off — evidence: pending
+  - [ ] AC-27 Management-account stack decommissioned (platform-led) — evidence: pending
