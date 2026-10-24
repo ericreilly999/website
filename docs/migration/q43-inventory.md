@@ -94,7 +94,7 @@ Remote state per environment, in its own new account:
 
 - Bucket `<project>-tfstate-<account-id>`, versioning on, SSE, public access block, us-east-1.
 - Key `website/<env>/terraform.tfstate`.
-- Locking: S3 native locking (`use_lockfile = true`, Terraform >= 1.10; the local toolchain is 1.14.7) instead of a DynamoDB table, one less resource per account. Set `required_version >= 1.10`. If platform standardises on DynamoDB it is a one-line change.
+- Locking: S3 native locking (`use_lockfile = true`, experimental in 1.10, GA in 1.11, so require >= 1.11; the local toolchain is 1.14.7) instead of a DynamoDB table, one less resource per account. Set `required_version >= 1.11`. If platform standardises on DynamoDB it is a one-line change.
 - The state bucket is created by a bootstrap step in each new account, not by the env root it stores state for.
 
 DNS handling (recommended split, to confirm with Platform):

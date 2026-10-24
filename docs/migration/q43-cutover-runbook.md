@@ -80,14 +80,14 @@ The registrar NS change is the highest-risk step in the program. Ordering below 
 
 1. Platform creates the new `ericreilly.com` hosted zone and loads **every** record set from the old zone, including: apex alias A/AAAA and www, `staging`, `staging.prompted`, `prompted`, `picks`, `dev.gencast`, the DrinkUp names, all ACM validation CNAMEs, the SES DKIM/MAIL FROM/SPF/DMARC records for `gencast` and `mail`, and the SendGrid records and apex `_dmarc`. The alias targets must point at whatever serves the name at that moment (still the old distributions at this stage).
 2. Diff: for every name and type in the old zone, the new zone returns identical answers. Query both name server sets directly: `dig @<old-ns> <name> <type>` against `dig @<new-ns> <name> <type>`, for the full list. Zero differences is the gate.
-3. Lower the TTL of the NS record at the registrar (if the registrar allows) and the zone's own SOA/NS TTL to 300 seconds, at least 48 hours ahead; note the original values.
+3. Lower the TTL of the NS and SOA records inside both zones to 300 seconds, at least 48 hours ahead; note the original values. This does not shorten the parent (.com) delegation TTL, which the registry sets (typically 172800 seconds) and the website cannot change; resolvers may keep the old name servers for up to that long after step 3.2, which is why the old zone stays intact.
 4. Freeze: no Terraform apply touches Route 53 in either account from here until step 3.4 is complete. Announce the freeze in the platform and website channels.
 
 ### 3.2 Switch (the delegation change)
 
 1. Platform changes the NS set at the registrar to the new zone's name servers. Only platform holds registrar access.
 2. Do not delete the old zone. Resolvers still holding the old NS keep getting correct answers from it until their cache expires.
-3. Monitor for the TTL period of the old NS set (default 172800 seconds on the apex NS record, which is why step 3.1 lowers it first; otherwise plan for up to 48 hours of mixed answers).
+3. Monitor for the parent delegation TTL (typically 172800 seconds): plan for up to 48 hours of mixed answers between the old and new zones. Both must return identical data throughout.
 4. Verification, repeated at +5 minutes, +1 hour, +24 hours: `dig NS ericreilly.com +trace`; HTTP 200 on the five website hostnames, `picks`, `dev.gencast`; mail checks: DKIM selectors for `gencast` and `mail` and SendGrid `s1`/`s2` resolve; send a test message through SES and SendGrid where the owning projects can; `_dmarc.ericreilly.com` resolves.
 
 ### 3.3 Record ownership afterwards
