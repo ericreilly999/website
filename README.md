@@ -101,15 +101,15 @@ Workflows in `.github/workflows/`:
 
 Every deploy job has `timeout-minutes`, job-level `permissions` (`id-token: write` only on jobs that assume a role) and a per-site `concurrency` group with `cancel-in-progress: false`, so an in-flight `s3 sync --delete` is never cancelled. Rollback is a re-dispatch of the previous good tag; the new buckets are versioned.
 
-AWS credentials come from OIDC; no long-lived secrets. Nothing environment-specific is in the workflow files. Set these variables on each GitHub environment (`staging`, `production`) from the matching `terraform/envs/<env>` outputs:
+AWS credentials come from OIDC; no long-lived secrets. Nothing environment-specific is in the workflow files. Set these on each GitHub environment (`staging`, `production`) from the matching `terraform/envs/<env>` outputs. The two role ARNs embed the account id, so they are environment **secrets** (masked in the public step headers); everything else is a variable:
 
-| Variable | Meaning |
-|----------|---------|
-| `AWS_ROLE_ARN` / `PROMPTED_AWS_ROLE_ARN` | deploy roles (main site / Prompted) |
-| `AWS_REGION` | region (`us-east-1`) |
-| `S3_BUCKET` / `PROMPTED_S3_BUCKET` | content buckets |
-| `CF_DIST_ID` / `PROMPTED_CF_DIST_ID` | CloudFront distributions to invalidate |
-| `SITE_URL` / `PROMPTED_URL` | public base URLs (E2E target, smoke check, staging link rewrite) |
+| Name | Kind | Meaning |
+|------|------|---------|
+| `AWS_ROLE_ARN` / `PROMPTED_AWS_ROLE_ARN` | secret | deploy roles (main site / Prompted) |
+| `AWS_REGION` | variable | region (`us-east-1`) |
+| `S3_BUCKET` / `PROMPTED_S3_BUCKET` | variable | content buckets |
+| `CF_DIST_ID` / `PROMPTED_CF_DIST_ID` | variable | CloudFront distributions to invalidate |
+| `SITE_URL` / `PROMPTED_URL` | variable | public base URLs (E2E target, smoke check, staging link rewrite) |
 
 ---
 
@@ -140,7 +140,9 @@ terraform/
 
 Each env root uses an S3 backend with native locking (`use_lockfile`, Terraform >= 1.11). The state bucket is created per account by a bootstrap step, and its name is supplied at init time: copy `backend.hcl.example` to `backend.hcl`, then `terraform init -backend-config=backend.hcl`. Account-specific inputs (account id, DNS zone id, record role, contact emails) come from `platform.auto.tfvars` (copy the `.example`) or `TF_VAR_*`; both files are gitignored and no account id is committed. `attach_domain_aliases` stays `false` until the cutover runbook step, because a hostname can be an alias of only one CloudFront distribution.
 
-**Public-repo handling of plan and apply (terraform-plan.yml, terraform-apply.yml).** Logs, job summaries and artifacts of this repository are readable by anyone, so: (1) every identifying input is a GitHub *environment secret*, not a variable (`TF_PLAN_ROLE_ARN`, `TF_APPLY_ROLE_ARN`, `TF_STATE_BUCKET`, `TF_PLAN_ENCRYPTION_KEY`, and the `TF_VAR_*` account, zone, record-role and contact-email values); only `AWS_REGION` stays a variable. Secrets are masked in step headers, variables are not. (2) The saved plan embeds those values, so it is uploaded only as an AES-256 encrypted file (`tfplan.enc`, key `TF_PLAN_ENCRYPTION_KEY`, retention 1 day) and decrypted by Terraform Apply. (3) The reviewer reads the plan job summary, which lists resource addresses and actions plus the destroy count, never attribute values. To inspect the full plan, run `terraform plan` locally with the platform inputs. (4) Plan and apply text is written to a file and only scrubbed progress lines (ids, ARNs, account numbers, emails removed) reach the log. (5) Sensitive variables and the role-ARN and invoke-URL outputs are `sensitive = true`; read them with `terraform output` from a workstation.
+**Public-repo handling of plan and apply (terraform-plan.yml, terraform-apply.yml).** Logs, job summaries and artifacts of this repository are readable by anyone, so: (1) every identifying input is a GitHub *environment secret*, not a variable (`TF_PLAN_ROLE_ARN`, `TF_APPLY_ROLE_ARN`, `TF_STATE_BUCKET`, `TF_PLAN_ENCRYPTION_KEY`, and the `TF_VAR_*` account, zone, record-role and contact-email values); only `AWS_REGION` stays a variable. Secrets are masked in step headers, variables are not. (2) The saved plan embeds those values, so it is uploaded only as an AES-256 encrypted file (`tfplan.enc`, key `TF_PLAN_ENCRYPTION_KEY`, at least 32 characters, retention 1 day) with a keyed HMAC (`tfplan.enc.hmac`, bound to environment and commit) that Terraform Apply verifies before decrypting, failing closed on mismatch. (3) The reviewer reads the plan job summary, which lists resource addresses and actions plus the destroy count, never attribute values. To inspect the full plan, run `terraform plan` locally with the platform inputs. (4) Plan and apply text is written to a file and only scrubbed progress lines (ids, ARNs, account numbers, emails removed) reach the log. (5) Sensitive variables and the role-ARN and invoke-URL outputs are `sensitive = true`; read them with `terraform output` from a workstation.
+
+**Operating notes.** Plan artifacts are kept 1 day: if the production approval comes more than 24 hours after the plan, re-run Terraform Plan and apply the new run id. The job summary shows addresses and actions only, so an attribute-level change (a policy, a tag, an origin setting) is invisible there; run a local `terraform plan` with the platform inputs and review it before any production apply. The plan and apply jobs fail early when a required secret is empty (account id, DNS zone id, and for production the contact emails).
 
 Staging and prod are applied through the pipeline only. `terraform/legacy` still holds the original state (bucket `ericreilly-website-tfstate`); see `terraform/legacy/README.md` and `docs/migration/q43-inventory.md`.
 

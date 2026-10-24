@@ -6,13 +6,16 @@ name: Terraform Apply
 #   gh workflow run terraform-apply.yml -f env=staging -f plan_run_id=<Terraform Plan run id>
 #
 # The `production` environment reviewer must approve before the job starts.
-# Variables come from the GitHub environment (see terraform-plan.yml), plus
+# Environment secrets and the AWS_REGION variable come from the GitHub
+# environment (see terraform-plan.yml), plus the secret
 #   TF_APPLY_ROLE_ARN   apply role (OIDC trust: environment:<name>)
 #
 # The plan artifact holds the account-specific inputs baked into the saved
 # plan, so apply does not need the TF_VAR_* values. The repository is PUBLIC and
 # artifacts are world-readable, so the artifact is AES-256 encrypted with the
-# environment secret TF_PLAN_ENCRYPTION_KEY and decrypted here. Role ARN and
+# environment secret TF_PLAN_ENCRYPTION_KEY and decrypted here, after a keyed
+# HMAC (bound to env + commit) is verified. Plan artifacts live 1 day, so
+# re-run Terraform Plan if approval comes later. Role ARN and
 # state bucket are environment secrets too (see terraform-plan.yml). Logs and the
 # summary carry resource addresses and output names only.
 
@@ -102,6 +105,10 @@ jobs:
               echo "::error::Environment secret/variable for $v is not set; this environment is not provisioned yet"; exit 1
             fi
           done
+          # Length only is reported, never the value.
+          if [ "${#PLAN_KEY}" -lt 32 ]; then
+            echo "::error::TF_PLAN_ENCRYPTION_KEY must be at least 32 characters"; exit 1
+          fi
 
       - name: Download the saved plan
         uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
@@ -111,10 +118,24 @@ jobs:
           github-token: ${{ github.token }}
           run-id: ${{ inputs.plan_run_id }}
 
-      - name: Decrypt the saved plan
+      - name: Verify plan integrity and decrypt
         env:
           PLAN_KEY: ${{ secrets.TF_PLAN_ENCRYPTION_KEY }}
+          PLAN_ENV: ${{ inputs.env }}
         run: |
+          # Fail closed: the HMAC must match the ciphertext, env and commit.
+          python3 - <<'PY'
+          import hashlib, hmac, os, sys
+          key = hashlib.sha256(b"tfplan-mac\0" + os.environ["PLAN_KEY"].encode()).digest()
+          msg = (os.environ["PLAN_ENV"] + "\n" + os.environ["GITHUB_SHA"] + "\n").encode() + open("tfplan.enc", "rb").read()
+          want = hmac.new(key, msg, hashlib.sha256).hexdigest()
+          have = open("tfplan.enc.hmac").read().strip()
+          if not hmac.compare_digest(want, have):
+              print("::error::Plan artifact failed its integrity check (HMAC mismatch); re-run Terraform Plan")
+              sys.exit(1)
+          print("Plan integrity verified")
+          PY
+          rm -f tfplan.enc.hmac
           openssl enc -d -aes-256-cbc -pbkdf2 -iter 600000 -in tfplan.enc -out tfplan -pass env:PLAN_KEY
           rm -f tfplan.enc
 
