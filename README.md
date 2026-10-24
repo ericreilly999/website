@@ -30,6 +30,7 @@ No framework or build step — pages are plain HTML. `npm run build` just copies
 ```bash
 npm install        # installs Playwright for E2E tests only
 npm run build      # copies public/ → build/
+npm test           # unit tests (node --test; contact Lambda handler), run by the PR Checks job
 npm run test:e2e   # runs Playwright tests (requires a live base URL)
 ```
 
@@ -121,10 +122,12 @@ The contact form on `/contact` posts to a shared Lambda-backed API:
 POST https://k7cpfmv07e.execute-api.us-east-1.amazonaws.com/prod/contact
 Content-Type: application/json
 
-{ "name": "...", "email": "...", "company": "...", "project": "...", "term": "..." }
+{ "name": "...", "email": "...", "company": "...", "project": "...", "need": "...", "term": "...", "website": "" }
 ```
 
-The same API handles prompt submissions from `prompted.ericreilly.com` (uses `{ "message": "..." }` format instead).
+`website` is a hidden honeypot field (`.hp-trap`, off-screen, `aria-hidden`, `tabindex="-1"`). Real users leave it empty; the handler returns the normal success response without sending email when it is filled.
+
+The same API handles prompt submissions from `prompted.ericreilly.com` (uses `{ "message": "...", "website": "" }` format instead, with the same honeypot).
 
 ---
 
