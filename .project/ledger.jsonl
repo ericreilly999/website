@@ -46,3 +46,5 @@
 {"ts":"2026-10-24T11:03:26Z","run_id":"fleet-2026-10-24-1028","project":"website","task":"adhoc","agent":"devops-engineer","outcome":"partial","pr":42,"notes":"plan/apply redaction PR opened, in review"}
 {"ts":"2026-10-24T11:06:08Z","run_id":"fleet-2026-10-24-1028","project":"website","task":"adhoc","agent":"code-reviewer","model":"claude-sonnet-5-5","tokens":98492,"tool_uses":18,"minutes":2.9,"outcome":"usage","source":"hook","agent_id":"aae5706829710abb7"}
 {"ts":"2026-10-24T11:06:18Z","run_id":"fleet-2026-10-24-1028","project":"website","task":"adhoc","agent":"code-reviewer","outcome":"merged","pr":42,"notes":"PR 42 squash merged 1654220; 0 blocking 3 warnings"}
+{"ts":"2026-10-24T11:09:41Z","run_id":"fleet-2026-10-24-1028","project":"website","task":"adhoc","agent":"devops-engineer","model":"claude-sonnet-5-5","tokens":106024,"tool_uses":24,"minutes":3.4,"outcome":"usage","source":"hook","agent_id":"a5871707b2c0c66f5"}
+{"ts":"2026-10-24T11:09:48Z","run_id":"fleet-2026-10-24-1028","project":"website","task":"adhoc","agent":"devops-engineer","outcome":"partial","pr":43,"notes":"redaction follow-ups PR opened, in review"}
