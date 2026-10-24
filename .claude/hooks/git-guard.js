@@ -2,6 +2,7 @@
 'use strict';
 // PreToolUse on Bash (and PowerShell): blocks destructive git and prod terraform commands, and PR merges
 // (`gh api -X PUT .../pulls/<n>/merge`, `gh pr merge`) that lack the FC-14 code-review verdict.
+// PreToolUse on `mcp__*__merge_pull_request`: always blocks, pointing to the `gh api` merge.
 // Rules and what to do instead: docs/agent-conventions/hooks.md. Kill switch: FLEET_HOOKS=off.
 // Each block carries a `gate` reason code (blockReason), which runHook logs as a gate-event line.
 
@@ -402,7 +403,7 @@ const PROTECTED_PATHS = [
   'agents/code-reviewer.md', 'agents/verifier.md', 'skills/code-reviewer/',
   'docs/agent-conventions/autonomy-bar.md', 'docs/agent-conventions/decision-card.md', 'docs/agent-conventions/verification-checks.md',
   'docs/agent-conventions/ci-discipline.md', 'docs/agent-conventions/github-api.md', 'docs/cloud-environment.md',
-  'skills/fleet/', 'skills/fleet-improve/', 'skills/fleet-cost/',
+  'skills/fleet/', 'skills/fleet-improve/', 'skills/fleet-cost/', 'docs/standards/',
 ];
 const isProtected = (f) => { const l = f.toLowerCase(); return PROTECTED_PATHS.some((p) => (p.endsWith('/') ? l.startsWith(p) : l === p)); };
 
@@ -523,7 +524,26 @@ function scan(cmd, cwd0, ps, ctx, depth) {
   return null;
 }
 
+// An MCP merge tool (`mcp__github__merge_pull_request`, or the same tool on another GitHub server) merges
+// without a command the FC-14 gate can read, so it is blocked outright: the one merge path is the
+// `gh api ... /merge` command, which the gate above checks (standard CLOUD-04, owner rulings 2026-10-24).
+const MCP_MERGE = /^mcp__.+__merge_pull_request$/;
+
+function checkMcpMerge(payload) {
+  const i = payload.tool_input || {};
+  const lit = (v, d) => (v != null && /^[A-Za-z0-9_.-]+$/.test(String(v)) ? String(v) : d);
+  const owner = lit(i.owner, '<owner>'); const repo = lit(i.repo, '<repo>');
+  const n = lit(i.pullNumber ?? i.pull_number ?? i.number, '<n>');
+  return {
+    block: `Blocked: ${payload.tool_name}\nFC-14: merge with \`gh api -X PUT repos/${owner}/${repo}/pulls/${n}/merge -f merge_method=squash\` instead. `
+      + 'The merge gate checks that command for a `Verdict: APPROVE` review on the head commit; an MCP merge tool skips that check, so it is never used (standard CLOUD-04). '
+      + `Post the review first (\`gh api repos/${owner}/${repo}/pulls/${n}/reviews -f event=COMMENT -F body=@review.md\`, first line \`${VERDICT}\`), then run the merge in a separate Bash call.`,
+    gate: { reason: 'merge_mcp' },
+  };
+}
+
 function decide(payload, ctx = {}) {
+  if (MCP_MERGE.test(String(payload.tool_name || ''))) return checkMcpMerge(payload);
   if (!['Bash', 'PowerShell'].includes(payload.tool_name)) return null;
   const cmd = (payload.tool_input || {}).command;
   if (!cmd || !/\b(git|terraform|tofu|gh)\b/.test(cmd)) return null;

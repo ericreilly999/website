@@ -18,6 +18,7 @@ records it as `fail` with `not run: <reason>` and does not sign off on a require
 | `tests-first.js` | implementation landing before its tests | `node tests-first.js --repo O/R --pr N` or `--range base..head` |
 | `signoff-read.js` | Done or prod promotion without a verifier PASS | `node signoff-read.js <project-dir> <pr> [--sha s]` → the record's front matter as JSON; 0 PASS, 1 FAIL/missing/invalid |
 | `mutation-diff.js` | tests that pass whatever the code does | `node mutation-diff.js --project <dir> [--base origin/main] [--max-survivors n] [--tool auto\|stryker\|mutmut] [--dry-run]` |
+| `standards-check.js` | workflows and Terraform drifting from the fleet engineering standards (unfiltered triggers, no timeouts, static AWS keys, local state, committed tfstate) | `node standards-check.js --repo <dir> [--ref origin/main] [--allowlist f] [--format json\|summary] [--out d]` → `{repo, checked_at, results: [{id, status, evidence}]}`; 0 no fail, 1 a fail. Rule ids in `docs/standards/`; run at project-session open and by fleet-improve, not by the verifier |
 
 All take `--help`. The Node checks default `--project` to the git toplevel of the current directory. GitHub access is `gh api` REST only (GraphQL is blocked in cloud sessions, [[github-api]]).
 `ux-sweep` needs Playwright; everything else is dependency-free (Node 20.12+, Python 3.9+ stdlib, bash, AWS CLI v2

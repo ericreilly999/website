@@ -22,6 +22,16 @@
         ]
       },
       {
+        "matcher": "mcp__.*__merge_pull_request",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "f=\"$CLAUDE_PROJECT_DIR\"/.claude/hooks/git-guard.js; [ ! -f \"$f\" ] || node \"$f\"",
+            "timeout": 10
+          }
+        ]
+      },
+      {
         "matcher": "ArtifactData",
         "hooks": [
           {

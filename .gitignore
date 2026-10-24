@@ -24,6 +24,7 @@ project-status/
 # Written by sync-project-definitions.js (ericreilly999/claude); edit there and re-sync.
 .claude/worktrees/
 .project/ledger.pending.jsonl*
+.project/checks/
 # fleet:managed end
 
 # Terraform env roots: real values stay out of git

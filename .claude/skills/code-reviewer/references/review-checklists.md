@@ -49,6 +49,8 @@ Apply the relevant checklist(s) for every PR. Mark each item as ✅ pass, ❌ bl
 
 ## Terraform Checklist
 
+The rules behind these items are `docs/standards/iac.md` (IAC-), `aws-access.md` (AWS-) and `secrets.md` (SEC-); cite the rule id in a BLOCKING finding.
+
 ### Module Architecture — BLOCKING if violated
 - [ ] No `resource` blocks defined in root `main.tf` — all resources in modules
 - [ ] Each module has a single, clear responsibility
@@ -105,6 +107,8 @@ Apply the relevant checklist(s) for every PR. Mark each item as ✅ pass, ❌ bl
 
 ## CI/CD Pipeline Checklist
 
+The rules behind these items are `docs/standards/ci-cd.md` (CI-) and `testing.md` (GHM-); cite the rule id in a BLOCKING finding.
+
 ### Security
 - [ ] All secrets via GitHub Secrets — no hardcoded values — BLOCKING
 - [ ] Permissions scoped to minimum required (`permissions:` block present)
@@ -124,8 +128,8 @@ Apply the relevant checklist(s) for every PR. Mark each item as ✅ pass, ❌ bl
 ### Branch & Deployment Gates
 - [ ] Branch naming enforced: `feature/`, `defect/`, `chore/` prefixes only
 - [ ] No direct push to `main` — PR required
-- [ ] Deploy to dev: triggered only on merge to main ✅
-- [ ] Deploy to staging: triggered only on git tag ✅
+- [ ] Deploy to dev: a path-filtered push to main, or `workflow_dispatch` (CI-01) ✅
+- [ ] Deploy to staging: `workflow_dispatch` only, never a push or a tag (CI-01) ✅
 - [ ] Deploy to prod: manual `workflow_dispatch` only ✅
 
 ### Reliability

@@ -218,6 +218,7 @@ const GATE_REASONS = {
   merge_changes_requested: 'git-guard', // FC-14: the latest verdict on the head is not an approval
   merge_unverified: 'git-guard', // FC-14: the lookup failed or the PR could not be named
   merge_protected_path: 'git-guard', // cloud merge of a claude-repo PR touching a protected path (owner-only)
+  merge_mcp: 'git-guard', // a merge through an MCP merge tool (mcp__*__merge_pull_request), which FC-14 cannot check
   uncommitted_project: 'stop-checks', // per-project session Stop: .project/ uncommitted
   uncommitted_fleet_state: 'stop-checks', // fleet session Stop: fleet-state uncommitted
   uncommitted_pm_ledger: 'stop-checks', // project-manager SubagentStop: ledger/cost uncommitted

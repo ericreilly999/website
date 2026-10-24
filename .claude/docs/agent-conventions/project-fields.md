@@ -49,7 +49,7 @@ The Status row shows `Running` while a session is live, and the owner's tile cou
 ```
 
 - **Complete object.** `update` replaces `run` as a whole. Every push carries `status`, `started_at`, `updated_at` and `threads`, and `ended_at` once the session closes. A push without `updated_at` or `threads` drops them from the page.
-- **`updated_at`** is UTC, taken from the shell at the push: `date -u +%Y-%m-%dT%H:%M:%SZ`. Read it at the push itself, never write a time ahead of the clock, and never copy an earlier value.
+- **`updated_at`** follows the clock rule ([[autonomy-bar]] Timestamps, FL-4), read at the push itself; never copy an earlier value.
 - **Push points.** Session open; whenever a thread starts or ends (the `threads` list changes); every checkpoint; and close (`"status": "closed"` with `ended_at`).
 - **`task`** is at most 8 words. The page clips a longer one, but write it short.
 - **What the owner sees.** The page shows `Running · N agents` while the freshest of `updated_at`, `started_at` and `last_run_at` is no more than 60 minutes old. Past 60 minutes with no push, it shows `Running?` in a warning style. That is a question, not a claim, so a PM waiting on one long subagent may read `Running?` while the session is live. The next push clears it.
@@ -70,20 +70,13 @@ Do not write `stage` any more. The page no longer renders it, and the lint WARNs
 
 ## Ask the owner by decision card
 
-Use the card format in `.claude/docs/agent-conventions/decision-card.md` for a question the owner must answer. Its fields:
-
-- `ask`: `decide`. `label`: `action` if the owner must act; otherwise `later`.
-- `title`: the question, at most 80 characters, ending in `?`.
-- `summary`: at most 5 sentences of plain language, with dates and dollars as concrete figures.
-- `options`: 2 to 4, ids `A`, `B`, ... in order. Options never name a target date (see above).
-- `recommendation`: `{"option": "A", "why": "<one sentence>"}`.
-- `details`: evidence, links and internal ids. Ids belong here, not in the title, summary or options.
+Use the card format in `.claude/docs/agent-conventions/decision-card.md` for a question the owner must answer; its field table and limits are the one copy, and `decision-card-validate.js` checks them. Options never name a target date (see above).
 
 Write the card in the `set` that creates the document. Never change `ask`, `options` or `recommendation` after the owner has answered. A PM acts on the owner's answer by reading `answer.choice` against the card's own `options`, never from prose. The owner's answer is recorded only when `answer.decided_by_owner` is `true`.
 
 ## Lint WARNs to check before you finish a session
 
-Run `node scripts/lint-decision-provenance.js <snapshot.json>`. Every WARN below is WARN only: the default exit is `0`, and `--strict` never moves on it. Fix what the WARN names.
+Run fleet-console's `node scripts/lint-decision-provenance.js <snapshot.json>` from a fleet-console checkout (the script lives in that repo, not in the claude repo, and is not vendored; a session without a fleet-console checkout skips this and says so). Every WARN below is WARN only: the default exit is `0`, and `--strict` never moves on it. Fix what the WARN names.
 
 | WARN | Meaning | Your action |
 |---|---|---|

@@ -75,7 +75,7 @@ Mirrors [[github-api]] in spirit.
 2. **No delete or archive tool exists** for issues. Freeing the 250 cap requires a human action in the Linear UI: either a manual delete (Cmd/Ctrl+Delete or the command bar — no MCP equivalent) or shortening the team's auto-archive window (Team Settings) so `Canceled`/`Done` issues sweep themselves out within ~24h. The PM can prepare for this (cancel + comment pointing at the consolidating epic) but cannot execute the actual cap-freeing step itself.
 3. **Duplicate state names are possible** — see Workflow states above. Check `list_issue_statuses` before setting a `state` if there's any doubt.
 4. **Cross-team moves:** `save_project`'s `addTeams`/`setTeams` lets a Linear Project span teams (used to move DrinkUp's Project onto `Claude's Projects` without losing its history/URL). `save_issue`'s `team` param moves an individual issue between teams — its identifier prefix changes on move (e.g. `DRI-336` → `CLD-1`).
-5. **No retry on rate-limit errors.** Free-plan rate limits apply — surface the reset time, don't hammer.
+5. **No retry on rate-limit errors** ([[github-api]] rule 4 applies to Linear's free-plan limits too): surface the reset time.
 6. **MCP unavailable = stop, don't improvise.** Never reconstruct an ad-hoc workaround.
 
 ## Free-plan constraints (verified 2026-09-19)
@@ -109,7 +109,7 @@ DrinkUp was the original single-project granular pilot (`DRI` team, ~214 issues,
 - 11 epics created (`CLD-1`..`CLD-11`, project `DrinkUp`, which now spans both teams), covering: Prod Cutover/Epic 40 Go-Live, Stripe Connect Payment Correctness, WebSocket/Reconciliation Infra, CI/CD Pipeline Hardening, AWS Infra Hygiene & Cost, Live-E2E/QA Test Hardening, Frontend UX & Bug Fixes, Security & Risk Hardening, Staging Demo-Bar Seed & Test Data, Docs & Spec Debt, Post-MVP/Parked Features.
 - The original ~167 active granular issues were cancelled, each with a comment pointing to its consolidating epic. 5 of those (DRI-63, 77, 84, 92, 114) were confirmed resolved in code during the reconciliation pass and dropped rather than carried forward. One (DRI-146) was a process-convention item, not product work, and was folded into these convention docs directly instead of getting an epic.
 - Full task-level detail is preserved at `drinkupapp/.project/linear-task-detail.md` — **not** `.project/TODO.md`, which is a pre-existing tombstone from the original file→Linear migration (2026-06-05) and was deliberately not overwritten.
-- All 11 epics are `Paused` (the backlog-type one — see the duplicate-name note above), matching the project's `paused` fleet-registry status.
+- All 11 epics are `Paused` (the backlog-type one — see the duplicate-name note above), matching the project's fleet-registry status at the time (`paused`, renamed `inactive` on 2026-10-17).
 - The old granular issues (now Cancelled) are queued for the human to bulk-delete in the Linear UI — see the MCP discipline note above for why that step can't be automated. Filter: DrinkUp project, `Status: Canceled`, excluding the 6 pre-existing cancellations (DRI-1, 2, 3, 4, 72, 307) that predate this migration.
 
 The old granular label groups (`Area`, `Type`, `Action Type`, `go-live`), the sub-issue mapping table, and the per-ritual Linear-vs-file behavior table that used to live in this document are retired along with the model that used them. See this file's git history for the prior version if ever needed for reference.

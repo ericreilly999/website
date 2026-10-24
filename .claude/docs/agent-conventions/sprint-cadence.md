@@ -27,10 +27,10 @@ Until all three hold, the story is in flight, not done. Owner rule 2026-10-20: t
 | Environment | Cadence | Trigger |
 |---|---|---|
 | Local dev / unit tests | Continuous | Every change |
-| Dev (deployed) | Continuous | Every merge to main |
-| Staging | Continuous | Every merge to main (same as dev, prod-like config + larger smoke suite) |
+| Dev (deployed) | Continuous | Every merge to main (a path-filtered push, FL-6) |
+| Staging | Continuous | A `workflow_dispatch` of every merge commit (staging is dispatch-only, CI-01; prod-like config + larger smoke suite) |
 | Release candidate tag | Weekly | Tag cut at sprint checkpoint from current main, after an owner card (Tier 3) |
-| Prod | After soak passes + P-7 or owner approval | Risk-tiered (see Soak tiers below) |
+| Prod | After soak passes + owner approval, unless P-7 or P-10 covers it ([[autonomy-bar]]) | Risk-tiered (see Soak tiers below) |
 | Hotfix to prod | On-demand | P0 production incident — skip soak with mandatory post-incident review |
 
 Staging is **continuously updated** — it tells you "is the code on main safe?" The release-candidate tag is a separate artifact — it pins the SHA that becomes the prod candidate.
