@@ -62,6 +62,7 @@ Judgment-heavy steps — cost *recommendations*, review *decisions*, requirement
 They follow their own exit-code contract, **0 pass / 1 fail / 2 usage / 3 not run**, with one JSON
 result line on stdout (exit 3 there means "did not run", not "gate tripped"). Catalogue, when each is
 required and the `.project/checks.json` schema: `docs/agent-conventions/verification-checks.md`.
+`standards-check.js` checks a repo against `docs/standards/` (rule ids CI-, IAC-, AWS-, SEC-, CLOUD-); it needs no dependencies and no `.project/checks.json`.
 Only `ux-sweep.js` has dependencies, pinned in `checks/package.json` + lockfile:
 `npm ci --prefix .claude/scripts/checks && npx --prefix .claude/scripts/checks playwright install chromium`.
 Tests: `node --test "test/*.test.js"` and `python -m unittest discover -s test -p "test_*.py"` from `checks/`.

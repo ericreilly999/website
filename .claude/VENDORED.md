@@ -54,6 +54,13 @@ Paths such as `.claude/docs/...` in these files are relative to the repo root.
 - `docs/agent-conventions/ux-rubric.md`
 - `docs/agent-conventions/verification-checks.md`
 - `docs/agent-conventions/weekly-digest.md`
+- `docs/standards/README.md`
+- `docs/standards/aws-access.md`
+- `docs/standards/ci-cd.md`
+- `docs/standards/cloud-sessions.md`
+- `docs/standards/iac.md`
+- `docs/standards/secrets.md`
+- `docs/standards/testing.md`
 - `fleet/scripts/audit-rollup.js`
 - `fleet/scripts/milestone-rollup.js`
 - `fleet/scripts/retro-validate.js`
@@ -79,6 +86,7 @@ Paths such as `.claude/docs/...` in these files are relative to the repo root.
 - `scripts/checks/package.json`
 - `scripts/checks/sibling-sweep.js`
 - `scripts/checks/signoff-read.js`
+- `scripts/checks/standards-check.js`
 - `scripts/checks/tests-first.js`
 - `scripts/checks/ux-sweep.js`
 - `scripts/cloud-setup.sh`

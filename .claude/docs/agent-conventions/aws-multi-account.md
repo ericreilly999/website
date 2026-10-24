@@ -59,10 +59,12 @@ python .claude/scripts/lib/aws_accounts.py assume-check --account-id <id> --prof
 - All Terraform for `dev` targets account `{project}-dev` via assumed role
 - All Terraform for `staging` targets `{project}-staging` via assumed role
 - All Terraform for `prod` targets `{project}-prod` via assumed role
-- Remote Terraform state lives in the **management account** S3 bucket (one central state bucket, paths scoped per project/environment)
+- Each environment's Terraform state bucket and lock table live in **that environment's own member account**, keyed `{project}/{environment}/...`; the management account holds no state (standard IAC-02: gencast ADR-015 §2.2, owner 2026-10-24 that the management account is billing-only)
 - GitHub Actions OIDC roles are created in each member account separately
 - Secrets Manager secrets are created in each member account separately — no cross-account secret sharing
 - Root credentials are never used for workloads; IAM user or assumed role only
+
+The engineering standards for accounts, OIDC, cloud users and the root-key lane are in `docs/standards/aws-access.md` (AWS-01 to AWS-11).
 
 ## What to Tell DevOps When Invoking
 

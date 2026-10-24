@@ -2,7 +2,9 @@
 
 Applies to every agent that influences when a CI pipeline runs (PM, Code Reviewer, QA, SRE, DevOps).
 
-GitHub Actions minutes are scarce. Each tag push / staging deploy typically burns ~20 minutes; on the free tier (2,000 min/month for private repos) a few iteration cycles can blow the whole budget.
+GitHub Actions minutes are scarce. Each tag push / staging deploy typically burns ~20 minutes, and each project's budget is 300 minutes a month on private repos ([[autonomy-bar]] P-2; the 2,000 free account minutes were gone by 2026-10-07), so a few iteration cycles can blow it.
+
+The engineering standards these rules feed are in `docs/standards/ci-cd.md` and `docs/standards/testing.md` (rule ids `CI-`, `TEST-`, `GHM-`).
 
 ## Background — why these rules exist
 
@@ -24,7 +26,7 @@ The canonical project-level incident (paraphrased from `CLAUDE.md` if present): 
 
    **Corollary — an open `deploy-failure` issue blocks new merges.** If the project has an auto-`deploy-failure`-issue backstop (a `notify-failure` job that opens/comments a labelled issue on a red deploy), any open `deploy-failure`-labelled issue MUST be triaged (SRE) **before merging anything new**. Consecutive failures on the same workflow are a STOP-and-diagnose signal, not a merge-around signal. Triage SLA: the issue is surfaced and owned within one session-open — it is a hard gate, not a soft one. A deploy-failure issue that sits while other work continues defeats the purpose of the backstop.
 
-5. **On 403 rate-limit errors, do NOT retry.** Surface the `resetAt` time. Retrying burns more calls and can trip secondary abuse detection.
+5. **On 403 rate-limit errors, do NOT retry** ([[github-api]] rule 4 is the rule).
 
    **Block on the wait — never arm a watcher and exit.** When an agent must wait for an external process (a CI run, a deploy, a background job) to reach a terminal state, it MUST **block** in the foreground until then. Do NOT arm a watcher (`Monitor`, a backgrounded poll loop) and end the turn — a watcher orphaned at agent exit forces a re-dispatch, which wastes context. Block with a foreground until-loop, polling at the interval above (≥ 240 s; deploy/CI pipelines take 15–25 min):
 
@@ -50,7 +52,7 @@ Before any tag push:
 - **Stage A — Dev local validation:** QA runs the live suite locally against dev, reports green
 - **Stage B — Staging local validation:** Same suite locally against staging, reports green
 - **Pre-flight check:** If a project has a migration / schema script with a pre-flight ABORT on detected drift (test-data accumulation, stale rows, schema-mismatch), run that script as a probe in both Stage A and Stage B before declaring green. Fix violators with the project's documented cleanup pattern rather than tagging and waiting for the deploy to ABORT.
-- **Only then** instruct DevOps to push the tag
+- **Only then**, within an hour of both greens, instruct DevOps to push the tag
 
 Same rule applies after a deploy completes, when QA validates the deployment: run locally, never trigger the live-E2E CI workflow as a "test" — that's ~20 GH minutes per run and exists only as a final-confirmation safety net.
 
@@ -58,7 +60,7 @@ When a live-E2E run fails locally, debug it per [[live-e2e-cleanup-discipline]] 
 
 ## Trigger-path discipline
 
-Deploy workflows that auto-trigger on `push: branches: [main]` MUST use `paths:` to filter triggers to paths that actually change the deployed artifact. Test-only changes (`tests/**`), spec changes (`.project/**`, `spec/**`), and docs (`*.md`, `docs/**`) MUST NOT trigger redeploys.
+Dev deploy workflows that auto-trigger on `push: branches: [main]` (staging and prod are dispatch-only, standard CI-01) MUST use `paths:` to filter triggers to paths that actually change the deployed artifact. Test-only changes (`tests/**`), spec changes (`.project/**`, `spec/**`), and docs (`*.md`, `docs/**`) MUST NOT trigger redeploys.
 
 Audit any new `deploy-*.yml` workflow added later for this pattern. A `push: branches: [main]` trigger without a `paths:` filter is CI-minute waste.
 
@@ -73,7 +75,7 @@ The project's `CLAUDE.md` lists the exact `paths:` patterns that apply.
 
 ## Surface-to-human discipline
 
-Don't surface intermediate steps during a fix cycle; the two-stage local gate runs autonomously. A run P-2 covers is logged, not asked. A run it does not cover (over 15 minutes, over budget, a prod apply outside P-7 or P-10, a release-candidate tag) is one decision card with the minutes in `cost`.
+Don't surface intermediate steps during a fix cycle; the two-stage local gate runs autonomously. A run P-2 covers is logged, not asked. A run it does not cover (over 15 minutes, over budget, a perf or full-regression run, a prod apply outside P-7 or P-10, a release-candidate tag) is one decision card with the minutes in `cost`.
 
 ## Pipeline-only path to staging and prod (owner decision FL-6, 2026-09-23)
 
@@ -83,7 +85,7 @@ The deploy pipeline (GitHub Actions: plan-on-PR, apply-on-merge, image/asset pro
 
 Running suites locally (unit, integration, Playwright against dev) stays the default habit at every step; it costs no minutes. Actions is not an iteration loop: never push commits just to see CI.
 
-- **Covered by P-2, no ask:** dev/staging runs and deploys, plan-only prod dispatches, and re-plans of an already-approved change, when the run is at most 15 Actions minutes and the project stays within its monthly budget (default 300 minutes per project per month on private repos; public repos are free). Log each run as an auto item ([[autonomy-bar]]) with its minutes and the month's running total, read from `~/.claude/fleet/cost-scan.json`.
-- **Still Tier 3:** a run over 15 minutes, any run that would take the project past its budget, prod applies outside P-7 or P-10, and release-candidate tags.
-- **Perf and full regression.** k6 / Lighthouse runs and full regression suites (for example GenCast's Reskin Contracts suite) run locally in every release certification. An Actions run of one over 15 minutes needs an owner card; their workflows stay `workflow_dispatch` only. Background: in October 2026 the Reskin suite ran on every PR and used 1,952 of the 2,000 free minutes in seven days.
-- **New workflows** are `workflow_dispatch` or path-gated, never an unfiltered `on: push` / `on: pull_request`. Existing path-gated PR checks (odds-analysis, website, drinkupapp) stay as they are.
+- **Covered by P-2, no ask:** exactly the runs [[autonomy-bar]] P-2 lists (standard GHM-01); that definition is the one copy. Log each run as an auto item ([[autonomy-bar]]) with its minutes and the month's running total, read from `~/.claude/fleet/cost-scan.json`.
+- **Still Tier 3:** everything P-2 does not cover: a run over 15 minutes, any run that would take the project past its budget, any perf or full-regression run, prod applies outside P-7 or P-10, and release-candidate tags.
+- **Perf and full regression** (standard GHM-02). k6 / Lighthouse runs and full regression suites (for example GenCast's Reskin Contracts suite) run locally in every release certification. An Actions run of one needs owner sanction whatever its length; their workflows stay `workflow_dispatch` only; k6 is capped at 4 runs or 80 minutes per repo per month. Background: in October 2026 the Reskin suite ran on every PR and used 1,952 of the 2,000 free minutes in seven days.
+- **Workflow triggers** follow standard CI-01: `workflow_dispatch` or `workflow_call`, a path-gated `pull_request` check (an unfiltered one only with an owner-decision waiver, `# standards-waive: CI-01 WS-3` on website, which the reviewer verifies; never `pull_request_target`), a path-filtered `push` to main for a dev deploy, or a `plan/**` push for a plan-only workflow (GC-200); staging and prod deploys are dispatch-only; never an unfiltered `on: push` / `on: pull_request` or `schedule`. Existing path-gated PR checks (odds-analysis, website, drinkupapp) stay as they are.

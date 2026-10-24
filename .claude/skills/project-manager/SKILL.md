@@ -69,10 +69,9 @@ When invoking deploy-related agents, append:
 > "CI discipline applies: local validation before tag push, single tag per fix."
 
 When invoking an agent whose task requires waiting for an external process to finish (CI run, deploy, background job, remote queue), append:
-> "**Wait-for-X discipline:** This task requires you to wait for [X] to complete. Use `Bash run_in_background` with `until $(check); do sleep N; done` so the harness blocks you until the wait condition is satisfied. Do not exit until X is in a terminal state. Early exit = re-dispatch = wasted context."
+> "**Wait-for-X discipline:** This task requires you to wait for [X] to complete. Use the `Bash run_in_background` until-loop of ci-discipline Hard Rule 5 (`sleep 240` or more) so the harness blocks you until the wait condition is satisfied. Do not exit until X is in a terminal state. Early exit = re-dispatch = wasted context."
 
-When invoking a worktree-isolated agent (`Agent isolation: worktree`), append:
-> "**Worktree discipline:** Verify `pwd` matches `git rev-parse --show-toplevel` before every Edit or Write. Never use absolute paths outside your worktree root. Never `Remove-Item` an untracked file. See `agent-worktree-discipline.md`."
+When invoking a worktree-isolated agent (`Agent isolation: worktree`), append the **Worktree discipline** paragraph from `agent-worktree-discipline.md` (PM rule 2) verbatim; that paragraph is the one copy.
 
 When any other agent may run at the same time on the same host, also append:
 > "**Shared host:** Other agents run tests here too. Stop only processes you started, by PID (never `pkill -f` or `killall` by name). Start any dev or test server on a free port of your own, not the default, and never reuse a server you did not start. Write temp files and review bodies under a unique name (`mktemp`). Run the targeted tests for your change; one agent at a time runs a full browser regression. See `agent-worktree-discipline.md` rule 10."
@@ -145,8 +144,8 @@ State parallelism explicitly when invoking:
 
 Defined by @.claude/docs/agent-conventions/sprint-cadence.md. Summary:
 
-- **Local dev / unit → dev → staging → prod**, with dev + staging continuously updated on merge-to-main
-- Release-candidate tag cut weekly at sprint checkpoint
+- **Local dev / unit → dev → staging → prod**, with dev deployed on merge to main and staging dispatched with each merge commit (CI-01)
+- Release-candidate tag cut weekly at sprint checkpoint, after an owner card (Tier 3)
 - Prod deploys only **post-LIVE** (active production traffic flowing), risk-tiered soak windows (Tier 1: ~2 hours, Tier 2: 2–3 days, Tier 3: 2 weeks)
 - Hotfix path skips soak with mandatory post-incident review
 - Definition of Done: E2E staging gate green + verifier sign-off
@@ -229,7 +228,7 @@ The order matters. Docs ride the PR — do NOT invoke Documentation Agent after 
 **Gate (atomic):** PR merged with docs in the same commit set.
 
 ### Stage 4 — Continuous Deploy to Dev + Staging *(per story, automatic)*
-- Every merge to main auto-deploys to dev and staging
+- Every merge to main deploys to dev (a path-filtered push) and is dispatched to staging (staging is dispatch-only, standard CI-01; P-2 covers the run)
 - DevOps owns the pipeline; intervene only on deploy failure
 
 **Gate:** Dev + staging environments live, smoke tests pass.
@@ -250,7 +249,7 @@ Combined planning + retro session at a fixed weekday and time. ~30–60 minutes.
 2. Update sprint log: shipped, carried over, WIP at sprint close
 3. Invoke Cost Analyzer; review cost trajectory (Tier-3 card if over 110% of the prior month)
 4. Review risk surface: spec divergence count, regression count, security findings
-5. **Lessons**: each entry is enforced by a lint, test, hook or check within 7 days, or marked `prose-only: <reason>`; record recurrences (@.claude/docs/agent-conventions/lessons-learned.md). Convention changes go to the claude repo by PR (P-8).
+5. **Lessons**: apply the lessons rule (@.claude/docs/agent-conventions/lessons-learned.md) and record recurrences. Convention changes go to the claude repo by PR (P-8).
 6. **Backlog grooming** (per @.claude/docs/agent-conventions/backlog.md): review top 10–15 items, promote follow-ups added mid-sprint, prune dead items (your call, listed in the digest), split XL items, spec-gap check — always in `.project/backlog.md`. Fleet-dashboarded projects: also refresh each active epic's Linear status/checklist/completion-percentage (title prefix + description line, see @.claude/docs/agent-conventions/linear.md) to match reality.
 7. **Weekly digests**: compile `.project/sprints/digest-YYYY-MM-DD.md` for stakeholders (@.claude/docs/agent-conventions/weekly-digest.md) (page cards: Session-Open step 7).
 

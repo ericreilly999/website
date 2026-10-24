@@ -8,7 +8,8 @@
 |---|---|---|
 | Get PR / PR files / PR comments / PR reviews | `mcp__github__get_pull_request*` | `gh pr view/diff` |
 | List PRs / issues | `mcp__github__list_pull_requests` / `mcp__github__list_issues` | `gh pr/issue list` |
-| Create / merge PR | `mcp__github__create_pull_request` / `mcp__github__merge_pull_request` | `gh pr create/merge` |
+| Create PR | `mcp__github__create_pull_request` | `gh pr create` |
+| Merge PR | never `mcp__github__merge_pull_request` (the merge gate cannot check it; git-guard blocks it) | `gh api -X PUT repos/O/R/pulls/N/merge -f merge_method=squash`, the only merge path (standard CLOUD-04) |
 | Create issue / branch | `mcp__github__create_issue` / `mcp__github__create_branch` | `gh issue create` / `git push` |
 | Post PR review (approve / request changes / comment) | `mcp__github__create_pull_request_review` / `mcp__github__add_issue_comment` | `gh pr review/comment` |
 | Push / update files | `mcp__github__push_files` / `mcp__github__create_or_update_file` | `git push` |

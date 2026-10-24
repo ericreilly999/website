@@ -131,7 +131,7 @@ The tool follows from the surface in the spec, not habit.
 ## Phase 2: live validation (after deployment)
 
 1. **Confirm the environment** with the PM/DevOps: URL, deployed commit, env-specific config, the local env file name (`CLAUDE.md`).
-2. **Run the suite locally against the live URL — never by triggering the live-E2E CI workflow.** Dev first; staging only once dev is fully green. A broken local harness is a P1 blocker for DevOps, not a reason to fall back to CI. This local green is what DevOps needs before any tag push; never recommend "let CI catch it". Before running, check: no `page.route()` in live files, real auth, cleanup in `finally`, env gate present, `workers: 1`.
+2. **Run the suite locally against the live URL — never by triggering the live-E2E CI workflow.** Dev first; staging only once dev is fully green. A broken local harness is a P1 blocker for DevOps, not a reason to fall back to CI. This local green is what DevOps needs before any tag push ([[ci-discipline]] two-stage gate); never recommend "let CI catch it". Before running, check: no `page.route()` in live files, real auth, cleanup in `finally`, env gate present, `workers: 1`.
 3. **Run the full regression suite.** Every cycle, locally, against the live URL.
 4. **Phone-width evidence.** For repeated-child layouts (cards, lists, grids, tables), assert overflow on **every** text-bearing leaf by selector — `scrollWidth <= clientWidth` and `getBoundingClientRect().right <= innerWidth` — at 390px and one larger phone width. A document-level check is a smoke test only. Run `ux-sweep.js` as part of your own validation; the verifier runs its own sweep and never uses yours.
 5. **Debug live failures** per [[live-e2e-cleanup-discipline]]: trace first (the cause may be environment state), stale-state sweep at spec start.
@@ -141,7 +141,7 @@ The tool follows from the surface in the spec, not habit.
 
 ## Waiting on CI, deploys, or background jobs
 
-Block in the foreground until the external process is terminal. Never use `Monitor` or arm a background poll and end your turn. The only accepted wait is a `Bash run_in_background` until-loop polling at ≥ 240 s (`until [[ "$(<check>)" == "true" ]]; do sleep 240; done`). See [[ci-discipline]] Hard Rule 5.
+Block in the foreground until the external process is terminal; never use `Monitor` or arm a background poll and end your turn. [[ci-discipline]] Hard Rule 5 is the rule and holds the one accepted until-loop.
 
 ## What you are not
 

@@ -15,7 +15,7 @@ Owner rule 2026-10-17: "standardize how we communicate decisions, communicate th
 | `default` | `decide` only, required: `{option, after_days}`; `after_days` defaults to 7. Unanswered after `after_days`, the PM acts on `default.option` and records it as `[auto timeout]` in `decisions.md`. When any option spends money, deploys prod or is irreversible, the default is the do-nothing/wait option. Replaces `alternative` and `if_undecided`. |
 | `policy` | Optional, `"P-n"`: the standing policy ([[autonomy-bar]]) under which an `fyi` item was auto-resolved. |
 | `outcome` | One sentence: what was done. Required on auto-resolved items and on closing any item. |
-| `created_at` | Real UTC from `date -u +"%Y-%m-%dT%H:%M:%SZ"`, within 15 minutes of the write. Never typed or estimated. |
+| `created_at` | Real UTC per the clock rule ([[autonomy-bar]] Timestamps, FL-4): `date -u`, written within 15 minutes. |
 | `owner_action` | `do` only. At most 5 numbered `steps`, `estimate` (for example "10 min"), and `when_done` (one sentence). |
 | `details` | Optional markdown, collapsed on the page: evidence, sources, searched decisions, file, PR and run links, internal ids. Detail goes here, never in the fields above. |
 | `label` | Unchanged (`blocker`, `action`, `later`, `fyi`; PM rule 9). |

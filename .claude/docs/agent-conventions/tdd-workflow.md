@@ -23,7 +23,7 @@ Tests exist before any code is written. The engineer's job is to read the tests 
 
 ## Fix PRs: fix the class, not the instance
 
-Before fixing a defect, search for its siblings: the same pattern, the same copied logic, the same missing guard elsewhere (`rg` across the repo, all environments' config, both frontend and backend). Fix every sibling or say why it is not affected. The PR body has a `## Sibling sweep` section with the search run and its results; `sibling-sweep.js` checks for it and the reviewer blocks without it.
+Before fixing a defect, search for its siblings: the same pattern, the same copied logic, the same missing guard elsewhere (`rg` across the repo, all environments' config, both frontend and backend). Fix every sibling or say why it is not affected. The PR body has a `## Sibling sweep` section holding either the search command in a code span or block (`rg`, `grep`, `git grep`, ...) followed by its results (`file:line` hits, each fixed or ruled out with a reason, a hit count, or `no matches`), or `no siblings: <reason>` with a reason of at least 10 characters. `sibling-sweep.js` checks exactly this, and the reviewer blocks without it.
 
 ## Hard rules
 

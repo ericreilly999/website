@@ -63,7 +63,7 @@ When a backlog item is pulled here, Requirement Analyst decomposes it into per-s
 | Metric | Last sprint | This sprint | Delta | Notes |
 |---|---|---|---|---|
 | AI token spend | $ | $ | % | |
-| GitHub Actions minutes | / 2000 (free tier) | / 2000 | | |
+| GitHub Actions minutes | / 300 (P-2 project budget) | / 300 | | |
 | AWS spend (total) | $ | $ | % | |
 | Largest single resource | [name] $ | [name] $ | | |
 
@@ -86,7 +86,7 @@ If delta > 10% → Tier 3 stop-and-ask per [[autonomy-bar]] before committing ne
 
 ## Release candidate tag
 
-Tag cut at sprint checkpoint: `v0.NN.0` from SHA `[abbreviated SHA]`
+Tag cut at sprint checkpoint, after the owner's decision (Tier 3, standard CI-13): `v0.NN.0` from SHA `[abbreviated SHA]`, decision `[id]`
 Soak tier: [1 / 2 / 3]
 Expected prod promotion date: [date] (post-LIVE only)
 
@@ -121,7 +121,7 @@ Expected prod promotion date: [date] (post-LIVE only)
 - [ ] All shipped stories have DoD confirmed (staging green + verifier sign-off)
 - [ ] Carried-over stories moved to backlog
 - [ ] Cost trajectory reviewed and verdict recorded
-- [ ] Every lessons-learned entry older than 7 days is enforced or marked `prose-only`
+- [ ] Every lessons-learned entry meets the lessons rule ([[lessons-learned]])
 - [ ] Next sprint's committed scope set
 ```
 
