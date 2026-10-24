@@ -222,3 +222,8 @@ CLD-13 and CLD-14 both fully shipped/closed — no further action queued for eit
 - Prod site deploys still parked by owner.
 - 2026-10-24: PR #42 (plan/apply redaction, encrypted plan artifact, vars->secrets) merged 1654220. DevOps on follow-ups (deploy workflow role ARNs to secrets etc.), branch ops/redaction-followups. QA RED tests for contact honeypot in flight. Owner/platform must create env secrets (list in PR 42 body / README) before first plan.
 - 2026-10-24: PR #43 merged 03d66ad (deploy role ARNs to secrets, HMAC on plan artifact). Small follow-up: clean error when tfplan.enc.hmac missing; README line on pre-merge plan artifacts. QA honeypot RED tests still in flight.
+- 2026-10-24: PR #45 (4a8422f) and PR #44 contact honeypot (f8d6f60) merged. No deploy done: deploys are dispatch-only and AWS_ROLE_ARN/PROMPTED_AWS_ROLE_ARN secrets are unset. Verifier sign-off for #44 (.project/verification/44.md) due once the merge commit is on staging.
+### RESUME (latest, Q-43 - idle)
+- Blocked on platform relay R-website-20261024-1 (account ids, state buckets, DNS shape, SES decision, SCPs). Open owner cards WS-9, WS-10, WS-11 (none blocking). Env secrets list in README must be created on staging and production before first plan; raise pending-Eric card when values known.
+- Then: staging plan -> show coordinator -> apply via pipeline -> deploy site to staging -> QA + verifier (includes #44 honeypot) -> prod per runbook. Backlog B-Q43-08/09 low priority. Prod still parked by owner.
+- Worktrees: only main.
