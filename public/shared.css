@@ -472,6 +472,7 @@ section { padding: 64px 0; border-top: 1px solid var(--line); }
   grid-template-columns: 1fr 1fr;
   gap: 20px 28px;
 }
+.hp-trap { position: absolute; left: -10000px; top: auto; width: 1px; height: 1px; overflow: hidden; }
 .field { display: flex; flex-direction: column; gap: 8px; }
 .field.full { grid-column: 1 / -1; }
 .field label {

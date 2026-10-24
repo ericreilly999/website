@@ -117,7 +117,9 @@ test.describe('Contact page', () => {
     // also carried inside the message text to be sure it reaches the inbox.
     expect(body.project).toContain('Cut our cloud bill');
     expect(body.project).toContain('Cloud & reliability');
-    expect(Object.keys(body).sort()).toEqual(['company', 'email', 'name', 'need', 'project', 'term']);
+    // B-Q43-04: the hidden honeypot travels with every submit, empty for real users.
+    expect(body.website).toBe('');
+    expect(Object.keys(body).sort()).toEqual(['company', 'email', 'name', 'need', 'project', 'term', 'website']);
   });
 
   test('submit with no need selected still sends and does not invent a need', async ({ page }) => {
