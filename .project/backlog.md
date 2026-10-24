@@ -117,6 +117,34 @@
 - **Outcome**: the buckets are no longer publicly readable and a bad deploy can be rolled back by object version.
 - **Acceptance**: TBD at spec time (note the S3 website endpoint serves the extensionless `about`/`projects`/`contact` objects; confirm the replacement handles them)
 
+## Q-43 follow-up: contact page 390px nav overflow
+
+- **ID**: B-Q43-08
+- **Type**: Defect
+- **Status**: Backlog
+- **Estimate**: S
+- **Milestone**: later
+- **Created**: 2026-10-24 by DevOps
+- **Priority**: Low
+- **Source**: PR #43 review: the nav overflows horizontally at 390px width on /contact; pre-existing, not caused by PR #43
+- **Spec link**: not yet speced
+- **Outcome**: /contact has no horizontal overflow at 390px.
+- **Acceptance**: at 390px viewport width the nav fits without horizontal scroll on /contact
+
+## Q-43 follow-up: whitespace-only honeypot value
+
+- **ID**: B-Q43-09
+- **Type**: Question
+- **Status**: Backlog
+- **Estimate**: XS
+- **Milestone**: later
+- **Created**: 2026-10-24 by DevOps
+- **Priority**: Low
+- **Source**: PR #43 review: should the honeypot value be trimmed before the check? The spec says non-empty string, so a whitespace-only value currently counts as filled
+- **Spec link**: not yet speced
+- **Outcome**: decision recorded on whether whitespace-only honeypot values count as filled.
+- **Acceptance**: spec states the rule; code and tests match it
+
 ---
 
 ## Done
