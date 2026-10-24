@@ -5,14 +5,24 @@ name: Terraform Plan
 #   gh workflow run terraform-plan.yml -f env=staging
 #
 # The job runs in the GitHub environment (staging | production) so every
-# account-specific value comes from environment variables, never from this file:
-#   TF_PLAN_ROLE_ARN   read-only plan role (OIDC trust: environment:<name>)
-#   AWS_REGION, TF_STATE_BUCKET
-#   TF_VAR_AWS_ACCOUNT_ID, TF_VAR_DNS_ZONE_ID, TF_VAR_DNS_ACCOUNT_ID,
-#   TF_VAR_DNS_ASSUME_ROLE_ARN (optional), TF_VAR_CONTACT_TO_EMAIL,
-#   TF_VAR_CONTACT_FROM_EMAIL (prod)
+# account-specific value comes from the environment, never from this file.
+# THIS REPOSITORY IS PUBLIC: run logs, job summaries and artifacts are readable
+# by anyone, so nothing identifying may reach them.
+#   Environment SECRETS (auto-masked in logs, including step headers; a plain
+#   variable would be echoed in the step's env/with header before any mask runs):
+#     TF_PLAN_ROLE_ARN   read-only plan role (OIDC trust: environment:<name>)
+#     TF_STATE_BUCKET, TF_PLAN_ENCRYPTION_KEY (random 32+ char passphrase)
+#     TF_VAR_AWS_ACCOUNT_ID, TF_VAR_DNS_ZONE_ID, TF_VAR_DNS_ACCOUNT_ID,
+#     TF_VAR_DNS_ASSUME_ROLE_ARN (optional), TF_VAR_CONTACT_TO_EMAIL,
+#     TF_VAR_CONTACT_FROM_EMAIL (prod)
+#   Environment variable (non-identifying): AWS_REGION
+# The saved plan embeds all of those values, so it is uploaded ONLY as an
+# AES-256 encrypted file (key = TF_PLAN_ENCRYPTION_KEY), kept 1 day, with a
+# keyed HMAC (tfplan.enc.hmac, bound to env + commit) that Terraform Apply
+# verifies before decrypting. The job summary lists resource addresses and
+# actions only; the reviewer reads that.
 # Note: planning production waits on the production environment reviewer, the
-# same as applying it, because the environment owns the role variables.
+# same as applying it, because the environment owns the role secrets.
 
 on:
   workflow_dispatch:
@@ -59,20 +69,33 @@ jobs:
 
       - name: Require plan role configuration
         env:
-          ROLE: ${{ vars.TF_PLAN_ROLE_ARN }}
-          BUCKET: ${{ vars.TF_STATE_BUCKET }}
+          ROLE: ${{ secrets.TF_PLAN_ROLE_ARN }}
+          BUCKET: ${{ secrets.TF_STATE_BUCKET }}
           REGION: ${{ vars.AWS_REGION }}
+          PLAN_KEY: ${{ secrets.TF_PLAN_ENCRYPTION_KEY }}
+          TF_VAR_AWS_ACCOUNT_ID: ${{ secrets.TF_VAR_AWS_ACCOUNT_ID }}
+          TF_VAR_DNS_ZONE_ID: ${{ secrets.TF_VAR_DNS_ZONE_ID }}
+          TF_VAR_CONTACT_TO_EMAIL: ${{ secrets.TF_VAR_CONTACT_TO_EMAIL }}
+          TF_VAR_CONTACT_FROM_EMAIL: ${{ secrets.TF_VAR_CONTACT_FROM_EMAIL }}
+          TARGET_ENV: ${{ inputs.env }}
         run: |
-          for v in ROLE BUCKET REGION; do
+          REQUIRED="ROLE BUCKET REGION PLAN_KEY TF_VAR_AWS_ACCOUNT_ID TF_VAR_DNS_ZONE_ID"
+          # Production also needs the contact-form emails (staging has no contact form).
+          if [ "$TARGET_ENV" = "prod" ]; then REQUIRED="$REQUIRED TF_VAR_CONTACT_TO_EMAIL TF_VAR_CONTACT_FROM_EMAIL"; fi
+          for v in $REQUIRED; do
             if [ -z "${!v}" ]; then
-              echo "::error::Environment variable for $v is not set; this environment is not provisioned yet"; exit 1
+              echo "::error::Environment secret/variable for $v is not set; this environment is not provisioned yet"; exit 1
             fi
           done
+          # Length only is reported, never the value.
+          if [ "${#PLAN_KEY}" -lt 32 ]; then
+            echo "::error::TF_PLAN_ENCRYPTION_KEY must be at least 32 characters"; exit 1
+          fi
 
       - name: Configure AWS credentials (OIDC, read-only plan role)
         uses: aws-actions/configure-aws-credentials@7474bc4690e29a8392af63c5b98e7449536d5c3a # v4
         with:
-          role-to-assume: ${{ vars.TF_PLAN_ROLE_ARN }}
+          role-to-assume: ${{ secrets.TF_PLAN_ROLE_ARN }}
           role-session-name: github-actions-website-tf-plan
           aws-region: ${{ vars.AWS_REGION }}
 
@@ -84,13 +107,17 @@ jobs:
 
       - name: Write account-specific inputs
         env:
-          V_ACCOUNT: ${{ vars.TF_VAR_AWS_ACCOUNT_ID }}
-          V_ZONE: ${{ vars.TF_VAR_DNS_ZONE_ID }}
-          V_DNS_ACCOUNT: ${{ vars.TF_VAR_DNS_ACCOUNT_ID }}
-          V_DNS_ROLE: ${{ vars.TF_VAR_DNS_ASSUME_ROLE_ARN }}
-          V_TO: ${{ vars.TF_VAR_CONTACT_TO_EMAIL }}
-          V_FROM: ${{ vars.TF_VAR_CONTACT_FROM_EMAIL }}
+          V_ACCOUNT: ${{ secrets.TF_VAR_AWS_ACCOUNT_ID }}
+          V_ZONE: ${{ secrets.TF_VAR_DNS_ZONE_ID }}
+          V_DNS_ACCOUNT: ${{ secrets.TF_VAR_DNS_ACCOUNT_ID }}
+          V_DNS_ROLE: ${{ secrets.TF_VAR_DNS_ASSUME_ROLE_ARN }}
+          V_TO: ${{ secrets.TF_VAR_CONTACT_TO_EMAIL }}
+          V_FROM: ${{ secrets.TF_VAR_CONTACT_FROM_EMAIL }}
         run: |
+          # Secrets are already masked; mask again as a belt-and-braces guard.
+          for v in V_ACCOUNT V_ZONE V_DNS_ACCOUNT V_DNS_ROLE V_TO V_FROM; do
+            if [ -n "${!v}" ]; then echo "::add-mask::${!v}"; fi
+          done
           # Unset variables are omitted so the Terraform defaults (null) apply.
           jq -n \
             --arg a "$V_ACCOUNT" --arg z "$V_ZONE" --arg da "$V_DNS_ACCOUNT" \
@@ -103,7 +130,7 @@ jobs:
 
       - name: Terraform init
         env:
-          STATE_BUCKET: ${{ vars.TF_STATE_BUCKET }}
+          STATE_BUCKET: ${{ secrets.TF_STATE_BUCKET }}
           AWS_REGION_VAR: ${{ vars.AWS_REGION }}
         run: |
           terraform init -input=false \
@@ -114,10 +141,21 @@ jobs:
         run: terraform validate
 
       - name: Terraform plan
-        run: terraform plan -input=false -lock-timeout=60s -out=tfplan
-
-      - name: Summarize plan
+        # Plan text goes to a file, never the public log (it prints attribute
+        # values). A failure prints a scrubbed error excerpt only.
         run: |
+          scrub() { sed -E 's#arn:aws[a-z-]*:[^ "]+#arn:***#g; s#[0-9]{12}#************#g; s#[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+#***@***#g; s#Z[A-Z0-9]{12,}#Z***#g; s#\[id=[^]]*\]##g'; }
+          if ! terraform plan -input=false -lock-timeout=60s -no-color -out=tfplan > plan.log 2>&1; then
+            echo "::error::terraform plan failed (scrubbed excerpt below; re-run locally for detail)"
+            grep -E '^(Error|.? ?Error)' plan.log | scrub | head -n 20 || true
+            rm -f plan.log ci.auto.tfvars.json
+            exit 1
+          fi
+          rm -f plan.log
+
+      - name: Summarize plan (addresses and actions only)
+        run: |
+          scrub() { sed -E 's#arn:aws[a-z-]*:[^ "]+#arn:***#g; s#[0-9]{12}#************#g; s#[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+#***@***#g; s#Z[A-Z0-9]{12,}#Z***#g; s#\[id=[^]]*\]##g'; }
           terraform show -json tfplan > tfplan.json
           DESTROY="$(jq '[.resource_changes[]? | select(.change.actions | index("delete"))] | length' tfplan.json)"
           TOTAL="$(jq '[.resource_changes[]? | select(.change.actions != ["no-op"] and .change.actions != ["read"])] | length' tfplan.json)"
@@ -127,16 +165,37 @@ jobs:
             echo "- Changed resources: ${TOTAL}"
             echo "- Destroy or replace: ${DESTROY}"
             echo ""
+            echo "Resource addresses and actions only. Attribute values are deliberately not shown (public repo)."
+            echo ""
             echo '```'
-            terraform show -no-color tfplan | head -c 900000
+            jq -r '.resource_changes[]? | select(.change.actions != ["no-op"] and .change.actions != ["read"]) | "\(.change.actions | join("+"))\t\(.address)"' tfplan.json \
+              | scrub | sort -k2 | head -n 500
             echo '```'
           } >> "$GITHUB_STEP_SUMMARY"
-          rm tfplan.json ci.auto.tfvars.json
+          rm -f tfplan.json ci.auto.tfvars.json
 
-      - name: Upload plan
+      - name: Encrypt plan
+        env:
+          PLAN_KEY: ${{ secrets.TF_PLAN_ENCRYPTION_KEY }}
+        run: |
+          openssl enc -aes-256-cbc -pbkdf2 -iter 600000 -salt -in tfplan -out tfplan.enc -pass env:PLAN_KEY
+          rm -f tfplan
+          # AES-CBC is not authenticated, so also record a keyed HMAC over
+          # env + commit + ciphertext. Terraform Apply verifies it before
+          # decrypting. It reveals nothing without the key.
+          PLAN_ENV="${{ inputs.env }}" python3 - <<'PY'
+          import hashlib, hmac, os
+          key = hashlib.sha256(b"tfplan-mac\0" + os.environ["PLAN_KEY"].encode()).digest()
+          msg = (os.environ["PLAN_ENV"] + "\n" + os.environ["GITHUB_SHA"] + "\n").encode() + open("tfplan.enc", "rb").read()
+          open("tfplan.enc.hmac", "w").write(hmac.new(key, msg, hashlib.sha256).hexdigest() + "\n")
+          PY
+
+      - name: Upload plan (encrypted)
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: tfplan-${{ inputs.env }}-${{ github.sha }}
-          path: terraform/envs/${{ inputs.env }}/tfplan
+          path: |
+            terraform/envs/${{ inputs.env }}/tfplan.enc
+            terraform/envs/${{ inputs.env }}/tfplan.enc.hmac
           if-no-files-found: error
-          retention-days: 7
+          retention-days: 1

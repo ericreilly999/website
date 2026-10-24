@@ -15,7 +15,8 @@ output "site_cloudfront_domain_name" {
 
 output "site_deploy_role_arn" {
   value       = module.site_deploy.role_arn
-  description = "Main site deploy role. Set as AWS_ROLE_ARN on the GitHub staging environment."
+  description = "Main site deploy role. Set as the AWS_ROLE_ARN secret (not a variable) on the GitHub staging environment."
+  sensitive   = true
 }
 
 output "prompted_bucket_name" {
@@ -35,5 +36,6 @@ output "prompted_cloudfront_domain_name" {
 
 output "prompted_deploy_role_arn" {
   value       = module.prompted_deploy.role_arn
-  description = "Prompted deploy role. Set as PROMPTED_AWS_ROLE_ARN on the GitHub staging environment."
+  description = "Prompted deploy role. Set as the PROMPTED_AWS_ROLE_ARN secret (not a variable) on the GitHub staging environment."
+  sensitive   = true
 }

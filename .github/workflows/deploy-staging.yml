@@ -3,11 +3,13 @@ name: Deploy Staging
 # Dispatch-only (owner scope, Q-43). Nothing deploys on push. Run it from the
 # Actions tab or `gh workflow run deploy-staging.yml -f ref=main`.
 #
-# Everything environment-specific comes from variables on the GitHub
-# `staging` environment (set from the envs/staging Terraform outputs):
-#   AWS_ROLE_ARN, PROMPTED_AWS_ROLE_ARN, AWS_REGION,
-#   S3_BUCKET, CF_DIST_ID, PROMPTED_S3_BUCKET, PROMPTED_CF_DIST_ID,
-#   SITE_URL, PROMPTED_URL
+# Everything environment-specific comes from the GitHub `staging` environment
+# (set from the envs/staging Terraform outputs). THIS REPOSITORY IS PUBLIC and a
+# variable is echoed in step headers, so the role ARNs (they embed the account
+# id) are environment SECRETS, which are masked:
+#   secrets:   AWS_ROLE_ARN, PROMPTED_AWS_ROLE_ARN
+#   variables: AWS_REGION, S3_BUCKET, CF_DIST_ID, PROMPTED_S3_BUCKET,
+#              PROMPTED_CF_DIST_ID, SITE_URL, PROMPTED_URL
 # No account ids, bucket names or distribution ids live in this file.
 
 on:
@@ -79,7 +81,7 @@ jobs:
       - name: Configure AWS credentials (staging)
         uses: aws-actions/configure-aws-credentials@7474bc4690e29a8392af63c5b98e7449536d5c3a # v4
         with:
-          role-to-assume: ${{ vars.AWS_ROLE_ARN }}
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
           role-session-name: github-actions-website-staging-deploy
           aws-region: ${{ vars.AWS_REGION }}
 
@@ -145,7 +147,7 @@ jobs:
       - name: Configure AWS credentials (prompted staging)
         uses: aws-actions/configure-aws-credentials@7474bc4690e29a8392af63c5b98e7449536d5c3a # v4
         with:
-          role-to-assume: ${{ vars.PROMPTED_AWS_ROLE_ARN }}
+          role-to-assume: ${{ secrets.PROMPTED_AWS_ROLE_ARN }}
           role-session-name: github-actions-website-prompted-staging-deploy
           aws-region: ${{ vars.AWS_REGION }}
 
