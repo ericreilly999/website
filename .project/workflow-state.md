@@ -215,3 +215,8 @@ CLD-13 and CLD-14 both fully shipped/closed — no further action queued for eit
 ### RESUME (latest, Q-43)
 - On DevOps PR: Code Reviewer, merge; then wait on platform for account ids/DNS shape (relay), run staging plan and show the coordinator before apply; prod via pipeline. Local tfstate leftovers: remote confirmed authoritative; local files stale (tfstate 0 bytes) -> delete once PR merged (B-Q43-05). Prod site deploy still parked per owner.
 - 2026-10-24: PR #40 (env roots, legacy freeze, dispatch-only workflows) merged 13b17e7. DevOps on follow-ups (env protection, verify job, plan/apply workflows, local tfstate cleanup), branch ops/q43-followups, worktree C:\dev\gitrepos\website-q43-followups. Awaiting platform account ids.
+- 2026-10-24: PR #41 merged 7672888 (plan/apply workflows, prod verify, GitHub env protection live, local tfstate leftovers deleted after remote head-object check). M7 AC-24 ticked.
+### RESUME (latest, Q-43)
+- BLOCKED ON PLATFORM (relay R-website-20261024-1): account ids, state buckets, DNS shape/record role, zone details, OIDC provider owner, SES decision, SCPs. No worktrees open besides main.
+- Then: set env vars (before that: mark vars sensitive, trim plan job summary and artifact retention because the repo is public; plan role needs PutObject/DeleteObject on *.tflock or plan with -lock=false), run plan workflow for staging, SHOW THE COORDINATOR THE PLAN before apply, apply via pipeline, QA + verifier on website-staging, handler honeypot test + hidden input (B-Q43-04), then prod plan/apply via pipeline per runbook, WS-9/WS-10 outcomes decide apex window and API domain.
+- Prod site deploys still parked by owner.

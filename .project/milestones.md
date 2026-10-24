@@ -68,7 +68,7 @@
 - **Definition of done**:
   - [x] AC-22 Inventory of every Terraform-owned and unmanaged resource, with runbook draft — evidence: PR #39 (merge `3b2d14f`), docs/migration/q43-inventory.md
   - [ ] AC-23 Per-env staging and prod roots with remote state in each new account, applied — evidence: pending
-  - [ ] AC-24 Deploy workflows dispatch-only, OIDC into new accounts, timeout-minutes and concurrency set — evidence: pending
+  - [x] AC-24 Deploy workflows dispatch-only, OIDC into new accounts, timeout-minutes and concurrency set — evidence: PR #40 (merge `13b17e7`) and PR #41 (merge `7672888`); dispatch-only, OIDC via vars, timeout-minutes and concurrency set (actionlint clean; not yet run live)
   - [ ] AC-25 Staging verified live in website-staging (QA + verifier) — evidence: pending
   - [ ] AC-26 Prod cutover per runbook, site and DNS live from new accounts, QA live sign-off — evidence: pending
   - [ ] AC-27 Management-account stack decommissioned (platform-led) — evidence: pending
