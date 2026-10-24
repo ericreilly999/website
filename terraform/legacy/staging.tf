@@ -67,7 +67,7 @@ resource "aws_acm_certificate_validation" "staging" {
 # S3 + CloudFront — staging static site
 # ---------------------------------------------------------------------------
 module "staging_static_site" {
-  source = "./modules/static_site"
+  source = "../modules/static_site"
 
   bucket_name     = local.staging_bucket_name
   domain_aliases  = [local.staging_domain_name]
@@ -110,7 +110,7 @@ resource "aws_route53_record" "staging_alias_aaaa" {
 # by merges to main, not tags).
 # ---------------------------------------------------------------------------
 module "staging_github_deploy" {
-  source = "./modules/github_deploy"
+  source = "../modules/github_deploy"
 
   github_repository           = local.github_repository
   deploy_role_name            = local.staging_deploy_role_name

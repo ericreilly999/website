@@ -1,3 +1,12 @@
+terraform {
+  required_providers {
+    aws = {
+      source  = "hashicorp/aws"
+      version = "~> 5.0"
+    }
+  }
+}
+
 variable "zone_id" {
   type        = string
   description = "Route 53 hosted zone ID in which the alias records will be created."

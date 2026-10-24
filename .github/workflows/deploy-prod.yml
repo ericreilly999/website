@@ -1,0 +1,227 @@
+name: Deploy Production
+
+# Dispatch-only. Never runs on a tag push. Run it with
+#   gh workflow run deploy-prod.yml -f tag=vX.Y.Z -f signoff=<verifier PR or record id>
+#
+# Gates, in order:
+#   1. `verify` job: the tag is a semver tag, its commit is on main, and
+#      Deploy Staging (including E2E) succeeded on that exact commit.
+#   2. The `production` GitHub environment requires a reviewer (and optionally a
+#      wait timer) before any deploy job starts. Configure that in
+#      Settings > Environments > production; without it this workflow has no
+#      approval gate.
+#
+# Everything environment-specific comes from variables on the GitHub
+# `production` environment (set from the envs/prod Terraform outputs):
+#   AWS_ROLE_ARN, PROMPTED_AWS_ROLE_ARN, AWS_REGION,
+#   S3_BUCKET, CF_DIST_ID, PROMPTED_S3_BUCKET, PROMPTED_CF_DIST_ID,
+#   SITE_URL, PROMPTED_URL
+# Rollback is a re-dispatch of the previous good tag.
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Release tag to deploy (vX.Y.Z)
+        required: true
+        type: string
+      signoff:
+        description: Verifier sign-off reference (PR number or record id) for this tag
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+env:
+  NODE_VERSION: 20
+
+jobs:
+  verify:
+    name: Verify Release Tag
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+      actions: read
+    outputs:
+      sha: ${{ steps.resolve.outputs.sha }}
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          fetch-depth: 0
+          fetch-tags: true
+
+      - name: Resolve and verify the tag
+        id: resolve
+        env:
+          TAG: ${{ inputs.tag }}
+          SIGNOFF: ${{ inputs.signoff }}
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          if ! [[ "$TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "::error::Tag '$TAG' is not vMAJOR.MINOR.PATCH"; exit 1
+          fi
+          if [ -z "${SIGNOFF// /}" ]; then
+            echo "::error::signoff reference is required"; exit 1
+          fi
+          SHA="$(git rev-parse --verify "refs/tags/${TAG}^{commit}")"
+          git merge-base --is-ancestor "$SHA" origin/main \
+            || { echo "::error::Tag commit $SHA is not on main"; exit 1; }
+          OK="$(gh run list --repo "$GITHUB_REPOSITORY" --workflow deploy-staging.yml \
+            --commit "$SHA" --status success --json databaseId --jq length)"
+          if [ "$OK" -lt 1 ]; then
+            echo "::error::No successful Deploy Staging run (with E2E) on $SHA"; exit 1
+          fi
+          echo "sha=$SHA" >> "$GITHUB_OUTPUT"
+          {
+            echo "## Release tag verified"
+            echo ""
+            echo "- **Tag:** \`${TAG}\` (\`${SHA}\`)"
+            echo "- **Sign-off ref:** ${SIGNOFF}"
+            echo "- **Staging runs green on this SHA:** ${OK}"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+  deploy-site:
+    name: Deploy Production
+    needs: verify
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    environment: production
+    # Never cancel an in-flight `s3 sync --delete`.
+    concurrency:
+      group: deploy-prod-site
+      cancel-in-progress: false
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - name: Check out the release commit
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          ref: ${{ needs.verify.outputs.sha }}
+
+      - name: Set up Node.js
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run tests
+        run: npm test
+
+      - name: Configure AWS credentials (prod)
+        uses: aws-actions/configure-aws-credentials@7474bc4690e29a8392af63c5b98e7449536d5c3a # v4
+        with:
+          role-to-assume: ${{ vars.AWS_ROLE_ARN }}
+          role-session-name: github-actions-website-prod-deploy
+          aws-region: ${{ vars.AWS_REGION }}
+
+      - name: Build website
+        run: npm run build
+
+      - name: Upload assets to S3 (prod)
+        env:
+          S3_BUCKET: ${{ vars.S3_BUCKET }}
+        run: |
+          CACHE="no-cache, no-store, must-revalidate"
+          aws s3 sync build/ "s3://${S3_BUCKET}" --delete --cache-control "$CACHE"
+          for page in about projects contact; do
+            aws s3 cp "build/${page}.html" "s3://${S3_BUCKET}/${page}" \
+              --content-type "text/html" --cache-control "$CACHE"
+          done
+
+      - name: Invalidate CloudFront cache (prod)
+        env:
+          CF_DIST_ID: ${{ vars.CF_DIST_ID }}
+        run: aws cloudfront create-invalidation --distribution-id "$CF_DIST_ID" --paths "/*"
+
+      - name: Job summary
+        env:
+          SITE_URL: ${{ vars.SITE_URL }}
+          TAG: ${{ inputs.tag }}
+        run: |
+          {
+            echo "## Production deployment complete"
+            echo ""
+            echo "- **URL:** ${SITE_URL}"
+            echo "- **Tag:** \`${TAG}\`"
+            echo "- **Triggered by:** \`${GITHUB_ACTOR}\`"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+  deploy-prompted:
+    name: Deploy Prompted Production
+    needs: verify
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    environment: production
+    concurrency:
+      group: deploy-prod-prompted
+      cancel-in-progress: false
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - name: Check out the release commit
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          ref: ${{ needs.verify.outputs.sha }}
+
+      - name: Configure AWS credentials (prompted prod)
+        uses: aws-actions/configure-aws-credentials@7474bc4690e29a8392af63c5b98e7449536d5c3a # v4
+        with:
+          role-to-assume: ${{ vars.PROMPTED_AWS_ROLE_ARN }}
+          role-session-name: github-actions-website-prompted-prod-deploy
+          aws-region: ${{ vars.AWS_REGION }}
+
+      - name: Upload static files to S3 (prompted prod)
+        env:
+          PROMPTED_S3_BUCKET: ${{ vars.PROMPTED_S3_BUCKET }}
+        run: |
+          aws s3 sync prompted/ "s3://${PROMPTED_S3_BUCKET}" \
+            --delete \
+            --cache-control "no-cache, no-store, must-revalidate"
+
+      - name: Invalidate CloudFront cache (prompted prod)
+        env:
+          PROMPTED_CF_DIST_ID: ${{ vars.PROMPTED_CF_DIST_ID }}
+        run: aws cloudfront create-invalidation --distribution-id "$PROMPTED_CF_DIST_ID" --paths "/*"
+
+      - name: Job summary
+        env:
+          PROMPTED_URL: ${{ vars.PROMPTED_URL }}
+          TAG: ${{ inputs.tag }}
+        run: |
+          {
+            echo "## Prompted production deployment complete"
+            echo ""
+            echo "- **URL:** ${PROMPTED_URL}"
+            echo "- **Tag:** \`${TAG}\`"
+            echo "- **Triggered by:** \`${GITHUB_ACTOR}\`"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+  smoke:
+    name: Production Smoke
+    needs: [deploy-site, deploy-prompted]
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    environment: production
+    permissions:
+      contents: read
+    steps:
+      - name: Check both sites respond
+        env:
+          SITE_URL: ${{ vars.SITE_URL }}
+          PROMPTED_URL: ${{ vars.PROMPTED_URL }}
+        run: |
+          set -euo pipefail
+          for url in "$SITE_URL" "$SITE_URL/contact" "$PROMPTED_URL"; do
+            curl --fail --silent --show-error --location --retry 5 --retry-delay 10 \
+              --retry-all-errors --max-time 20 --output /dev/null "$url"
+            echo "ok $url"
+          done

@@ -166,9 +166,11 @@ test.describe('Q-25 site-wide hygiene', () => {
   });
 
   test('deploy workflow uploads about as an extensionless page for staging and prod', async () => {
-    const wf = fs.readFileSync(path.join(ROOT, '.github', 'workflows', 'deploy.yml'), 'utf8');
-    const loops = wf.match(/for page in [^;]+; do/g) || [];
-    expect(loops.length).toBeGreaterThanOrEqual(2);
-    for (const l of loops) expect(l).toContain('about');
+    for (const file of ['deploy-staging.yml', 'deploy-prod.yml']) {
+      const wf = fs.readFileSync(path.join(ROOT, '.github', 'workflows', file), 'utf8');
+      const loops = wf.match(/for page in [^;]+; do/g) || [];
+      expect(loops.length).toBeGreaterThanOrEqual(1);
+      for (const l of loops) expect(l).toContain('about');
+    }
   });
 });
