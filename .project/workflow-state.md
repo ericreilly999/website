@@ -211,3 +211,6 @@ CLD-13 and CLD-14 both fully shipped/closed — no further action queued for eit
 ### RESUME (latest)
 - On DevOps return: review PR (Code Reviewer), decide on local tfstate leftovers per its remote-state comparison, relay needs-from-platform list via a `relays/` doc to platform, then build per-env roots.
 - Prod still parked by owner (see earlier RESUME).
+- 2026-10-24: PR #39 (Q-43 inventory, draft runbook, backlog) merged 3b2d14f. M7 added to milestones.md (AC-22 ticked). Relay R-website-20261024-1 to platform; cards WS-9/10/11 raised. DevOps building env roots + dispatch-only workflows (branch ops/q43-env-roots, worktree C:\dev\gitrepos\website-q43-roots), no applies.
+### RESUME (latest, Q-43)
+- On DevOps PR: Code Reviewer, merge; then wait on platform for account ids/DNS shape (relay), run staging plan and show the coordinator before apply; prod via pipeline. Local tfstate leftovers: remote confirmed authoritative; local files stale (tfstate 0 bytes) -> delete once PR merged (B-Q43-05). Prod site deploy still parked per owner.
