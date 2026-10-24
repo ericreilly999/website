@@ -12,9 +12,41 @@
 // Rules and what to do instead: docs/agent-conventions/hooks.md. Kill switch: FLEET_HOOKS=off.
 // Each block carries a `gate` reason code (blockReason), which runHook logs as a gate-event line.
 
+const fs = require('node:fs');
+const os = require('node:os');
 const path = require('node:path');
 const { execFileSync, spawnSync } = require('node:child_process');
 const C = require('./lib/common');
+
+/** The home directory the shell expands `~` and `$HOME` to (Git Bash sets HOME to `/c/Users/<me>`). */
+const homeDir = () => C.nativePath(String(process.env.HOME || os.homedir()).replace(/\\/g, '/'));
+
+let cygpathMissing = false;
+/** `cygpath -w` of an MSYS path (`/tmp/x`), or null when cygpath is not on PATH or fails. */
+function cygpath(p) {
+  if (cygpathMissing) return null;
+  const r = spawnSync('cygpath', ['-w', p], { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'], timeout: 2000 });
+  if (r.error) { cygpathMissing = r.error.code === 'ENOENT'; return null; }
+  const out = r.status === 0 ? String(r.stdout || '').trim() : '';
+  return out || null;
+}
+
+/** A directory word as the shell would read it -> a native absolute path: `~`, `$HOME` and `${HOME}` (PowerShell
+ * `$env:HOME`/`$env:USERPROFILE`) expanded; on Windows an MSYS drive path (`/c/x`) becomes `C:/x` and another MSYS
+ * path (`/tmp/x`) goes through `cygpath -w` when it is on PATH (`/mnt/c/...` stays as it is); resolved against
+ * `base`; and, where it exists, with symlinks and junctions followed (`~/.claude/fleet` -> the fleet-state checkout). */
+function shellPath(base, word) {
+  let p = String(word == null || word === '' ? '.' : word);
+  p = p.replace(/^(?:~|\$HOME|\$\{HOME\}|\$env:HOME|\$env:USERPROFILE)(?=[\\/]|$)/i, () => homeDir());
+  if (process.platform === 'win32') {
+    if (/^\/[a-zA-Z](?:\/|$)/.test(p)) p = `${p[1].toUpperCase()}:/${p.slice(3)}`;
+    else if (/^\/(?!\/|mnt\/)/.test(p)) p = cygpath(p) || p;
+  }
+  const abs = path.resolve(base || '.', p);
+  try { return fs.realpathSync.native(abs); } catch { return abs; }
+}
+
+const isDir = (p) => { try { return fs.statSync(p).isDirectory(); } catch { return false; } };
 
 /** Index just past the line that closes a heredoc body opened before `from` (or s.length). */
 function skipBody(s, from, done) {
@@ -32,13 +64,18 @@ function skipBody(s, from, done) {
  * not commands, so they are skipped: a file written through a heredoc may mention `git reset --hard`.
  * Command substitutions inside double quotes (`"$(...)"`) and backtick substitutions (Bash) are
  * commands, so their text is returned in `segs.subs` for the caller to check too. With `opts.ps`
- * (PowerShell) a backtick escapes the next character instead. */
+ * (PowerShell) a backtick escapes the next character instead. Redirections (`2>&1`, `> /dev/null`, `>>log`, `<in`,
+ * `&>x`, `<<<word`, PowerShell `*>$null`) are not words of the command: the operator, its fd and its target are dropped. */
 function segments(cmd, opts = {}) {
   const segs = []; let cur = []; let word = ''; let inWord = false; let q = null;
   const heredocs = []; const subs = [];
   const quoted = []; let curQ = new Set(); let wordQ = false; // words built with quotes or escapes, by segment and index
-  const endWord = () => { if (inWord) { if (wordQ) curQ.add(cur.length); cur.push(word); word = ''; inWord = false; } wordQ = false; };
-  const endSeg = () => { endWord(); if (cur.length) { segs.push(cur); quoted.push(curQ); } cur = []; curQ = new Set(); };
+  let dropNext = false; // the next word is a redirection target
+  const endWord = () => {
+    if (inWord) { if (dropNext) dropNext = false; else { if (wordQ) curQ.add(cur.length); cur.push(word); } word = ''; inWord = false; }
+    wordQ = false;
+  };
+  const endSeg = () => { endWord(); dropNext = false; if (cur.length) { segs.push(cur); quoted.push(curQ); } cur = []; curQ = new Set(); };
   const s = String(cmd || '');
   /** Text of `$( ... )` opening at i (s[i] === '$'), and the index of its closing paren. */
   const dollarParen = (i) => {
@@ -87,6 +124,15 @@ function segments(cmd, opts = {}) {
     if (ch === '"' || ch === "'") { q = ch; inWord = true; wordQ = true; continue; }
     if (ch === '\\' && i + 1 < s.length && s[i + 1] !== '\n') { word += s[++i]; inWord = true; wordQ = true; continue; }
     if (ch === '\\' && s[i + 1] === '\n') { i++; continue; }
+    if (ch === '>' || ch === '<' || (ch === '&' && s[i + 1] === '>')) {
+      const op = /^(?:&>>?|>>|>\||>&|>|<<<|<>|<&|<)/.exec(s.slice(i))[0];
+      // `2>`, `2>>`, `2>&1`; PowerShell `*>`: the fd word belongs to the redirection.
+      if (inWord && !wordQ && (/^\d+$/.test(word) || (opts.ps && word === '*'))) { word = ''; inWord = false; } else endWord();
+      i += op.length - 1;
+      const fd = op.endsWith('&') ? /^(?:\d+-?|-)/.exec(s.slice(i + 1)) : null;
+      if (fd) i += fd[0].length; else dropNext = true; // `>&2` is complete; `> file`, `>&file` take a target word
+      continue;
+    }
     if (ch === ';' || ch === '\n' || ch === '&' || ch === '|' || ch === '(' || ch === ')') { endSeg(); continue; }
     if (/\s/.test(ch)) { endWord(); continue; }
     word += ch; inWord = true;
@@ -148,14 +194,18 @@ function baseName(tok) { return path.basename(String(tok || '')).replace(/\.exe$
 
 /** git global options -> {cwd, sub, args}. */
 function parseGit(tokens, cwd) {
-  let i = 1; let dir = cwd; const env = tokens.env || {};
+  let i = 1; let dir = cwd; const env = tokens.env || {}; const dirWords = [];
   while (i < tokens.length && tokens[i].startsWith('-')) {
     const t = tokens[i];
-    if (t === '-C') { dir = path.resolve(dir || '.', C.nativePath(String(tokens[i + 1] || '.').replace(/^~(?=\/|$)/, require('node:os').homedir()))); i += 2; continue; }
+    if (t === '-C') { dirWords.push(String(tokens[i + 1] || '.')); dir = shellPath(dir, tokens[i + 1]); i += 2; continue; }
     if (t === '-c' || t === '--git-dir' || t === '--work-tree' || t === '--namespace') { i += 2; continue; }
     i += 1;
   }
-  return { cwd: dir, sub: tokens[i], subIdx: i, args: tokens.slice(i + 1), env, prefix: tokens.slice(1, i), shellCwd: cwd };
+  // runPrefix: the global options without `-C`; the hook's own git calls run in `cwd` (every -C applied) instead, as
+  // Windows git cannot read an MSYS `-C /c/x` or a `-C ~/x` the shell would have expanded.
+  const prefix = tokens.slice(1, i);
+  const runPrefix = prefix.filter((x, k) => x !== '-C' && prefix[k - 1] !== '-C');
+  return { cwd: dir, sub: tokens[i], subIdx: i, args: tokens.slice(i + 1), env, prefix, runPrefix, dirWords, shellCwd: cwd };
 }
 
 function currentBranch(cwd, ctx) {
@@ -195,15 +245,20 @@ const MAIN_REF = /^refs\/heads\/(main|master)$/;
  * one blocks first), no system config, and never a credential prompt. */
 const gitEnv = () => ({ ...process.env, GIT_CONFIG_NOSYSTEM: '1', GIT_TERMINAL_PROMPT: '0', GCM_INTERACTIVE: 'never' });
 
-/** Run the push as `git push --dry-run --porcelain` -> {stdout, stderr, status, timedOut, error}. Tests inject ctx.dryRunPush. */
-function dryRunPush(g, ctx) {
+/** The dry run's argv: the push's own words (segments() already stopped at `|`, `;`, `&&`, `||` and dropped redirections). */
+function dryRunArgv(g) {
   // core.abbrev=no: full shas in the summary; --no-verify: no pre-push hook; -q/--quiet would hide the `To` blocks.
   const args = g.args.filter((x) => x !== '-q' && x !== '--quiet');
-  const argv = [...g.prefix, '-c', 'core.abbrev=no', 'push', '--dry-run', '--porcelain', '--no-verify', ...args];
-  if (ctx.dryRunPush) return ctx.dryRunPush(g.shellCwd, argv, g);
+  return [...g.runPrefix, '-c', 'core.abbrev=no', 'push', '--dry-run', '--porcelain', '--no-verify', ...args];
+}
+
+/** Run the push as `git push --dry-run --porcelain` in g.cwd -> {stdout, stderr, status, timedOut, error}. Tests inject ctx.dryRunPush. */
+function dryRunPush(g, ctx) {
+  const argv = dryRunArgv(g);
+  if (ctx.dryRunPush) return ctx.dryRunPush(g.cwd, argv, g);
   const left = ctx.pushBudget ? ctx.pushBudget.until - Date.now() : DRY_RUN_MS;
   if (left < 2000) return { stdout: '', stderr: `no time left in the ${PUSH_BUDGET_MS / 1000} s budget for one command's pushes; run each push in its own Bash call`, status: null };
-  const r = spawnSync('git', argv, { cwd: g.shellCwd, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'], timeout: Math.min(DRY_RUN_MS, left), env: gitEnv(g), maxBuffer: 16 * 1024 * 1024 });
+  const r = spawnSync('git', argv, { cwd: g.cwd, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'], timeout: Math.min(DRY_RUN_MS, left), env: gitEnv(g), maxBuffer: 16 * 1024 * 1024 });
   return { stdout: r.stdout || '', stderr: r.stderr || '', status: r.status, timedOut: !!(r.error && r.error.code === 'ETIMEDOUT'), error: r.error && r.error.message };
 }
 
@@ -223,7 +278,7 @@ function parsePorcelain(out) {
 function diffFiles(g, from, to, ctx) {
   if (ctx.diffFiles) return ctx.diffFiles(g, from, to);
   try {
-    return execFileSync('git', [...g.prefix, 'diff', '--name-only', '--no-renames', from, to], { cwd: g.shellCwd, encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'], timeout: DIFF_MS, env: gitEnv(g), maxBuffer: 64 * 1024 * 1024 })
+    return execFileSync('git', [...g.runPrefix, 'diff', '--name-only', '--no-renames', from, to], { cwd: g.cwd, encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'], timeout: DIFF_MS, env: gitEnv(g), maxBuffer: 64 * 1024 * 1024 })
       .split(/\r?\n/).filter(Boolean);
   } catch { return null; }
 }
@@ -245,14 +300,24 @@ function checkPushMain(g, ctx) {
       + 'which the dry run would apply (and could run a program from) before the command is approved. Push without config overrides, `GIT_*`/`SSH*` variables, '
       + '`--receive-pack`/`--exec` or `ext::`/`fd::` URLs.';
   }
+  const where = g.dirWords.length ? `\`-C ${g.dirWords.join(' -C ')}\`` : 'the shell\'s working directory';
+  if (!ctx.dryRunPush && !isDir(g.cwd)) {
+    return `Direct pushes to main/master skip review and the FC-14 merge gate, so every push is checked with \`git push --dry-run --porcelain\` first, and that failed `
+      + `in the path step: the push runs in ${where}, which the hook resolved to ${g.cwd}, and that is not a directory. `
+      + 'Name the directory as an absolute path (`C:/...`, `/c/...` and `~/...` are understood) and retry; the hook does not let a push it cannot check through.';
+  }
   const r = dryRunPush(g, ctx);
   const why = r.timedOut ? `it timed out after ${DRY_RUN_MS / 1000} s`
     : ((String(r.stderr || '').trim().split(/\r?\n/).filter((l) => !/^(hint|warning):/.test(l)).pop() || r.error || `exit ${r.status}`).slice(0, 200));
   const blocks = r.timedOut ? [] : parsePorcelain(r.stdout);
   if (!blocks.length) {
     if (!ctx.fleetChain && !r.timedOut && r.status === 0 && /Everything up-to-date/.test(r.stderr || '')) return null; // nothing to push (in a fleet chain the target must still be seen)
-    return `Direct pushes to main/master skip review and the FC-14 merge gate, so every push is checked with \`git push --dry-run --porcelain\` first, and that failed: ${why}. `
-      + 'Fix the remote or the arguments and retry; the hook does not let a push it cannot check through.';
+    const pathStep = /cannot change to|not a git repository|no such file or directory/i.test(String(r.stderr || ''));
+    const ran = `The dry run ran \`git ${dryRunArgv(g).join(' ')}\` in ${g.cwd} (from ${where}).`;
+    return `Direct pushes to main/master skip review and the FC-14 merge gate, so every push is checked with \`git push --dry-run --porcelain\` first, and that failed `
+      + (pathStep ? `in the path step (git cannot use that directory): ${why}. ${ran} Fix the path and retry; `
+        : `in the dry-run step, on the push arguments as parsed: ${why}. ${ran} If those are not the push's own words, report the hook; otherwise fix the remote or the arguments and retry; `)
+      + 'the hook does not let a push it cannot check through.';
   }
   if (ctx.fleetChain) {
     const away = blocks.find((b) => !isFleetState(b.url));
@@ -319,7 +384,7 @@ function collectGit(cmd, cwd0, ps, depth, out = { gits: [], exports: [] }) {
     const t = stripPrefix(raw);
     if (!t.length) continue;
     const b = baseName(t[0]);
-    if (b === 'cd' || b === 'pushd' || b === 'set-location') { if (t[1]) cwd = path.resolve(cwd, C.nativePath(t[1].replace(/^~(?=\/|$)/, require('node:os').homedir()))); continue; }
+    if (b === 'cd' || b === 'pushd' || b === 'set-location') { if (t[1]) cwd = shellPath(cwd, t[1]); continue; }
     if (b === 'export' && t.slice(1).some((x) => /^(GIT_|SSH|PAGER=|LESS)/i.test(x))) out.exports.push(t.join(' '));
     if (/^\$env:(GIT_|SSH|PAGER|LESS)/i.test(t[0])) out.exports.push(t.join(' '));
     if (b === 'git') {
@@ -707,7 +772,7 @@ function scan(cmd, cwd0, ps, ctx, depth) {
     const t = stripPrefix(raw);
     if (!t.length) continue;
     const b = baseName(t[0]);
-    if (b === 'cd' || b === 'pushd' || b === 'set-location') { if (t[1]) cwd = path.resolve(cwd, C.nativePath(t[1].replace(/^~(?=\/|$)/, require('node:os').homedir()))); continue; }
+    if (b === 'cd' || b === 'pushd' || b === 'set-location') { if (t[1]) cwd = shellPath(cwd, t[1]); continue; }
     let msg = null; let tool = null; let sub = null;
     if (b === 'git') { const g = parseGit(t, cwd); tool = 'git'; sub = g.sub; msg = checkGit(g, ctx); }
     else if (b === 'terraform' || b === 'tofu') { tool = 'terraform'; msg = checkTerraform(t, cwd); }
@@ -776,11 +841,11 @@ function decide(payload, ctx = {}) {
   if (!['Bash', 'PowerShell'].includes(payload.tool_name)) return null;
   const cmd = (payload.tool_input || {}).command;
   if (!cmd || !/\b(git|terraform|tofu|gh)\b/.test(cmd)) return null;
-  const ps = payload.tool_name === 'PowerShell'; const cwd = payload.cwd || process.cwd();
+  const ps = payload.tool_name === 'PowerShell'; const cwd = shellPath(null, payload.cwd || process.cwd());
   const chained = checkPushChain(cmd, cwd, ps, ctx);
   if (chained && chained.block) return chained;
   return scan(cmd, cwd, ps, { ...ctx, fleetChain: !!(chained && chained.fleetChain), pushBudget: { until: Date.now() + PUSH_BUDGET_MS } }, 0);
 }
 
-module.exports = { decide, blockReason, segments, checkGit, checkTerraform, parseGit, parseGhApiMerge, parseGhPrMerge, checkMerge, firstLine, VERDICT };
+module.exports = { decide, blockReason, segments, shellPath, checkGit, checkTerraform, parseGit, parseGhApiMerge, parseGhPrMerge, checkMerge, firstLine, VERDICT };
 if (require.main === module) C.runHook(decide, 'git-guard');
