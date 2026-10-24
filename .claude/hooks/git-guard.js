@@ -2,12 +2,18 @@
 'use strict';
 // PreToolUse on Bash (and PowerShell): blocks destructive git and prod terraform commands, and PR merges
 // (`gh api -X PUT .../pulls/<n>/merge`, `gh pr merge`) that lack the FC-14 code-review verdict.
+// Every `git push` is first run as `git push --dry-run --porcelain` (same cwd and arguments), so git itself resolves
+// refspecs, push.default, remote.<name>.push and push URLs; an update of refs/heads/main or master is blocked unless
+// the tree diff it brings is all under `.project/` or that push URL is fleet-state. A failed dry run blocks.
+// The dry run sees the repo before the command runs, so a push must be the only git command in its Bash call that can
+// change commits, branches, the index or refs (except a chain wholly in the fleet-state checkout).
 // PreToolUse on `mcp__*__merge_pull_request`: always blocks, pointing to the `gh api` merge.
+// PreToolUse on `mcp__*__push_files` / `mcp__*__create_or_update_file`: blocks a write to the default branch.
 // Rules and what to do instead: docs/agent-conventions/hooks.md. Kill switch: FLEET_HOOKS=off.
 // Each block carries a `gate` reason code (blockReason), which runHook logs as a gate-event line.
 
 const path = require('node:path');
-const { execFileSync } = require('node:child_process');
+const { execFileSync, spawnSync } = require('node:child_process');
 const C = require('./lib/common');
 
 /** Index just past the line that closes a heredoc body opened before `from` (or s.length). */
@@ -30,8 +36,9 @@ function skipBody(s, from, done) {
 function segments(cmd, opts = {}) {
   const segs = []; let cur = []; let word = ''; let inWord = false; let q = null;
   const heredocs = []; const subs = [];
-  const endWord = () => { if (inWord) { cur.push(word); word = ''; inWord = false; } };
-  const endSeg = () => { endWord(); if (cur.length) segs.push(cur); cur = []; };
+  const quoted = []; let curQ = new Set(); let wordQ = false; // words built with quotes or escapes, by segment and index
+  const endWord = () => { if (inWord) { if (wordQ) curQ.add(cur.length); cur.push(word); word = ''; inWord = false; } wordQ = false; };
+  const endSeg = () => { endWord(); if (cur.length) { segs.push(cur); quoted.push(curQ); } cur = []; curQ = new Set(); };
   const s = String(cmd || '');
   /** Text of `$( ... )` opening at i (s[i] === '$'), and the index of its closing paren. */
   const dollarParen = (i) => {
@@ -56,7 +63,7 @@ function segments(cmd, opts = {}) {
       else word += ch;
       continue;
     }
-    if (ch === '`' && opts.ps) { if (s[i + 1] === '\n') { i++; continue; } if (i + 1 < s.length) { word += s[++i]; inWord = true; } continue; }
+    if (ch === '`' && opts.ps) { if (s[i + 1] === '\n') { i++; continue; } if (i + 1 < s.length) { word += s[++i]; inWord = true; wordQ = true; } continue; }
     if (ch === '`') { const [inner, j] = backtick(i); subs.push(inner); endWord(); i = j; continue; }
     if (ch === '<' && s[i + 1] === '<' && s[i + 2] !== '<') {
       const m = /^<<(-?)[ \t]*(?:'([^'\n]*)'|"([^"\n]*)"|\\?([^\s;&|()<>'"]+))/.exec(s.slice(i));
@@ -77,8 +84,8 @@ function segments(cmd, opts = {}) {
       endSeg();
       i = skipBody(s, s.indexOf('\n', i) + 1, (line) => line.startsWith(close)) - 1; continue;
     }
-    if (ch === '"' || ch === "'") { q = ch; inWord = true; continue; }
-    if (ch === '\\' && i + 1 < s.length && s[i + 1] !== '\n') { word += s[++i]; inWord = true; continue; }
+    if (ch === '"' || ch === "'") { q = ch; inWord = true; wordQ = true; continue; }
+    if (ch === '\\' && i + 1 < s.length && s[i + 1] !== '\n') { word += s[++i]; inWord = true; wordQ = true; continue; }
     if (ch === '\\' && s[i + 1] === '\n') { i++; continue; }
     if (ch === ';' || ch === '\n' || ch === '&' || ch === '|' || ch === '(' || ch === ')') { endSeg(); continue; }
     if (/\s/.test(ch)) { endWord(); continue; }
@@ -86,6 +93,7 @@ function segments(cmd, opts = {}) {
   }
   endSeg();
   Object.defineProperty(segs, 'subs', { value: subs, enumerable: false });
+  Object.defineProperty(segs, 'quoted', { value: quoted, enumerable: false });
   return segs;
 }
 
@@ -143,11 +151,11 @@ function parseGit(tokens, cwd) {
   let i = 1; let dir = cwd; const env = tokens.env || {};
   while (i < tokens.length && tokens[i].startsWith('-')) {
     const t = tokens[i];
-    if (t === '-C') { dir = path.resolve(dir || '.', C.nativePath(tokens[i + 1] || '.')); i += 2; continue; }
+    if (t === '-C') { dir = path.resolve(dir || '.', C.nativePath(String(tokens[i + 1] || '.').replace(/^~(?=\/|$)/, require('node:os').homedir()))); i += 2; continue; }
     if (t === '-c' || t === '--git-dir' || t === '--work-tree' || t === '--namespace') { i += 2; continue; }
     i += 1;
   }
-  return { cwd: dir, sub: tokens[i], args: tokens.slice(i + 1), env };
+  return { cwd: dir, sub: tokens[i], subIdx: i, args: tokens.slice(i + 1), env, prefix: tokens.slice(1, i), shellCwd: cwd };
 }
 
 function currentBranch(cwd, ctx) {
@@ -174,6 +182,191 @@ function localBranch(cwd, name, ctx) {
 }
 
 const PROTECTED = ['main', 'master'];
+
+const PR_FLOW = 'Push a branch instead (`git push -u origin <branch>`), open a PR '
+  + '(`gh api repos/<owner>/<repo>/pulls -f title=... -f head=<branch> -f base=main -F body=@pr-body.md`), and let the code-reviewer review and merge it (FC-14).';
+// All pushes in one command share PUSH_BUDGET_MS, kept under the hook's 30 s timeout: a hook that times out does not block.
+const DRY_RUN_MS = 12000;
+const DIFF_MS = 5000;
+const PUSH_BUDGET_MS = 24000;
+const MAIN_REF = /^refs\/heads\/(main|master)$/;
+
+/** Environment for the hook's own git calls: the session's, never the command's `VAR=x` prefixes (a GIT_* or SSH*
+ * one blocks first), no system config, and never a credential prompt. */
+const gitEnv = () => ({ ...process.env, GIT_CONFIG_NOSYSTEM: '1', GIT_TERMINAL_PROMPT: '0', GCM_INTERACTIVE: 'never' });
+
+/** Run the push as `git push --dry-run --porcelain` -> {stdout, stderr, status, timedOut, error}. Tests inject ctx.dryRunPush. */
+function dryRunPush(g, ctx) {
+  // core.abbrev=no: full shas in the summary; --no-verify: no pre-push hook; -q/--quiet would hide the `To` blocks.
+  const args = g.args.filter((x) => x !== '-q' && x !== '--quiet');
+  const argv = [...g.prefix, '-c', 'core.abbrev=no', 'push', '--dry-run', '--porcelain', '--no-verify', ...args];
+  if (ctx.dryRunPush) return ctx.dryRunPush(g.shellCwd, argv, g);
+  const left = ctx.pushBudget ? ctx.pushBudget.until - Date.now() : DRY_RUN_MS;
+  if (left < 2000) return { stdout: '', stderr: `no time left in the ${PUSH_BUDGET_MS / 1000} s budget for one command's pushes; run each push in its own Bash call`, status: null };
+  const r = spawnSync('git', argv, { cwd: g.shellCwd, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'], timeout: Math.min(DRY_RUN_MS, left), env: gitEnv(g), maxBuffer: 16 * 1024 * 1024 });
+  return { stdout: r.stdout || '', stderr: r.stderr || '', status: r.status, timedOut: !!(r.error && r.error.code === 'ETIMEDOUT'), error: r.error && r.error.message };
+}
+
+/** `git push --porcelain` stdout -> [{url, refs: [{flag, from, to, summary}]}], one block per `To <url>`. */
+function parsePorcelain(out) {
+  const blocks = []; let cur = null;
+  for (const line of String(out || '').split(/\r?\n/)) {
+    if (line.startsWith('To ')) { cur = { url: line.slice(3).trim(), refs: [] }; blocks.push(cur); continue; }
+    if (line === 'Done') { cur = null; continue; }
+    const m = /^([ +\-*!=])\t([^\t]*)\t(.*)$/.exec(line);
+    if (m && cur) { const i = m[2].indexOf(':'); cur.refs.push({ flag: m[1], from: i < 0 ? '' : m[2].slice(0, i), to: i < 0 ? m[2] : m[2].slice(i + 1), summary: m[3] }); }
+  }
+  return blocks;
+}
+
+/** Paths that differ between two commits (tree diff, both sides of a rename), or null when git cannot say. */
+function diffFiles(g, from, to, ctx) {
+  if (ctx.diffFiles) return ctx.diffFiles(g, from, to);
+  try {
+    return execFileSync('git', [...g.prefix, 'diff', '--name-only', '--no-renames', from, to], { cwd: g.shellCwd, encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'], timeout: DIFF_MS, env: gitEnv(g), maxBuffer: 64 * 1024 * 1024 })
+      .split(/\r?\n/).filter(Boolean);
+  } catch { return null; }
+}
+
+const isFleetState = (url) => { const r = slugFrom(url); return !!(r && r.repo.toLowerCase() === 'fleet-state'); };
+const ALLOWED = 'Pushes whose changes to main are all under `.project/` (the PM\'s state commits), and fast-forward pushes to fleet-state, are allowed.';
+
+/** Block message when the push (as git resolves it) writes refs/heads/main or master, else null. Fails closed. */
+function checkPushMain(g, ctx) {
+  const a = g.args;
+  if (a.includes('--dry-run') || a.includes('-n')) return null; // writes nothing
+  // The dry run would apply these (and could run a program they name) before the command is approved, so it never runs.
+  const opt = a.find((x) => /^--(receive-pack|exec|config)/.test(x))
+    || g.prefix.find((x) => x === '-c' || /^--config/.test(x) || /^-c./.test(x))
+    || Object.keys(g.env || {}).find((k) => /^(GIT_|SSH)/i.test(k))
+    || [...g.prefix, ...a].find((x) => /(^|=)(ext|fd)::/i.test(x));
+  if (opt) {
+    return `Direct pushes to main/master skip review and the FC-14 merge gate, so every push is checked with a dry run first, and this push carries \`${String(opt).split('=')[0]}\`, `
+      + 'which the dry run would apply (and could run a program from) before the command is approved. Push without config overrides, `GIT_*`/`SSH*` variables, '
+      + '`--receive-pack`/`--exec` or `ext::`/`fd::` URLs.';
+  }
+  const r = dryRunPush(g, ctx);
+  const why = r.timedOut ? `it timed out after ${DRY_RUN_MS / 1000} s`
+    : ((String(r.stderr || '').trim().split(/\r?\n/).filter((l) => !/^(hint|warning):/.test(l)).pop() || r.error || `exit ${r.status}`).slice(0, 200));
+  const blocks = r.timedOut ? [] : parsePorcelain(r.stdout);
+  if (!blocks.length) {
+    if (!ctx.fleetChain && !r.timedOut && r.status === 0 && /Everything up-to-date/.test(r.stderr || '')) return null; // nothing to push (in a fleet chain the target must still be seen)
+    return `Direct pushes to main/master skip review and the FC-14 merge gate, so every push is checked with \`git push --dry-run --porcelain\` first, and that failed: ${why}. `
+      + 'Fix the remote or the arguments and retry; the hook does not let a push it cannot check through.';
+  }
+  if (ctx.fleetChain) {
+    const away = blocks.find((b) => !isFleetState(b.url));
+    // Earlier commands in this call change the repo, so the dry run's flags (`=`, `!` rejected) say nothing about the real push.
+    if (away) return `Run \`git push\` in its own Bash call. This call changes the fleet-state checkout and then pushes to ${away.url}, which is not fleet-state; only pushes to fleet-state may share a call with a commit.`;
+  }
+  for (const b of blocks) {
+    for (const ref of b.refs) {
+      if (!MAIN_REF.test(ref.to) || ref.flag === '=' || ref.flag === '!') continue; // up to date, or rejected by git anyway (no earlier command in this call changed the repo)
+      const dest = ref.to.replace(/^refs\/heads\//, '');
+      if (ref.flag === '-') return `Direct pushes to main/master skip review and the FC-14 merge gate: this push deletes ${dest} on ${b.url}, which is blocked on every repository, fleet-state included.`;
+      if (ref.flag === '+') return `Force-pushing main/master rewrites shared history: this push force-updates ${dest} on ${b.url} (blocked on every repository, fleet-state included). Push a branch and open a PR; to undo a merged change, \`git revert\` it on a branch.`;
+      if (isFleetState(b.url)) continue; // the coordinator's state repo: commits go straight to main (fleet SKILL)
+      if (ref.flag === '*') return `Direct pushes to main/master skip review and the FC-14 merge gate: this push creates ${dest} on ${b.url}. ${PR_FLOW}`;
+      const m = /^([0-9a-f]{7,64})\.\.([0-9a-f]{7,64})\b/.exec(ref.summary);
+      const files = m ? diffFiles(g, m[1], m[2], ctx) : null;
+      const outside = files && files.filter((f) => !f.startsWith('.project/'));
+      if (files && !outside.length) continue; // only .project/ state (FC-14 lets a session merge such a PR, too)
+      const what = files ? `changes ${outside.slice(0, 3).join(', ')}${outside.length > 3 ? ', ...' : ''} outside .project/`
+        : `cannot be checked (no tree diff for \`${ref.summary}\`)`;
+      return `Direct pushes to main/master skip review and the FC-14 merge gate: this push to ${dest} on ${b.url} ${what}. ${PR_FLOW} ${ALLOWED}`;
+    }
+  }
+  return null;
+}
+
+// ---- A push runs alone (review of #51) ------------------------------------------------------------------------
+// The hook runs before any of the command does, so a dry run cannot see what an earlier `git commit`/`merge`/`pull` in
+// the same Bash call will change. A call with a `git push` may hold only read-only git commands, unless every git
+// command in it targets the fleet-state checkout (the coordinator's one-call state commit, fleet SKILL).
+const READ_ONLY_GIT = new Set(['status', 'log', 'diff', 'show', 'rev-parse', 'ls-files', 'ls-remote', 'ls-tree', 'cat-file', 'describe', 'blame',
+  'shortlog', 'grep', 'merge-base', 'name-rev', 'for-each-ref', 'version', 'help', 'count-objects', 'rev-list', 'show-ref', 'check-ignore', 'var', 'whatchanged']);
+
+/** True when the git command cannot change commits, branches, the index, refs or the config a push reads. */
+function readOnlyGit(g) {
+  const a = g.args || []; const pos = a.filter((x) => !x.startsWith('-'));
+  // Config overrides, GIT_* or pager variables, and pager/external-diff flags can run a program (core.fsmonitor,
+  // core.pager, GIT_EXTERNAL_DIFF, `grep -O<cmd>`), and a program can commit.
+  if ((g.prefix || []).some((x) => x === '-c' || /^-c./.test(x) || /^--(config-env|exec-path|paginate)/.test(x) || x === '-p')) return false;
+  if (Object.keys(g.env || {}).some((k) => /^(GIT_|PAGER$|LESS|SSH)/i.test(k))) return false;
+  if (a.some((x) => /^(-O|--open-files-in-pager|--ext-diff|--textconv|--exec|--upload-pack|--receive-pack)/.test(x))) return false;
+  if (!g.sub || READ_ONLY_GIT.has(g.sub)) return true;
+  switch (g.sub) {
+    case 'remote': return !a.length || ['-v', '--verbose', 'get-url', 'show'].includes(a[0]);
+    case 'fetch': return pos.length <= 1; // a refspec can move local refs
+    case 'branch': return a.every((x) => ['--show-current', '-a', '-r', '-v', '-vv', '--list', '--all', '--remotes', '--verbose'].includes(x));
+    case 'config': return a.some((x) => ['--get', '--get-all', '--get-regexp', '--list', '-l'].includes(x));
+    case 'stash': case 'worktree': return a[0] === 'list' || (g.sub === 'stash' && a[0] === 'show');
+    case 'tag': return a.every((x) => x === '-l' || x === '--list');
+    default: return false;
+  }
+}
+
+const isPush = (g) => g.sub === 'push' && !(g.args || []).some((x) => x === '--dry-run' || x === '-n');
+
+/** Every git command in `cmd` (shell wrappers and substitutions included) as parsed by parseGit, plus env exports.
+ * `opaque`: the subcommand word was quoted, escaped or built from an expansion (`pu''sh`, `p\ush`, `$x`), so it may be a push. */
+function collectGit(cmd, cwd0, ps, depth, out = { gits: [], exports: [] }) {
+  if (depth > 4) return out;
+  let cwd = cwd0;
+  const segs = segments(cmd, { ps });
+  for (let si = 0; si < segs.length; si++) {
+    const raw = segs[si];
+    const t = stripPrefix(raw);
+    if (!t.length) continue;
+    const b = baseName(t[0]);
+    if (b === 'cd' || b === 'pushd' || b === 'set-location') { if (t[1]) cwd = path.resolve(cwd, C.nativePath(t[1].replace(/^~(?=\/|$)/, require('node:os').homedir()))); continue; }
+    if (b === 'export' && t.slice(1).some((x) => /^(GIT_|SSH|PAGER=|LESS)/i.test(x))) out.exports.push(t.join(' '));
+    if (/^\$env:(GIT_|SSH|PAGER|LESS)/i.test(t[0])) out.exports.push(t.join(' '));
+    if (b === 'git') {
+      const g = parseGit(t, cwd);
+      const at = raw.length - t.length + g.subIdx; // stripPrefix drops words from the front only
+      const opaque = g.sub != null && ((segs.quoted[si] && segs.quoted[si].has(at)) || /[$`%@{}*?]/.test(g.sub));
+      out.gits.push({ g, text: t.join(' '), opaque });
+      continue;
+    }
+    const inner = innerCommand(b, t);
+    if (inner) collectGit(inner.cmd, cwd, inner.ps, depth + 1, out);
+  }
+  for (const sub of segs.subs) collectGit(sub, cwd, ps, depth + 1, out);
+  return out;
+}
+
+const FLEET_STATE_SLUG = 'ericreilly999/fleet-state';
+
+/** Block for a call that pushes and also changes the repo (or exports a GIT_ or SSH variable), else null. */
+function checkPushChain(cmd, cwd, ps, ctx) {
+  const { gits, exports } = collectGit(cmd, cwd, ps, 0);
+  const odd = gits.find((x) => x.opaque);
+  if (odd) {
+    return {
+      block: `Blocked: ${odd.text.slice(0, 120)}\nDirect pushes to main/master skip review and the FC-14 merge gate, and the git subcommand \`${String(odd.g.sub).slice(0, 40)}\` `
+        + 'is quoted, escaped or built from an expansion, so the hook cannot tell whether it is a push. Write the subcommand plainly (`git push ...`, `git status`).',
+      gate: { reason: 'push_main' },
+    };
+  }
+  if (!gits.some((x) => isPush(x.g))) return null;
+  const others = gits.filter((x) => !isPush(x.g) && !readOnlyGit(x.g));
+  if (!others.length && !exports.length) return null;
+  const fleet = (dir) => { const r = originRepo(dir, ctx); return !!(r && `${r.owner}/${r.repo}`.toLowerCase() === FLEET_STATE_SLUG); };
+  // Fleet-state chain: allowed only when nothing in it can change where a push goes (remote/config writes), and then
+  // every push must also go to fleet-state, which checkPushMain checks per `To` block (ctx.fleetChain).
+  if (!exports.length && gits.every((x) => fleet(x.g.cwd)) && !others.some((x) => ['remote', 'config'].includes(x.g.sub))) {
+    return { fleetChain: true };
+  }
+  const push = gits.find((x) => isPush(x.g)).text;
+  const what = exports.length ? `sets ${exports[0].slice(0, 60)}` : `also runs \`${others[0].text.slice(0, 60)}\``;
+  return {
+    block: `Blocked: ${push.slice(0, 120)}\nRun \`git push\` in its own Bash call. This call ${what}, and the push guard checks a push before any of the call runs, `
+      + 'so it would judge the repository as it was before that command. Run the other commands first, then the push alone in a separate Bash call '
+      + '(read-only git such as `status`, `log`, `diff` or `fetch` may share it). Only a chain in which every git command targets the fleet-state checkout may stay in one call.',
+    gate: { reason: 'push_chained' },
+  };
+}
 
 function checkGit(g, ctx) {
   const a = g.args; const has = (...f) => a.some((x) => f.includes(x));
@@ -213,15 +406,17 @@ function checkGit(g, ctx) {
         return 'Tag pushes are release-candidate cuts (Tier 3). Raise a decide card for the owner and push the branch without tags. '
           + 'Once the owner has approved the cut, push with the approving decision id: `FLEET_TAG_APPROVED=GC-123 git push origin <tag>`.';
       }
-      const dest = (r) => r.replace(/^\+/, '').split(':').pop().replace(/^refs\/heads\//, '');
+      const dest = (r) => r.replace(/^\+/, '').split(':').pop().replace(/^refs\//, '').replace(/^heads\//, '');
       const plus = refspecs.some((r) => r.startsWith('+') && PROTECTED.includes(dest(r)));
       const toProtected = refspecs.some((r) => PROTECTED.includes(dest(r)))
         || (refspecs.length === 0 && PROTECTED.includes(currentBranch(g.cwd, ctx)))
         || refspecs.some((r) => r === 'HEAD' && PROTECTED.includes(currentBranch(g.cwd, ctx)))
-        || has('--mirror', '--all');
+        || has('--mirror', '--all', '--branches');
       if ((force && toProtected) || plus) {
         return 'Force-pushing main/master rewrites shared history. Push a branch and open a PR; to undo a merged change, `git revert` it on a branch.';
       }
+      const msg = checkPushMain(g, ctx);
+      if (msg) return msg;
       break;
     }
     case 'branch': {
@@ -495,7 +690,11 @@ function blockReason(tool, sub, msg) {
     if (msg.startsWith('Protected path:')) return 'merge_protected_path';
     return /the latest verdict on head/.test(msg) ? 'merge_changes_requested' : 'merge_no_approve';
   }
-  if (sub === 'push') return msg.startsWith('Tag pushes') ? 'tag_push_unapproved' : 'force_push_protected';
+  if (sub === 'push') {
+    if (msg.startsWith('Tag pushes')) return 'tag_push_unapproved';
+    if (msg.startsWith('Run `git push` in its own')) return 'push_chained';
+    return msg.startsWith('Direct pushes') ? 'push_main' : 'force_push_protected';
+  }
   return GIT_REASONS[sub] || null;
 }
 
@@ -542,12 +741,45 @@ function checkMcpMerge(payload) {
   };
 }
 
+// An MCP file write (`mcp__github__push_files`, `create_or_update_file(s)`, `delete_file`, or the same tool on another
+// GitHub server) to the default branch commits to main with no PR, so neither review nor FC-14 sees it.
+const MCP_FILE_WRITE = /^mcp__.+__(push_files|create_or_update_files?|delete_file)$/;
+const DEFAULT_LOOKUP_MS = 5000;
+
+/** The repo's default branch through `gh api` REST, or null when the lookup fails (the hook does not block on its own error). */
+function defaultBranch(owner, repo, ctx) {
+  try {
+    const out = ctx.gh ? ctx.gh(['api', `repos/${owner}/${repo}`]) : runGh(['api', `repos/${owner}/${repo}`], ctx.env || process.env, DEFAULT_LOOKUP_MS);
+    const b = JSON.parse(out).default_branch;
+    return typeof b === 'string' && b ? b : null;
+  } catch { return null; }
+}
+
+function checkMcpFileWrite(payload, ctx) {
+  const i = payload.tool_input || {};
+  const branch = String(i.branch == null ? '' : i.branch).trim().replace(/^refs\/heads\//, '');
+  const lit = (v) => v != null && /^[A-Za-z0-9_.-]+$/.test(String(v));
+  let hit = !branch || PROTECTED.includes(branch); // no branch: GitHub writes to the default branch
+  if (!hit && lit(i.owner) && lit(i.repo)) hit = defaultBranch(String(i.owner), String(i.repo), ctx) === branch;
+  if (!hit) return null;
+  const slug = lit(i.owner) && lit(i.repo) ? `${i.owner}/${i.repo}` : 'the repository';
+  return {
+    block: `Blocked: ${payload.tool_name} to ${slug} ${branch || '(default branch)'}\n`
+      + `Direct writes to the default branch skip review and the FC-14 merge gate. ${PR_FLOW}`,
+    gate: { reason: 'push_main' },
+  };
+}
+
 function decide(payload, ctx = {}) {
   if (MCP_MERGE.test(String(payload.tool_name || ''))) return checkMcpMerge(payload);
+  if (MCP_FILE_WRITE.test(String(payload.tool_name || ''))) return checkMcpFileWrite(payload, ctx);
   if (!['Bash', 'PowerShell'].includes(payload.tool_name)) return null;
   const cmd = (payload.tool_input || {}).command;
   if (!cmd || !/\b(git|terraform|tofu|gh)\b/.test(cmd)) return null;
-  return scan(cmd, payload.cwd || process.cwd(), payload.tool_name === 'PowerShell', ctx, 0);
+  const ps = payload.tool_name === 'PowerShell'; const cwd = payload.cwd || process.cwd();
+  const chained = checkPushChain(cmd, cwd, ps, ctx);
+  if (chained && chained.block) return chained;
+  return scan(cmd, cwd, ps, { ...ctx, fleetChain: !!(chained && chained.fleetChain), pushBudget: { until: Date.now() + PUSH_BUDGET_MS } }, 0);
 }
 
 module.exports = { decide, blockReason, segments, checkGit, checkTerraform, parseGit, parseGhApiMerge, parseGhPrMerge, checkMerge, firstLine, VERDICT };

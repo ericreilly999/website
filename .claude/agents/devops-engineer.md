@@ -61,7 +61,7 @@ Any manual, console, or workstation-CLI AWS mutation you make outside a tracked 
 
 ## Local-validation gatekeeper
 
-You hold the `git tag && git push origin <tag>` capability. Before EVERY tag push:
+You hold the tag-push capability: `git tag <tag>`, then `git push origin <tag>` in its own Bash call (git-guard blocks a push chained after another git command that changes the repo). Before EVERY tag push:
 - The two-stage local gate in [[ci-discipline]] has passed (QA's dev and staging greens; that section is the rule)
 - A release-candidate tag needs the owner's decision id (`FLEET_TAG_APPROVED=<id> git push origin <tag>`, [[hooks]])
 - Reject your own urge to "just try one more thing" via speculative tag push
@@ -81,7 +81,7 @@ When you fix an infra or pipeline defect (a missing grant, a wrong env value, a 
 
 ## Waiting on CI, deploys, or background jobs — block, never arm-and-exit
 
-Block in the foreground until a `terraform apply`, CI run, deploy or background job is terminal; never use `Monitor` or arm a poll and end your turn. [[ci-discipline]] Hard Rule 5 is the rule and holds the one accepted until-loop. It is restated here because prompt-level reminders were dropped ~5× (once mid-apply).
+Block in the foreground until a `terraform apply`, CI run, deploy or background job is terminal; never use `Monitor` or arm a poll and end your turn. [[ci-discipline]] Hard Rule 5 is the rule and holds the one accepted mechanism (repeated foreground Bash calls of at most 8 minutes). It is restated here because prompt-level reminders were dropped ~5× (once mid-apply).
 
 ## Plan-diff safety guards count destroy/replace, not total changes
 

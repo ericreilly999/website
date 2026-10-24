@@ -1,14 +1,15 @@
 #!/usr/bin/env python3
-"""GitHub REST-quota discipline, GraphQL status polling, and log caching.
+"""GitHub REST-quota discipline, REST status polling, and log caching.
 
 Encodes github-api.md + ci-discipline.md as runnable checks so the rules are
 enforced by a script rather than re-reasoned each session:
 
-  - rate-check / preflight: GitHub has two separate 5,000/hr pools (REST + GraphQL);
-    REST is what gets exhausted. Pre-flight before any 3+ REST batch; if core
-    remaining < 200, surface resetAt and pause (preflight exits non-zero).
-  - status-poll: the canonical GraphQL statusCheckRollup template — a read that
-    spends the underused GraphQL pool instead of REST.
+  - rate-check / preflight: every GitHub call is REST (github-api.md: cloud sessions
+    block GraphQL), and the REST pool is what gets exhausted. Pre-flight before any
+    3+ REST batch; if core remaining < 200, surface resetAt and pause (preflight
+    exits non-zero).
+  - status-poll: CI state of a ref from the REST check-runs API (plus commit
+    statuses outside cloud sessions), with a `terminal` flag for bounded waits.
   - fetch-logs: pull-once-and-cache. Logs are expensive REST calls; pull to a
     local file once, then Read/Grep it. Skips the call if the cache file exists.
 
@@ -33,21 +34,6 @@ except ImportError:
     from ._common import emit, fail, run, run_json, ToolMissing
 
 _BATCH_THRESHOLD = 200
-
-_STATUS_QUERY = """
-query($owner:String!, $repo:String!, $ref:String!) {
-  repository(owner:$owner, name:$repo) {
-    object(expression:$ref) {
-      ... on Commit {
-        statusCheckRollup { state }
-        checkSuites(first:20) {
-          nodes { checkRuns(first:50) { nodes { name status conclusion } } }
-        }
-      }
-    }
-  }
-}
-"""
 
 
 def _gh_json(args: list[str]):
@@ -82,10 +68,16 @@ def rate() -> dict:
 _FAILED = ("failure", "cancelled", "timed_out", "action_required", "startup_failure")
 
 
-def _status_poll_rest(owner: str, repo: str, ref: str) -> dict:
-    """Cloud sessions block GraphQL, so build the same result from the REST check-runs and status APIs."""
+def status_poll(owner: str, repo: str, ref: str) -> dict:
+    """CI state of a ref from the REST check-runs API, plus commit statuses outside cloud sessions.
+
+    REST only (github-api.md): cloud sessions block GraphQL, and their proxy also refuses
+    commit statuses (403), so a cloud session reads check runs alone.
+    """
     cr = _gh_json(["api", f"repos/{owner}/{repo}/commits/{ref}/check-runs?per_page=100"]) or {}
-    st = _gh_json(["api", f"repos/{owner}/{repo}/commits/{ref}/status"]) or {}
+    st = {}
+    if os.environ.get("CLAUDE_CODE_REMOTE") != "true":
+        st = _gh_json(["api", f"repos/{owner}/{repo}/commits/{ref}/status"]) or {}
     runs = [{"name": r.get("name"), "status": (r.get("status") or "").upper(),
              "conclusion": (r.get("conclusion") or "").upper() or None} for r in cr.get("check_runs", []) or []]
     statuses = st.get("statuses", []) or []
@@ -98,24 +90,6 @@ def _status_poll_rest(owner: str, repo: str, ref: str) -> dict:
     else:
         rollup = "SUCCESS"
     return {"rollup": rollup, "terminal": rollup in ("SUCCESS", "FAILURE", "ERROR"), "checks": runs, "source": "rest"}
-
-
-def status_poll(owner: str, repo: str, ref: str) -> dict:
-    if os.environ.get("CLAUDE_CODE_REMOTE") == "true":
-        return _status_poll_rest(owner, repo, ref)
-    data = _gh_json([
-        "api", "graphql",
-        "-f", f"query={_STATUS_QUERY}",
-        "-F", f"owner={owner}", "-F", f"repo={repo}", "-F", f"ref={ref}",
-    ])
-    obj = (((data or {}).get("data") or {}).get("repository") or {}).get("object") or {}
-    rollup = (obj.get("statusCheckRollup") or {}).get("state")
-    runs = []
-    for suite in (obj.get("checkSuites", {}) or {}).get("nodes", []) or []:
-        for cr in (suite.get("checkRuns", {}) or {}).get("nodes", []) or []:
-            runs.append({"name": cr.get("name"), "status": cr.get("status"), "conclusion": cr.get("conclusion")})
-    terminal = rollup in ("SUCCESS", "FAILURE", "ERROR")
-    return {"rollup": rollup, "terminal": terminal, "checks": runs}
 
 
 def fetch_logs(run_id: str, out_dir: str) -> dict:
@@ -156,7 +130,7 @@ def _main() -> None:
     elif args.action == "preflight":
         r = rate()
         if r["core_remaining"] < args.min:
-            emit({**r, "advice": "below threshold — switch reads to GraphQL/MCP or pause until core_reset"}, exit_code=3)
+            emit({**r, "advice": "below threshold — surface core_reset to the PM and stop the batch (github-api.md rule 2)"}, exit_code=3)
         emit(r)
     elif args.action == "status-poll":
         emit(status_poll(args.owner, args.repo, args.ref))

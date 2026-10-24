@@ -392,8 +392,10 @@ function openSource(repo, ref) {
 
 const asArray = (v) => (v == null ? [] : Array.isArray(v) ? v : [v]);
 const isObj = (v) => v && typeof v === 'object' && !Array.isArray(v);
-// A waiver is a comment line: `# standards-waive: <rule id> <decision id>`. Text elsewhere (a `run:` string, a `name:`)
-// never waives. The decision id must not itself be a standards rule id.
+// A waiver is `# standards-waive: <rule id> <decision id>` at a line start or after whitespace, read from the raw text
+// with no YAML/HCL parsing: a `#` line inside a `run: |` block or a quoted value counts too, as does a trailing
+// comment; text with no `#` before it never waives. The code reviewer confirms each waiver is its own comment line
+// (docs/standards/README.md). The decision id must not itself be a standards rule id.
 const WAIVER_COMMENT = /(?:^|\s)#\s*standards-waive:\s*([A-Z]+-\d+)(?:[ \t]+([A-Z][A-Z0-9]*-\d+[a-z]?))?/gm;
 const RULE_ID = /^(CI|IAC|AWS|SEC|TEST|GHM|CLOUD)-\d+$/;
 // The finding kinds a rule's waiver can cover. A rule not listed here: any of its findings in the file. CI-01: only

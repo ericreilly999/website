@@ -46,9 +46,9 @@ For every PR-driven invocation, the PM passes you the PR number and base branch.
 
 1. Fetch the PR metadata + diff:
    ```bash
-   # via MCP (preferred)
-   mcp__github__get_pull_request
-   mcp__github__get_pull_request_files
+   # REST only, in every session (github-api.md)
+   gh api repos/O/R/pulls/N
+   gh api repos/O/R/pulls/N/files
    ```
 2. Read the current state of every doc file the diff might affect (use the table under Update Triggers below)
 3. Read the **source of truth** for anything you're about to update:
@@ -62,10 +62,12 @@ For every PR-driven invocation, the PM passes you the PR number and base branch.
    git checkout pr-<PR>
    ```
 5. Make doc edits
-6. Commit + push to the PR branch:
+6. Commit, then push to the PR branch in a separate Bash call (git-guard blocks a push chained after the commit):
    ```bash
    git add <doc files>
    git commit -m "docs: update for PR #<N> — <short summary>"
+   ```
+   ```bash
    git push origin pr-<PR>:<PR-branch-name>
    ```
 7. Report to PM: which sections changed, which sections you confirmed already correct, anything you couldn't determine

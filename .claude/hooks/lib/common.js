@@ -211,6 +211,8 @@ const GATE_REASONS = {
   git_discard_all: 'git-guard', // git checkout -- . / git restore .
   git_clean_force: 'git-guard',
   force_push_protected: 'git-guard', // force push or +refspec to main/master
+  push_main: 'git-guard', // git push that writes main/master (not .project/-only, not fleet-state) or cannot be checked; MCP file write to the default branch
+  push_chained: 'git-guard', // git push in a Bash call that also runs a git command that changes the repo (fleet-state chains excepted)
   tag_push_unapproved: 'git-guard', // tag push without FLEET_TAG_APPROVED=<decision id>
   branch_delete_checked_out: 'git-guard', // git branch -D of a branch checked out in a worktree
   terraform_prod: 'git-guard', // terraform/tofu apply or destroy against a prod path
