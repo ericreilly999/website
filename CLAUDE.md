@@ -30,3 +30,7 @@ Linear is a status **dashboard** only — a small number of epic-level issues in
 ## Language / stack
 
 Plain HTML/CSS/vanilla JS for the deployed site (`public/`). No build step, no framework, no new dependencies for content or UI work unless a spec says otherwise.
+
+<!-- fleet:merge-policy -->
+Merge policy (owner decision FC-14, 2026-10-21): pull requests from claude/ branches are merged by the code-reviewer agent after it posts a review whose first line is `Verdict: APPROVE`; PRs that change only .project/ files are merged by the session. A hook verifies this before every merge.
+<!-- /fleet:merge-policy -->

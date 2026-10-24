@@ -1,0 +1,83 @@
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Agent|Task",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "f=\"$CLAUDE_PROJECT_DIR\"/.claude/hooks/agent-dispatch-gate.js; [ ! -f \"$f\" ] || node \"$f\"",
+            "timeout": 10
+          }
+        ]
+      },
+      {
+        "matcher": "Bash|PowerShell",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "f=\"$CLAUDE_PROJECT_DIR\"/.claude/hooks/git-guard.js; [ ! -f \"$f\" ] || node \"$f\"",
+            "timeout": 30
+          }
+        ]
+      },
+      {
+        "matcher": "ArtifactData",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "f=\"$CLAUDE_PROJECT_DIR\"/.claude/hooks/decision-card-validate.js; [ ! -f \"$f\" ] || node \"$f\"",
+            "timeout": 10
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Agent|Task",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "f=\"$CLAUDE_PROJECT_DIR\"/.claude/hooks/ledger-usage.js; [ ! -f \"$f\" ] || node \"$f\"",
+            "timeout": 20
+          }
+        ]
+      }
+    ],
+    "SubagentStop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "f=\"$CLAUDE_PROJECT_DIR\"/.claude/hooks/ledger-usage.js; [ ! -f \"$f\" ] || node \"$f\"",
+            "timeout": 20
+          },
+          {
+            "type": "command",
+            "command": "f=\"$CLAUDE_PROJECT_DIR\"/.claude/hooks/stop-checks.js; [ ! -f \"$f\" ] || node \"$f\"",
+            "timeout": 20
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "f=\"$CLAUDE_PROJECT_DIR\"/.claude/hooks/stop-checks.js; [ ! -f \"$f\" ] || node \"$f\"",
+            "timeout": 20
+          }
+        ]
+      }
+    ]
+  },
+  "permissions": {
+    "allow": [
+      "Bash(gh api -X PUT repos/ericreilly999/website/pulls/*/merge -f merge_method=squash)"
+    ]
+  },
+  "env": {
+    "CHECKPOINT_DISABLE": "1"
+  }
+}

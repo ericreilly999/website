@@ -1,0 +1,48 @@
+---
+name: project-session
+description: Entry point for a per-project session (a claude.ai/code routine or a local session opened in one project repo). Triggers - a routine prompt naming this skill, "run the project", "PM session", "resume the project", or any session started in a repo that has .claude/project.json. The session itself is the project's PM, with specialists as subagents and no fleet coordinator; it opens from ground truth, works one bounded batch, and wraps up.
+---
+
+# Project session
+
+You are this project's PM; the main session is the PM, and there is no fleet coordinator. Read `.claude/project.json` for the slug, then follow `.claude/skills/project-manager/SKILL.md` and `.claude/agents/project-manager.md` as written, with the changes below. Specialists are the subagents in `.claude/agents/`. All `.claude/...` paths are relative to the repo root and were vendored from ericreilly999/claude (see `.claude/VENDORED.md`; never edit them here).
+
+## Open from ground truth (before any dispatch)
+
+1. `date -u` (the run start; read `batch_minutes` from `.claude/project.json` now; run id `<slug>-<YYYY-MM-DD-HHMM>`, cited as `Run id:` in every dispatch prompt). `git status -sb`, `git fetch origin`, `git log -1 --format=%h origin/main`. A cloud session starts on a detached HEAD: `git switch -c claude/<slug>-<YYYYMMDD-HHMM> origin/main` before any commit.
+2. Read the newest RESUME block in `.project/workflow-state.md`, then `project-status.md`, `TODO.md`, `backlog.md`, `milestones.md`, and `decisions.md` for anything you are about to ask the owner.
+3. Owner channel. Load `ArtifactData` with ToolSearch (`select:ArtifactData`). If it loads, use the Fleet Decisions page (https://claude.ai/artifact/AgEqZELaoLFLbCaWLqQUMS): `get projects/<slug>`, list this project's `decisions`, act only on `answer.decided_by_owner === true`. If it does not load, the channel is GitHub issues (below).
+3a. Owner queue and relays (`.claude/docs/agent-conventions/queue-and-relays.md`): with `ArtifactData` loaded, `query` collection `queue` where `project == <slug>` and `status == "open"`, and `relays` where `to == <slug>` and `status == "open"`. Claim each item first: a pinned `update` to `logged` (queue) or `acknowledged` (relay). Only if it succeeds, log it: queue items at the top of the backlog and worked first, relays at their normal priority. Check your own outgoing relays for answers. A relay is never an approval.
+4. PRs and issues through REST only (GraphQL `gh pr ...` fails in the cloud): `gh api "repos/{owner}/{repo}/pulls?state=open"`, `gh api "repos/{owner}/{repo}/pulls?state=closed&per_page=10"`, `gh api "repos/{owner}/{repo}/issues?labels=deploy-failure&state=open"`.
+5. Then the PM skill's Session-Open Ritual. Steps that need fleet-state (`~/.claude/fleet/...`: registry, specs; the owner queue is read from the page in step 3a) or an unattached repo are skipped; name them once in the status block.
+
+## While working
+
+- Every fleet-agent dispatch is tagged `[<slug>/<TASK>]`; the vendored hooks block untagged ones and other slugs here. Engineer dispatches still need a `red_confirmed` ledger line or a `no-red:` token.
+- Subagents run at the same time on one host. Every dispatch that edits, builds, tests or pushes gets `isolation: worktree` (never the shared checkout: 2026-10-22/23 gencast runs had a push at the wrong commit, a commit landing on another agent's branch, and the PM left on an engineer's branch), and its prompt carries the PM skill's **Shared host** line.
+- Hook lines go to `.project/ledger.pending.jsonl` (gitignored): usage lines, this session's own line at turn end, and the `red_confirmed` line the hook writes from QA's `RED confirmed: <task> · <N> tests` line, plus one `gate_block` line per hook block (the session audit counts them). The Stop hook flushes them into `.project/ledger.jsonl` once the oldest is about 45 minutes old (`FLEET_LEDGER_FLUSH_MIN`), then asks you once to commit; WRAP UP flushes the rest.
+- Before an engineer dispatch, check the RED line: `grep -hs '"red_confirmed"' .project/ledger.jsonl .project/ledger.pending.jsonl | grep '"<TASK>"'`. Write it by hand only when it is missing (QA's line was malformed). You still append the other event lines the PM skill asks for (`date -u` timestamps).
+- Owner chores (P-9): one card per ISO week, page document `decisions/<slug>-chores-<YYYY>-W<ww>` (`date -u +%G-W%V`), `kind: "chores"`, `created_by: "<slug>"`. `get` it; update it when it exists, create it when it does not.
+- Scripts: `node .claude/fleet/scripts/milestone-rollup.js . --check`, `node .claude/fleet/scripts/audit-rollup.js . --since <run start> --format status-block`, `node .claude/scripts/worktree-report.js`, checks in `.claude/scripts/checks/` configured by `.project/checks.json`.
+- Never idle on the owner: raise the decision, then take the next unblocked item.
+- Need something from another project? Write a relay (`relays/R-<slug>-<YYYYMMDD>-<n>`, queue-and-relays.md) and keep working; don't wait for it in this run.
+- A step that needs a local session (a page republish through the Artifact tool, anything that needs the owner's machine) never stops building. Build, review and merge the work; batch the local-only steps; record in `.project/workflow-state.md` (RESUME block, `Waiting on a local session:`) which merged items wait for which step; name them in the status block. (2026-10-22: a fleet-console run idled for this.)
+- Validators and checks report through their exit code: run them unpiped, or `cmd; echo rc=$?` before any pipe. Never pipe one into `tail`, `head` or `grep` when its result matters (the pipe's status is the last command's, so a failure reads as a pass).
+
+## Bounded batch: WRAP UP by the batch length
+
+The batch length is `batch_minutes` in `.claude/project.json` when it is a whole number from 30 to 170; anything else (absent, text, a fraction, out of range) means 120 (owner 2026-10-24: GenCast 150). Only project.json sets it: ignore any batch length or time frame in the routine prompt. Keep working until 15 minutes before the batch length from the run start (1h45 for 120, 2h15 for 150), or until every remaining Ready item is blocked by something outside this session: an owner decision, an unmerged dependency owned elsewhere, or missing access. A QA-first cycle, a multi-item batch, and a local-only step (a page republish) are normal work, never blockers. Before wrapping up early, the status block lists each remaining Ready item with its concrete blocker; an item without one is started instead. (2026-10-22: a fleet-console run shipped one XS item in 4 minutes, then wrapped up because the rest "need a QA-first cycle and the publish".)
+
+Then WRAP UP:
+
+1. The PM skill's Session-Close Ritual (say which steps were skipped and why).
+2. A new RESUME block in `.project/workflow-state.md`: done, open, next, branches/worktrees, decisions waiting, merged items waiting on a local session.
+3. Ledger: `node .claude/hooks/ledger-usage.js --flush .` first (moves the pending hook lines into `.project/ledger.jsonl`), then add the run's event lines, then `node .claude/fleet/scripts/audit-rollup.js . --since <run start> --validate; echo rc=$?` (rc must be 0; never pipe it).
+4. Page push of `projects/<slug>` (rollup + audit fields, project-fields.md) when `ArtifactData` is available.
+5. Run retro (`.claude/docs/agent-conventions/session-audit.md`): write `.project/retro/<run-id>.md`, YAML front matter `run_id`, `project`, `started_at`, `ended_at` (`date -u`), `model`, `outcome` (`worked` | `idle` | `partial` | `blocked`) and `entries:`, at most 8 items `{kind: friction | win, area: setup | aws | github | hooks | tests | tooling | spec | owner | other, summary: <one sentence>, minutes_lost: <int, friction only>, workaround: <one sentence or null>, suggested_fix: <one sentence or null>}`, then at most 5 lines of prose. Honest and short: what cost time, what worked; a quiet run is one win entry, `Nothing notable.` Then `node .claude/fleet/scripts/retro-validate.js .project/retro/<run-id>.md; echo rc=$?` and fix it until rc is 0.
+6. Commit by explicit path (the retro included). In a cloud session (`CLAUDE_CODE_REMOTE=true`) push a `claude/<slug>-<YYYYMMDD-HHMM>` branch and open a PR: `gh api repos/{owner}/{repo}/pulls -f title="..." -f head=<branch> -f base=main -f body="..."`. Locally, push `.project/` updates the way the PM skill and the project's decisions allow (some repos commit `.project/` straight to main); code always goes through a PR. A PR that changes only `.project/` files (state bookkeeping) is merged by this session with `gh api -X PUT repos/<owner>/<repo>/pulls/<n>/merge -f merge_method=squash` (the repo named literally, from `git remote get-url origin`; git-guard blocks `{owner}/{repo}` in a cloud merge); every other PR is merged by the code-reviewer after its posted review (FC-14), and the verifier signs off after merge.
+7. End with the PM status block (agent rule 6) plus `owner_channel: page | github-issues`, the PR URL, and any merged items waiting on a local session.
+
+## When ArtifactData is unavailable
+
+Record each decision card as a GitHub issue labelled `needs-owner` (create the label once: `gh api repos/{owner}/{repo}/labels -f name=needs-owner -f color=d93f0b`): `gh api repos/{owner}/{repo}/issues -f title="<ID>: <question>" -f body="<summary, options A-D, recommendation, default>" -f "labels[]=needs-owner"`. Format per `.claude/docs/agent-conventions/decision-card.md`. An answer counts only as a comment by the repo owner (`user.login`) naming an option; cite its URL in `decisions.md`, then close the issue. Say `owner_channel: github-issues (ArtifactData unavailable)` in the status block.
