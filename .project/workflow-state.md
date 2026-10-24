@@ -204,3 +204,10 @@ CLD-13 and CLD-14 both fully shipped/closed — no further action queued for eit
 - 2026-10-19: PR #36 (Scale card text, 5213c65, run 39329354074) and PR #37 (Build/Launch terms swapped, "migrations" wording, bea8622, run 39330258564) merged; staging E2E green both. Prod NOT deployed (parked).
 ### RESUME (latest)
 - Prod awaits owner go. Open owner questions: should about.html align with home copy; should Build/Launch supporting text differ; card order. Locked empty folders to delete manually: website-scale-card-text, website-terms-swap, website-splash, website-wt-work-experience (+ five earlier).
+
+## Session - 2026-10-24 (`fleet-2026-10-24-1028`)
+- Q-43 (platform-led website migration; WS-6/7/8 approved): DevOps dispatched for phase 1 (inventory, per-env root layout, cutover runbook draft, remote-state check) in worktree C:\dev\gitrepos\website-q43-inventory, branch ops/q43-inventory. No applies yet; each staging/prod plan goes to the coordinator before apply; prod applies via pipeline.
+- Brief corrections: none material (no website relay existed at open; the only relay is gencast-addressed).
+### RESUME (latest)
+- On DevOps return: review PR (Code Reviewer), decide on local tfstate leftovers per its remote-state comparison, relay needs-from-platform list via a `relays/` doc to platform, then build per-env roots.
+- Prod still parked by owner (see earlier RESUME).

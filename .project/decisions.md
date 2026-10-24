@@ -95,3 +95,5 @@ WS-5 option A approved (page answer, channel chat, quote "I'm good with A", deci
 
 ## 2026-10-18 — Q-24/Q-25 parked in staging (owner chat)
 Owner instruction (relayed by coordinator, chat): "don't deploy anything to production, leave parked in staging to revisit later." No tag, no release. Staging (staging.ericreilly.com, main @ 192e8ec + docs) stays as is: WS-5 Projects refresh, Q-25 consulting landing/About/contact, all owner copy changes. The hero sub-line is ON HOLD: the owner is still choosing the wording, so do not change it until he sends it.
+
+- 2026-10-24 [approval] WS-6 (extended), WS-7, WS-8: decided_by_owner true, decided_at 2026-10-24T10:27:14Z, channel chat. Quotes: "Keep the website migration churning until we're fully migrated and live in the new account. You are welcome to use the root key to hit that account until we've migrated away from it." / "One staging account and one prod account." / "Platform account (Recommended)". Work item Q-43.
