@@ -99,6 +99,10 @@
               </select>
             </div>
           </div>
+          <div class="hp-trap" aria-hidden="true">
+            <label for="hpWebsite">Website</label>
+            <input type="text" id="hpWebsite" name="website" tabindex="-1" autocomplete="off" value="" />
+          </div>
           <button type="submit" class="submit-btn" id="submitBtn">
             send message <span aria-hidden="true">→</span>
           </button>
@@ -177,7 +181,8 @@
       // Also prefix the message so the need reaches the inbox even if the API ignores unknown fields.
       project: need ? "[What I need: " + need + "]\n\n" + form.project.value : form.project.value,
       need: need,
-      term: form.term.value
+      term: form.term.value,
+      website: form.website.value
     };
     try {
       const res = await fetch('https://k7cpfmv07e.execute-api.us-east-1.amazonaws.com/prod/contact', {

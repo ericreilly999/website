@@ -443,6 +443,7 @@
     .wrap { padding: 20px 20px 64px; }
     header.hero { padding: 48px 0 32px; }
   }
+.hp-trap { position: absolute; left: -10000px; top: auto; width: 1px; height: 1px; overflow: hidden; }
 </style>
 </head>
 <body>
@@ -498,6 +499,10 @@
           submit prompt
           <svg viewBox="0 0 12 12" fill="none"><path d="M1 6h10M7 2l4 4-4 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
         </button>
+      </div>
+      <div class="hp-trap" aria-hidden="true">
+        <label for="hpWebsite">Website</label>
+        <input type="text" id="hpWebsite" name="website" tabindex="-1" autocomplete="off" value="" />
       </div>
       <div class="success" role="status" aria-live="polite">
         <div class="ok">→ got it, thanks.</div>
@@ -632,7 +637,7 @@
       const resp = await fetch(CONTACT_API, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ message: 'New Prompt Submission from Prompted: Tech Talks\n\nPrompt Topic: ' + input.value.trim() })
+        body: JSON.stringify({ message: 'New Prompt Submission from Prompted: Tech Talks\n\nPrompt Topic: ' + input.value.trim(), website: form.website.value })
       });
       if (!resp.ok) throw new Error('API error ' + resp.status);
 
