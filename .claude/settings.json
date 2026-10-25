@@ -32,6 +32,16 @@
         ]
       },
       {
+        "matcher": "mcp__.*__create_branch",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "f=\"$CLAUDE_PROJECT_DIR\"/.claude/hooks/git-guard.js; [ ! -f \"$f\" ] || node \"$f\"",
+            "timeout": 10
+          }
+        ]
+      },
+      {
         "matcher": "mcp__.*__(push_files|create_or_update_files?|delete_file)",
         "hooks": [
           {

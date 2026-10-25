@@ -103,4 +103,4 @@ Never mutate the workstation tree ([[agent-worktree-discipline]] rule 6 lists th
 - Secrets via GitHub Secrets; the workflow runs QA's suite, not ad-hoc commands
 - Security scans configured and blocking on critical findings
 - Branch naming enforced (`feature/`, `defect/`, `chore/`); tests gate deploys; no direct pushes to main
-- Triggers follow CI-01: a `push` trigger only for a path-filtered dev deploy or a plan-only `plan/**` workflow; staging and prod deploys are `workflow_dispatch` only
+- Triggers follow CI-01: a `push` trigger only for a path-filtered dev deploy, a plan-only `plan/**` workflow, or the release-request pipeline (`release/<dev|staging|prod>/*` and `test/dev/*`, exactly platform's templates, with the gate in the job: commit on main, the same-commit dev-suite evidence for staging, the card and change-hash compare for prod); otherwise staging and prod deploys are `workflow_dispatch` only. A pull-request job holds `id-token: write` only to assume a read-only plan role (CI-04)

@@ -28,7 +28,7 @@ Until all three hold, the story is in flight, not done. Owner rule 2026-10-20: t
 |---|---|---|
 | Local dev / unit tests | Continuous | Every change |
 | Dev (deployed) | Continuous | Every merge to main (a path-filtered push, FL-6) |
-| Staging | Continuous | A `workflow_dispatch` of every merge commit (staging is dispatch-only, CI-01; prod-like config + larger smoke suite) |
+| Staging | Continuous | A `workflow_dispatch` of every merge commit, or on the release-request pipeline a pushed `release/staging/<sha>` after the dev integration suite passed at that commit, no card (FL-20 B, [[cloud-releases]]); CI-01; prod-like config + larger smoke suite |
 | Release candidate tag | Weekly | Tag cut at sprint checkpoint from current main, after an owner card (Tier 3) |
 | Prod | After soak passes + owner approval, unless P-7 or P-10 covers it ([[autonomy-bar]]) | Risk-tiered (see Soak tiers below) |
 | Hotfix to prod | On-demand | P0 production incident — skip soak with mandatory post-incident review |

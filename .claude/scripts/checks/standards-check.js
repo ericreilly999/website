@@ -17,13 +17,14 @@ const { EXIT, CheckError, walk } = require('./lib/common');
 
 const CHECK = 'standards-check';
 const USAGE = `
-Usage: node standards-check.js --repo <dir> [--ref <git ref>] [--allowlist <repo-relative file>] [--format json|summary] [--out <dir>]
+Usage: node standards-check.js --repo <dir> [--ref <git ref>] [--allowlist <repo-relative file>] [--slug <owner/repo>] [--format json|summary] [--out <dir>]
 
 Checks the rules of docs/standards/ that a repo's files can prove: CI-01, CI-02, CI-03, CI-04, AWS-02,
 IAC-01, IAC-03, IAC-04, SEC-02, CLOUD-06. Each result is pass, fail, waived, warn or n/a.
 --repo defaults to the current directory. --ref reads committed files at that ref (for example
 origin/main) instead of the working tree. --allowlist defaults to .project/network-allowlist.txt; without
-that file CLOUD-06 is n/a. A file can waive a rule with a comment line naming the owner decision:
+that file CLOUD-06 is n/a. --slug names the repo (default: its origin remote), which a reusable-workflow
+call <owner>/<repo>/.github/workflows/x.yml@main must name for CI-01 to read the called workflow. A file can waive a rule with a comment line naming the owner decision:
 "# standards-waive: CI-01 WS-3" makes that file's findings for the rule "waived" (never "pass"), citing the decision,
 which the code reviewer verifies. A CI-01 waiver covers only the unfiltered pull_request finding. A waiver with no valid
 decision id is itself a fail. pull_request_target and unreadable workflows cannot be waived.
@@ -379,7 +380,22 @@ function gitRefSource(dir, ref) {
   };
 }
 
+/** `<owner>/<repo>` of the checkout's origin remote, or null (a reusable-workflow call names its repo this way). */
+function originSlug(dir) {
+  try {
+    const url = gitOut(dir, ['remote', 'get-url', 'origin']).toString().trim();
+    const m = /[/:]([^/:\s]+)\/([^/\s]+?)(?:\.git)?\/?$/.exec(url);
+    return m ? `${m[1]}/${m[2]}` : null;
+  } catch { return null; }
+}
+
 function openSource(repo, ref) {
+  const src = openSourceRaw(repo, ref);
+  if (src.slug === undefined) src.slug = originSlug(path.resolve(repo));
+  return src;
+}
+
+function openSourceRaw(repo, ref) {
   const dir = path.resolve(repo);
   if (!fs.existsSync(dir) || !fs.statSync(dir).isDirectory()) throw new CheckError(`--repo ${repo} is not a directory`, EXIT.USAGE);
   if (ref) return gitRefSource(dir, ref);
@@ -443,8 +459,10 @@ function stepsText(job) {
 
 const DEPLOY_NAME = /deploy|release|promot|apply|publish|secret/i;
 const SIDE_EFFECT = /configure-aws-credentials|\bterraform\b|\btofu\b|(^|\s)aws\s/m;
+// `terraform apply`, also with global options first (`terraform -chdir="src/$ROOT" apply`, the platform pipeline template).
+const TF_APPLY = /\b(terraform|tofu)(\s+-\S+)*\s+apply\b/;
 // Steps that change a deployed environment even when the workflow's name does not say deploy.
-const DEPLOY_STEP = /\b(terraform|tofu)\s+(apply|destroy)\b|\baws\s+secretsmanager\s+put-secret-value\b|\baws\s+ssm\s+put-parameter\b|\baws\s+s3\s+(sync|cp)\b|\baws\s+lambda\s+update-|\baws\s+cloudfront\s+create-invalidation\b|\baws\s+ecs\s+update-service\b/;
+const DEPLOY_STEP = /\b(terraform|tofu)(\s+-\S+)*\s+(apply|destroy)\b|\baws\s+secretsmanager\s+put-secret-value\b|\baws\s+ssm\s+put-parameter\b|\baws\s+s3\s+(sync|cp)\b|\baws\s+lambda\s+update-|\baws\s+cloudfront\s+create-invalidation\b|\baws\s+ecs\s+update-service\b/;
 const STAGE_PROD = /(^|[^a-z])(staging|stage|prod|production)([^a-z]|$)/i;
 
 /** The jobs of a workflow that change an environment: those with a deploy step; when none has one (a deploy run
@@ -476,8 +494,223 @@ function secretRoutes(wf, text) {
   return reasons;
 }
 
-/** Any job runs `terraform apply` (or `tofu apply`). */
-function applies(jobs) { return Object.values(jobs).filter(isObj).some((j) => /\b(terraform|tofu)\s+apply\b/.test(stepsText(j))); }
+/** Any job runs `terraform apply` (or `tofu apply`), global options such as `-chdir=` included. */
+function applies(jobs) { return Object.values(jobs).filter(isObj).some((j) => TF_APPLY.test(stepsText(j))); }
+
+/** False only when the job's `if:` provably keeps it off `event`: a condition made only of `&&`-joined terms, one of
+ * which is `github.event_name == '<another event>'` or `github.event_name != '<event>'` (the template's
+ * `github.event_name == 'push' && github.repository != '...'`). Anything else (`||`, `!`, parentheses, functions such
+ * as `always()` or `contains()`) cannot be proved here, so the job counts as running on the event. */
+function runsOnEvent(job, event) {
+  const cond = String((isObj(job) && job.if) || '').trim().replace(/^\$\{\{([\s\S]*)\}\}$/, '$1').trim();
+  if (!cond || /\|\||!(?!=)|[()]/.test(cond)) return true;
+  for (const term of cond.split('&&').map((t) => t.trim())) {
+    const eq = /^github\.event_name\s*==\s*['"]([a-z_]+)['"]$/.exec(term);
+    if (eq && eq[1] !== event) return false;
+    const ne = /^github\.event_name\s*!=\s*['"]([a-z_]+)['"]$/.exec(term);
+    if (ne && ne[1] === event) return false;
+  }
+  return true;
+}
+
+/** The repo path of a reusable workflow a job calls, or null: `./.github/workflows/x.yml`, or
+ * `<owner>/<repo>/.github/workflows/x.yml@main` where `<owner>/<repo>` is this repo (`slug`, from origin). Another
+ * repo, another ref, or a repo whose slug is unknown resolves to null, and the caller reports it (fail closed). */
+function calledWorkflow(uses, slug) {
+  const u = String(uses || '');
+  const local = /^\.\/(\.github\/workflows\/[^/@\s]+\.ya?ml)$/.exec(u);
+  if (local) return local[1];
+  const m = /^([^/\s]+\/[^/\s]+)\/(\.github\/workflows\/[^/@\s]+\.ya?ml)@(\S+)$/.exec(u);
+  if (!m || !slug || m[1].toLowerCase() !== String(slug).toLowerCase() || !/^(refs\/heads\/)?main$/.test(m[3])) return null;
+  return m[2];
+}
+
+const stepText = (s) => (isObj(s) ? `${s.uses || ''}\n${s.run || ''}` : '');
+
+// ---- Release-request branches (FL-19 B, FL-20 B, owner 2026-10-24; platform spec pl1 v1.5.0 FA-FR-72 to FA-FR-77, tools/pipeline/v1.0.0)
+// A cloud session can push but cannot dispatch, so a release run starts from a pushed `release/<env>/<sha>` branch and
+// the dev integration suite from `test/dev/<sha>`. The push filters are exactly these patterns (FA-FR-76). Every job
+// such a push reaches counts as a deploy and must run platform's gate steps. The check parses no shell (review 3 of
+// #58): every step up to and including the last gate the push needs (`request` for dev, `evidence` for staging,
+// `compare` for prod; `suite-guard` for the dev suite) must be one of the platform template's own steps, compared by
+// exact text. The reference is the template copied into lib/platform-templates/ (README there names the commit).
+const REQUEST_BRANCH = /^release\/(dev|staging|prod)\/\*$/;
+const SUITE_BRANCH = /^test\/dev\/\*$/;
+const TEMPLATE_DIR = path.join(__dirname, 'lib', 'platform-templates');
+const norm = (v) => String(v == null ? '' : v).replace(/\s+/g, ' ').trim();
+const normEnv = (e) => JSON.stringify(Object.entries(isObj(e) ? e : {}).map(([k, v]) => [k, norm(v)]).sort());
+
+let templateCache;
+/** The platform template steps the checks compare with: the `release` job's steps through `compare`, the dev suite's
+ * `guard` job, and the proposed request-branch cleanup job. */
+function templates() {
+  if (templateCache) return templateCache;
+  const read = (f) => parseYaml(lf(fs.readFileSync(path.join(TEMPLATE_DIR, f), 'utf8')));
+  const pipe = read('terraform-pipeline.yml');
+  const suite = read('dev-integration-suite.yml');
+  const cleanup = read('request-branch-cleanup.yml');
+  const release = asArray(jobsOf(pipe).release && jobsOf(pipe).release.steps);
+  const guard = asArray(jobsOf(suite).guard && jobsOf(suite).guard.steps);
+  const at = (steps, re) => steps.findIndex((s) => isObj(s) && re.test(String(s.run || '')));
+  templateCache = {
+    release, guard, cleanupJob: jobsOf(cleanup).cleanup, releaseJob: jobsOf(pipe).release, guardJob: jobsOf(suite).guard,
+    gates: { request: at(release, /release_gate\.py\s+request\b/), evidence: at(release, /release_gate\.py\s+evidence\b/), compare: at(release, /release_gate\.py\s+compare\b/) },
+    suiteGuard: at(guard, /release_gate\.py\s+suite-guard\b/),
+  };
+  return templateCache;
+}
+
+/** True when step `s` is template step `t` (exact): a `uses:` with the same action at the same pinned SHA and no `env`;
+ * a `run:` with the same whitespace-collapsed text, the same `env` and the same `if:`, and no other key (no `shell`,
+ * `working-directory`, `continue-on-error`). */
+function sameStep(s, t) {
+  if (!isObj(s) || !isObj(t)) return false;
+  // Every key but `name` is compared, and the step has exactly the template step's keys: `id` included (review 4 of
+  // #58: the later gates' `if:` reads `steps.gate.outputs`, so a renamed id switches them off), `with:` (a checkout may
+  // not land another ref on the trusted path), `env`, `if:`, and no added `shell`, `working-directory` or
+  // `continue-on-error`. Text values compare whitespace-collapsed; an action must be the template's pinned SHA.
+  const keys = (o) => Object.keys(o).filter((k) => k !== 'name').sort();
+  if (keys(s).join() !== keys(t).join()) return false;
+  for (const k of keys(t)) {
+    const a = s[k]; const b = t[k];
+    if (isObj(b) || isObj(a)) { if (normEnv(a) !== normEnv(b)) return false; } else if (norm(a) !== norm(b)) return false;
+  }
+  return !t.uses || /@[0-9a-f]{40}$/.test(String(s.uses));
+}
+
+/** Job-level settings that differ from the template job `ref` and would change how its steps run: an image, a default
+ * shell, an env such as BASH_ENV or NODE_OPTIONS, a job allowed to fail, a GitHub Environment (its vars and secrets
+ * override the repository's), another runner. */
+function jobOverrides(job, wf, ref = {}) {
+  const bad = ['env', 'defaults', 'container', 'services', 'continue-on-error', 'environment', 'runs-on']
+    .filter((k) => JSON.stringify(job[k] ?? null) !== JSON.stringify((isObj(ref) && ref[k]) ?? null));
+  for (const k of ['env', 'defaults']) if (isObj(wf) && wf[k] != null) bad.push(`workflow ${k}`);
+  return bad;
+}
+
+/** Findings for one job against a template prefix: every step up to and including each named gate must be a template
+ * step from before (or the same as) that gate. `gates` = [{cmd, t}] in order, `t` the gate's index in `ref`. */
+function prefixFindings(where, steps, ref, gates) {
+  const out = [];
+  let prev = -1;
+  for (const { cmd, t } of gates) {
+    const k = steps.findIndex((s) => sameStep(s, ref[t]));
+    if (k < 0) { out.push(`${where}: no step equal to the platform template's \`release_gate.py ${cmd}\` step (every key but name: text, id, env, with, if:)`); return out; }
+    if (k < prev) { out.push(`${where}: the \`release_gate.py ${cmd}\` step comes before an earlier gate step`); return out; }
+    for (let j = 0; j < k; j++) {
+      if (ref.slice(0, t).some((r) => sameStep(steps[j], r))) continue;
+      out.push(`${where}: step ${j + 1} (${(isObj(steps[j]) && (steps[j].name || steps[j].uses)) || 'run'}) runs before the \`release_gate.py ${cmd}\` step and is not one of the platform template's steps before it (every key but name equal: text, id, env, with, if:, the pinned action)`);
+      return out;
+    }
+    prev = k;
+  }
+  return out;
+}
+
+/** The job that only deletes its own request branch (cloud-releases.md: a cloud session cannot delete a branch): its
+ * steps and permissions equal the reference cleanup job exactly, with nothing else that could run code. */
+function isRefCleanup(job, wf) {
+  const ref = templates().cleanupJob;
+  if (!isObj(job) || !isObj(ref) || job.uses || jobOverrides(job, wf, ref).length) return false;
+  const steps = asArray(job.steps); const rs = asArray(ref.steps);
+  const perms = job.permissions != null ? job.permissions : wf && wf.permissions;
+  return steps.length === rs.length && steps.every((s, i) => sameStep(s, rs[i])) && JSON.stringify(perms) === JSON.stringify(ref.permissions);
+}
+
+/** CI-01 findings (messages) for a `push` on request branches; [] when the workflow carries the gates. */
+function requestPushFindings(wf, cfg, branches, wfAt, slug) {
+  const other = branches.filter((b) => !REQUEST_BRANCH.test(b) && !SUITE_BRANCH.test(b));
+  if (other.length) return [`\`push\` mixes request branches with ${other.join(', ')} (the filters are exactly \`release/<dev|staging|prod>/*\` or \`test/dev/*\`, FA-FR-76)`];
+  const extra = ['paths', 'paths-ignore', 'tags', 'tags-ignore', 'branches-ignore'].filter((k) => cfg[k] != null);
+  if (extra.length) return [`request-branch \`push\` also filters on ${extra.join(', ')} (a filtered request starts no run; the branch patterns are the only filter)`];
+  const envs = branches.map((b) => (REQUEST_BRANCH.exec(b) || [])[1]).filter(Boolean);
+  const suite = branches.some((b) => SUITE_BRANCH.test(b));
+  if (suite && envs.length) return ['one workflow takes both `release/*` and `test/dev/*` pushes (the release and the dev integration suite are separate workflows)'];
+  let T;
+  try { T = templates(); } catch (e) { return [`the platform template reference in scripts/checks/lib/platform-templates cannot be read (${e.message}), so no request workflow can be checked`]; }
+  const out = [];
+  // Every job this push reaches: the workflow's own, and those of the reusable workflow a job calls (the release caller).
+  // A call this check cannot read, or a call nested inside the callee, is a finding: its gate cannot be checked.
+  const units = [];
+  for (const [id, job] of Object.entries(jobsOf(wf))) {
+    if (!isObj(job) || !runsOnEvent(job, 'push')) continue;
+    if (!job.uses) { units.push({ where: `job ${id}`, id, job, wf }); continue; }
+    const callee = calledWorkflow(job.uses, slug);
+    const cwf = callee && wfAt(callee);
+    if (!isObj(cwf)) {
+      out.push(callee
+        ? `job ${id} calls \`${job.uses}\`, which is not a readable workflow in this repo, so its gate cannot be checked`
+        : `job ${id} calls \`${job.uses}\`, which is neither \`./.github/workflows/...\` nor ${slug ? `\`${slug}/.github/workflows/...@main\`` : 'this repo at @main (its origin is unknown: pass --slug)'}, so its gate cannot be checked`);
+      continue;
+    }
+    for (const [cid, cj] of Object.entries(jobsOf(cwf))) {
+      if (!isObj(cj) || !runsOnEvent(cj, 'push')) continue;
+      if (cj.uses) out.push(`${callee} job ${cid} calls \`${cj.uses}\`, a nested reusable workflow, so its gate cannot be checked`);
+      else units.push({ where: `${callee} job ${cid}`, id: cid, job: cj, wf: cwf });
+    }
+  }
+  const overrides = (u, ref) => { const b = jobOverrides(u.job, u.wf, ref); if (b.length) out.push(`${u.where}: sets ${b.join(', ')}, which differ from the platform template's job (they would change how the gate steps run)`); };
+  if (suite) {
+    const guards = units.filter((u) => asArray(u.job.steps).some((s) => sameStep(s, T.guard[T.suiteGuard])));
+    if (!guards.length) return [...out, 'a `test/dev/*` push with no job whose steps include the platform template\'s `release_gate.py suite-guard` step (the dev suite runs only for a commit on main already released to dev, FA-FR-74)'];
+    for (const g of guards) {
+      out.push(...prefixFindings(g.where, asArray(g.job.steps), T.guard, [{ cmd: 'suite-guard', t: T.suiteGuard }]));
+      overrides(g, T.guardJob);
+      if (g.job.environment != null || usesSecrets(g.job) || grantsToken(effPerms(g.job, g.wf))) out.push(`${g.where}: the guard job holds an Environment, a secret or an OIDC token (it only reads the Actions API)`);
+    }
+    const guardIds = new Set(guards.map((g) => g.id));
+    const reaches = (u, seen = new Set()) => asArray(u.job.needs).map(String).some((n) => guardIds.has(n)
+      || (!seen.has(n) && seen.add(n) && isObj(jobsOf(u.wf)[n]) && reaches({ job: jobsOf(u.wf)[n], wf: u.wf }, seen)));
+    for (const u of units) {
+      if (guardIds.has(u.id)) continue;
+      if (!reaches(u)) out.push(`${u.where} does not need the suite guard (every suite job runs after \`guard\`, FA-FR-74)`);
+      else if (/\b(always|failure|cancelled)\s*\(/.test(String(u.job.if || '')) && !isRefCleanup(u.job, u.wf)) out.push(`${u.where} runs even when the guard fails (\`${u.job.if}\`); only the job that deletes the request branch may`);
+      if (DEPLOY_STEP.test(stepsText(u.job))) out.push(`${u.where} applies or deploys (the dev integration suite never runs \`terraform apply\` or writes an environment)`);
+    }
+    return out;
+  }
+  const gates = [{ cmd: 'request', t: T.gates.request }];
+  if (envs.includes('staging')) gates.push({ cmd: 'evidence', t: T.gates.evidence });
+  if (envs.includes('prod')) gates.push({ cmd: 'compare', t: T.gates.compare });
+  for (const u of units) {
+    if (isRefCleanup(u.job, u.wf)) continue;
+    out.push(...prefixFindings(u.where, asArray(u.job.steps), T.release, gates));
+    overrides(u, T.releaseJob);
+  }
+  return out;
+}
+
+/** Secrets other than the job token in a job's text (`secrets.X`, X not GITHUB_TOKEN). */
+const usesSecrets = (job) => [...JSON.stringify(job || {}).matchAll(/\bsecrets\s*\.\s*([A-Za-z_][A-Za-z0-9_-]*)/g)].some((m) => m[1] !== 'GITHUB_TOKEN');
+const effPerms = (job, wf) => (job && job.permissions != null ? job.permissions : wf && wf.permissions);
+const grantsToken = (p) => p === 'write-all' || (isObj(p) && String(p['id-token'] || '') === 'write');
+
+// CI-04: the role names the platform spec gives the read-only plan tier (pl1 FA-FR-42 to FA-FR-50): the repo's
+// pipeline plan role `pipeline/<repo>-plan` or a plan hub `fleet/FleetPlanHub-<project>` first, then role-chained the
+// read-only spoke `fleet/FleetPlanReadOnly`; or the template's repository variables for exactly those roles.
+const ACCT = String.raw`(?:\d{12}|\$\{\{\s*vars\.[A-Z0-9_]+\s*\}\})`;
+const PLAN_FIRST = [new RegExp(`^arn:aws:iam::${ACCT}:role/(?:pipeline/[a-z0-9-]+-plan|fleet/FleetPlanHub-[a-z0-9-]+)$`), /^\$\{\{\s*vars\.PIPELINE_PLAN_ROLE_ARN\s*\}\}$/];
+// (Spec v1.5.0: only the pull-request plan reads role variables; the release job takes its role ARNs from the gate.)
+const PLAN_SPOKE = [new RegExp(`^arn:aws:iam::${ACCT}:role/fleet/FleetPlanReadOnly$`), /^\$\{\{\s*vars\.PIPELINE_PR_SPOKE_ARN\s*\}\}$/];
+
+/** CI-04: why a pull_request job may not hold `id-token: write`, or null when every role it assumes is a read-only plan
+ * role (FA-FR-50's pull-request subject) and it has no deploy step. */
+function prTokenProblem(job) {
+  const steps = asArray(job.steps).filter(isObj);
+  const creds = steps.filter((s) => /^aws-actions\/configure-aws-credentials@/.test(String(s.uses || '')));
+  const w = (s) => (isObj(s.with) ? s.with : {});
+  if (!creds.length) return 'and assumes no role';
+  if (steps.some((s) => DEPLOY_STEP.test(stepText(s)))) return 'and runs a deploy step';
+  const role = (s) => String(w(s)['role-to-assume'] || '').trim();
+  if (!PLAN_FIRST.some((re) => re.test(role(creds[0])))) return `for \`${role(creds[0]) || 'no role'}\`, not a read-only plan role (\`pipeline/<repo>-plan\`, \`fleet/FleetPlanHub-<project>\` or \`vars.PIPELINE_PLAN_ROLE_ARN\`)`;
+  for (const s of creds.slice(1)) {
+    const chained = String(w(s)['role-chaining']) === 'true';
+    if (!(PLAN_FIRST.some((re) => re.test(role(s))) || (chained && PLAN_SPOKE.some((re) => re.test(role(s)))))) {
+      return `and then assumes \`${role(s) || 'no role'}\`, not a read-only plan role or a \`fleet/FleetPlanReadOnly\` spoke chained from one`;
+    }
+  }
+  return null;
+}
 
 /** A deploy whose name, file name or a job's environment names staging or prod. */
 function deploysStagingOrProd(file, wf) {
@@ -501,7 +734,7 @@ function isDeployWorkflow(file, wf) {
 function pathGatedJobs(jobs) {
   const ids = Object.keys(jobs);
   const filters = ids.filter((id) => /^(changes|paths|filter|path-filter|detect-changes)$/.test(id)
-    || /dorny\/paths-filter|tj-actions\/changed-files|git diff --name-only/.test(stepsText(jobs[id])));
+    || /dorny\/paths-filter|tj-actions\/changed-files|\bgit\b(\s+-\S+(\s+\S+)?)*?\s+diff\s+--name-only/.test(stepsText(jobs[id])));
   if (!filters.length) return null;
   const gated = new Set(filters);
   let grew = true;
@@ -513,15 +746,33 @@ function pathGatedJobs(jobs) {
       if (needs.some((n) => gated.has(n)) && jobs[id].if) { gated.add(id); grew = true; }
     }
   }
-  return { filters, ungated: ids.filter((id) => !gated.has(id)) };
+  // A job whose `if:` keeps it off pull_request runs (the template's push-only `release` job) runs no PR check.
+  return { filters, ungated: ids.filter((id) => !gated.has(id) && runsOnEvent(jobs[id], 'pull_request')) };
 }
 
 // ------------------------------------------------------------------ workflow rules
 
-function checkWorkflows(source) {
+function checkWorkflows(source, { slug = null } = {}) {
   const files = source.files.filter((f) => /^\.github\/workflows\/[^/]+\.ya?ml$/.test(f));
   const F = Object.fromEntries(['CI-01', 'CI-02', 'CI-03', 'CI-04', 'AWS-02'].map((id) => [id, { findings: [], ok: [], applicable: false }]));
   if (source.prefetch) source.prefetch(files);
+  // Other workflow files, parsed once: a release caller's gate lives in the reusable workflow it calls, and that
+  // workflow's deploy job takes its concurrency from the calling job.
+  const parsedAt = new Map();
+  const wfAt = (p) => {
+    if (!parsedAt.has(p)) {
+      const t = files.includes(p) ? source.read(p) : null;
+      let v = null;
+      try { v = t == null ? null : parseYaml(t); } catch { v = null; }
+      parsedAt.set(p, v);
+    }
+    return parsedAt.get(p);
+  };
+  const callerConcurrency = (target) => files.flatMap((f) => {
+    const cwf = wfAt(f);
+    return Object.entries(jobsOf(cwf)).filter(([, j]) => isObj(j) && calledWorkflow(j.uses, slug) === target)
+      .map(([id, j]) => ({ where: `${f} job ${id}`, concurrency: j.concurrency }));
+  });
   for (const file of files) {
     const text = source.read(file);
     if (text == null) continue;
@@ -564,7 +815,10 @@ function checkWorkflows(source) {
       } else if (ev === 'push') {
         const branches = asArray(cfg.branches).map(String);
         const planOnly = branches.length && branches.every((br) => /^plan\//.test(br));
-        if (planOnly) {
+        if (branches.some((br) => /^(release|test)\//.test(br))) {
+          // A release-request or dev-suite push (FL-19 B, FL-20 B): allowed only with the template's gates in the job.
+          for (const msg of requestPushFindings(wf, cfg, branches, wfAt, slug)) add('CI-01', 'fail', `${file}: ${msg}`);
+        } else if (planOnly) {
           if (applies(jobs)) add('CI-01', 'fail', `${file}: a \`plan/**\` push workflow runs an apply (plan-only workflows only, GC-200)`);
         } else if (deploysStagingOrProd(file, wf)) add('CI-01', 'fail', `${file}: \`push\` trigger on a staging or prod deploy (staging and prod are workflow_dispatch only)`);
         else if (cfg.paths || cfg['paths-ignore']) {
@@ -600,11 +854,20 @@ function checkWorkflows(source) {
       } else {
         // Job-level: only the jobs that deploy need it; test, e2e, verify and smoke jobs may cancel in progress.
         const deployers = deployingJobs(jobs);
-        const missing = deployers.filter((id) => !jobs[id].concurrency);
-        const cancels = deployers.filter((id) => jobs[id].concurrency && cc(jobs[id].concurrency) === 'true');
+        // A reusable workflow's deploy job may take its concurrency from the job that calls it (the release caller).
+        const callers = 'workflow_call' in trig ? callerConcurrency(file) : [];
+        const viaCaller = callers.length > 0 && callers.every((c) => c.concurrency); // a cancelling one is reported below
+        // Only a job that runs on no trigger of its own besides workflow_call takes the caller's concurrency.
+        const onlyCalled = (id) => Object.keys(trig).every((e) => e === 'workflow_call' || !runsOnEvent(jobs[id], e));
+        // No caller here (Platform commits only the reusable workflow, plan-only, FA-FR-77): the caller elsewhere sets it.
+        const uncalled = deployers.filter((id) => !jobs[id].concurrency && 'workflow_call' in trig && !callers.length && onlyCalled(id));
+        if (uncalled.length) add('CI-03', 'warn', `${file}: deploy job(s) ${uncalled.join(', ')} run only under workflow_call and no workflow in this repo calls them; the calling job must set concurrency`);
+        const missing = deployers.filter((id) => !jobs[id].concurrency && !(viaCaller && onlyCalled(id)) && !uncalled.includes(id));
+        const cancels = [...deployers.filter((id) => jobs[id].concurrency && cc(jobs[id].concurrency) === 'true'),
+          ...callers.filter((c) => c.concurrency && cc(c.concurrency) === 'true').map((c) => c.where)];
         if (missing.length) add('CI-03', 'fail', `${file}: deploy job(s) without concurrency: ${missing.join(', ')}`);
         else if (cancels.length) add('CI-03', 'fail', `${file}: concurrency cancels in progress on deploy job(s) ${cancels.join(', ')}`);
-        else F['CI-03'].ok.push(`${file}: job-level concurrency on deploy job(s) ${deployers.join(', ')}`);
+        else F['CI-03'].ok.push(`${file}: job-level concurrency on deploy job(s) ${deployers.join(', ')}${viaCaller ? ` (from the caller: ${callers.map((c) => c.where).join(', ')})` : ''}`);
       }
     }
 
@@ -612,10 +875,19 @@ function checkWorkflows(source) {
     F['CI-04'].applicable = true;
     const jobsWithout = jobIds.filter((id) => isObj(jobs[id]) && jobs[id].permissions == null);
     if (wf.permissions == null && (jobsWithout.length || !jobIds.length)) add('CI-04', 'fail', `${file}: no \`permissions\` at the top level${jobIds.length ? ` or on job(s) ${jobsWithout.join(', ')}` : ''}`);
-    const prEvent = events.some((e) => e === 'pull_request' || e === 'pull_request_target');
     const idTok = (p) => isObj(p) && String(p['id-token'] || '') === 'write' || p === 'write-all';
-    if (prEvent && (idTok(wf.permissions) || jobIds.some((id) => isObj(jobs[id]) && idTok(jobs[id].permissions)))) {
-      add('CI-04', 'fail', `${file}: a pull_request workflow grants \`id-token: write\` (a PR could mint an AWS token)`);
+    const tokenJobs = jobIds.filter((id) => isObj(jobs[id]) && idTok(jobs[id].permissions ?? wf.permissions));
+    if (events.includes('pull_request_target') && (idTok(wf.permissions) || tokenJobs.length)) {
+      add('CI-04', 'fail', `${file}: a pull_request_target workflow grants \`id-token: write\` (a PR could mint an AWS token)`);
+    } else if (events.includes('pull_request')) {
+      if (!jobIds.length && idTok(wf.permissions)) add('CI-04', 'fail', `${file}: a pull_request workflow grants \`id-token: write\` (a PR could mint an AWS token)`);
+      // A PR job may mint a token only for a read-only plan role (FA-FR-50's pull-request subject); a job whose
+      // `if:` keeps it off pull_request runs is judged by its other triggers, and a reusable-workflow call never.
+      for (const id of tokenJobs.filter((j) => runsOnEvent(jobs[j], 'pull_request'))) {
+        const why = jobs[id].uses ? 'through a reusable-workflow call' : prTokenProblem(jobs[id]);
+        if (why) add('CI-04', 'fail', `${file}: pull_request job ${id} grants \`id-token: write\` ${why} (a PR could mint an AWS token; only a read-only plan role may, FA-FR-50)`);
+        else F['CI-04'].ok.push(`${file}: pull_request job ${id} mints a token only for a read-only plan role`);
+      }
     }
     if (!F['CI-04'].findings.some((f) => f.file === file)) F['CI-04'].ok.push(`${file}: permissions declared`);
 
@@ -836,8 +1108,8 @@ function summarize(repoName, results) {
 }
 
 /** Run every rule over a file source. Returns {repo, checked_at, results, summary, exitCode}. */
-function runChecks(source, { repo = '.', allowlist = DEFAULT_ALLOWLIST, now = new Date() } = {}) {
-  const wf = checkWorkflows(source);
+function runChecks(source, { repo = '.', allowlist = DEFAULT_ALLOWLIST, now = new Date(), slug } = {}) {
+  const wf = checkWorkflows(source, { slug: slug || source.slug || null });
   const workflowTexts = source.files.filter((f) => /^\.github\/workflows\/[^/]+\.ya?ml$/.test(f)).map((f) => source.read(f) || '');
   const tf = checkTerraform(source, workflowTexts);
   const net = checkAllowlist(source, allowlist);
@@ -862,7 +1134,7 @@ function main(argv = process.argv.slice(2)) {
   try {
     ({ values } = parseArgs({ args: argv, options: {
       help: { type: 'boolean', short: 'h' }, repo: { type: 'string' }, ref: { type: 'string' },
-      allowlist: { type: 'string' }, format: { type: 'string' }, out: { type: 'string' },
+      allowlist: { type: 'string' }, format: { type: 'string' }, out: { type: 'string' }, slug: { type: 'string' },
     }, strict: true, allowPositionals: false }));
   } catch (e) { return usageOut(e.message); }
   if (values.help) { process.stdout.write(USAGE.trim() + '\n'); process.exit(EXIT.PASS); }
@@ -872,7 +1144,7 @@ function main(argv = process.argv.slice(2)) {
   let result;
   try {
     const source = openSource(repo, values.ref);
-    result = runChecks(source, { repo, allowlist: values.allowlist || DEFAULT_ALLOWLIST });
+    result = runChecks(source, { repo, allowlist: values.allowlist || DEFAULT_ALLOWLIST, slug: values.slug });
   } catch (e) {
     const exitCode = e instanceof CheckError ? e.exitCode : EXIT.NOT_RUN;
     if (exitCode === EXIT.USAGE) return usageOut(e.message);
@@ -897,5 +1169,5 @@ if (require.main === module) main();
 module.exports = {
   RULES, parseYaml, stripComment, splitKey, parseFlow, stripHclComments, hclBlocks, hclAttrs, waiversIn, triggers,
   malformedWaivers, parseWaivers, WAIVABLE_KINDS, pathGatedJobs, isDeployWorkflow, deploysStagingOrProd, deployingJobs, secretRoutes, hostAllowed, checkWorkflows, checkTerraform, checkAllowlist, runChecks, summarize,
-  memSource, fsSource, openSource, gitRefSource,
+  memSource, fsSource, openSource, gitRefSource, runsOnEvent, calledWorkflow, isRefCleanup, sameStep, templates,
 };

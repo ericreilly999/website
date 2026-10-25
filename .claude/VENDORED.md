@@ -36,6 +36,7 @@ Paths such as `.claude/docs/...` in these files are relative to the repo root.
 - `docs/agent-conventions/aws-multi-account.md`
 - `docs/agent-conventions/backlog.md`
 - `docs/agent-conventions/ci-discipline.md`
+- `docs/agent-conventions/cloud-releases.md`
 - `docs/agent-conventions/decision-card.md`
 - `docs/agent-conventions/error-handling-discipline.md`
 - `docs/agent-conventions/github-api.md`
@@ -43,6 +44,7 @@ Paths such as `.claude/docs/...` in these files are relative to the repo root.
 - `docs/agent-conventions/lessons-learned.md`
 - `docs/agent-conventions/linear.md`
 - `docs/agent-conventions/live-e2e-cleanup-discipline.md`
+- `docs/agent-conventions/local-tasks.md`
 - `docs/agent-conventions/mcp-tools.md`
 - `docs/agent-conventions/project-fields.md`
 - `docs/agent-conventions/queue-and-relays.md`
@@ -80,6 +82,11 @@ Paths such as `.claude/docs/...` in these files are relative to the repo root.
 - `scripts/checks/iam-simulate.sh`
 - `scripts/checks/lib/common.js`
 - `scripts/checks/lib/iam.js`
+- `scripts/checks/lib/platform-templates/README.md`
+- `scripts/checks/lib/platform-templates/dev-integration-suite.yml`
+- `scripts/checks/lib/platform-templates/request-branch-cleanup.yml`
+- `scripts/checks/lib/platform-templates/terraform-pipeline.yml`
+- `scripts/checks/lib/platform-templates/terraform-release.yml`
 - `scripts/checks/lib/ux.js`
 - `scripts/checks/mutation-diff.js`
 - `scripts/checks/package-lock.json`

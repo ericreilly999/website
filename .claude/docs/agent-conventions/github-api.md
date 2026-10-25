@@ -55,5 +55,5 @@ The REST pool is 5,000 calls an hour and it is the one that runs out: a multi-ho
 ## Cloud sessions (claude.ai/code)
 
 - Only repos attached to the session are reachable. Anything else returns 403 "GitHub access to this repository is not enabled for this session". That's expected, not an outage.
-- The proxy blocks branch deletes and tag pushes. Rely on each repo's "Automatically delete head branches" setting after merge, and cut release tags from a local session or an Actions workflow.
+- The proxy blocks branch deletes and tag pushes. Rely on each repo's "Automatically delete head branches" setting after merge, and cut release tags from a local session or an Actions workflow. Both routes refuse a delete (probe 2026-10-25: `git push --delete` HTTP 403; REST `DELETE git/refs` "Write access to this GitHub API path is not permitted through this proxy"), so release-request and `test/dev/` branches are deleted by the workflow's own cleanup job, never by the session ([[cloud-releases]]). Pushes of any branch name work.
 - Commit statuses (`POST statuses/<sha>`, `GET commits/<sha>/status`) return 403 in the cloud, so `status-poll` there reads only check runs; reviewers and the verifier rely on local suites and the sign-off record ([[verification-checks]]).

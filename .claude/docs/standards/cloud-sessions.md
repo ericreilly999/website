@@ -20,11 +20,11 @@ A project's `.claude/` definitions MUST be the vendored copy of this repo, re-sy
 
 ### CLOUD-03 · Every change lands by PR from a `claude/` branch
 
-A cloud session MUST push only `claude/` branches and land every change, `.project/` included, through a PR.
+A cloud session MUST land every change, `.project/` included, through a PR from a `claude/` branch. The only other branches it pushes are pipeline requests, which change no code: `release/<dev|staging|prod>/<sha>` and `test/dev/<sha>` ([cloud-releases](../agent-conventions/cloud-releases.md)), and `plan/**` where a project uses plan branches (CI-01). It never deletes a branch.
 
-- **Why:** the proxy allows nothing else, and a PR is the review record (existing convention: `docs/cloud-environment.md` Per-project sessions, Branches).
+- **Why:** a PR is the review record (existing convention: `docs/cloud-environment.md` Per-project sessions, Branches). A cloud session can push but cannot dispatch, so pipeline runs start from request branches (FL-19 B, FL-20 B, owner 2026-10-24). The proxy accepts any branch name but refuses deletes (fleet-console probe 2026-10-25T02:06Z: `release/probe/T`, `test/dev/probe-T`, `plan/probe/T`, `claude/release/probe/T` and `claude/probe-T` pushed; `git push --delete` 403, REST `DELETE git/refs` refused), so request branches are deleted by the workflow's own cleanup job.
 - **Reference:** [project-session](../../skills/project-session/SKILL.md) WRAP UP step 6.
-- **Enforced by:** the GitHub proxy.
+- **Enforced by:** review (branch names); the GitHub proxy (deletes and tag pushes).
 
 ### CLOUD-04 · Merges follow FC-14
 
