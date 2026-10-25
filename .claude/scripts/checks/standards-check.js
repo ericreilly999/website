@@ -527,13 +527,14 @@ function calledWorkflow(uses, slug) {
 
 const stepText = (s) => (isObj(s) ? `${s.uses || ''}\n${s.run || ''}` : '');
 
-// ---- Release-request branches (FL-19 B, FL-20 B, owner 2026-10-24; platform spec pl1 v1.5.0 FA-FR-72 to FA-FR-77, tools/pipeline/v1.0.0)
+// ---- Release-request branches (FL-19 B, FL-20 B, owner 2026-10-24; platform spec pl1 v1.6.0 FA-FR-72 to FA-FR-77, tools/pipeline/v1.0.2)
 // A cloud session can push but cannot dispatch, so a release run starts from a pushed `release/<env>/<sha>` branch and
 // the dev integration suite from `test/dev/<sha>`. The push filters are exactly these patterns (FA-FR-76). Every job
 // such a push reaches counts as a deploy and must run platform's gate steps. The check parses no shell (review 3 of
 // #58): every step up to and including the last gate the push needs (`request` for dev, `evidence` for staging,
-// `compare` for prod; `suite-guard` for the dev suite) must be one of the platform template's own steps, compared by
-// exact text. The reference is the template copied into lib/platform-templates/ (README there names the commit).
+// `prod-evidence` then `compare` for prod; `suite-guard` for the dev suite) must be one of the platform template's own
+// steps, compared by exact text. The reference is the template copied into lib/platform-templates/ (its README names
+// the tag).
 const REQUEST_BRANCH = /^release\/(dev|staging|prod)\/\*$/;
 const SUITE_BRANCH = /^test\/dev\/\*$/;
 const TEMPLATE_DIR = path.join(__dirname, 'lib', 'platform-templates');
@@ -542,19 +543,24 @@ const normEnv = (e) => JSON.stringify(Object.entries(isObj(e) ? e : {}).map(([k,
 
 let templateCache;
 /** The platform template steps the checks compare with: the `release` job's steps through `compare`, the dev suite's
- * `guard` job, and the proposed request-branch cleanup job. */
+ * `guard` job, and the `cleanup` jobs of the release caller and the dev suite. */
 function templates() {
   if (templateCache) return templateCache;
   const read = (f) => parseYaml(lf(fs.readFileSync(path.join(TEMPLATE_DIR, f), 'utf8')));
   const pipe = read('terraform-pipeline.yml');
   const suite = read('dev-integration-suite.yml');
-  const cleanup = read('request-branch-cleanup.yml');
+  const caller = read('terraform-release.yml');
   const release = asArray(jobsOf(pipe).release && jobsOf(pipe).release.steps);
   const guard = asArray(jobsOf(suite).guard && jobsOf(suite).guard.steps);
   const at = (steps, re) => steps.findIndex((s) => isObj(s) && re.test(String(s.run || '')));
   templateCache = {
-    release, guard, cleanupJob: jobsOf(cleanup).cleanup, releaseJob: jobsOf(pipe).release, guardJob: jobsOf(suite).guard,
-    gates: { request: at(release, /release_gate\.py\s+request\b/), evidence: at(release, /release_gate\.py\s+evidence\b/), compare: at(release, /release_gate\.py\s+compare\b/) },
+    release, guard, releaseJob: jobsOf(pipe).release, guardJob: jobsOf(suite).guard,
+    // The `cleanup` jobs (tools/pipeline v1.0.1+, T-500): the caller's and the suite's, each deleting its own request branch.
+    cleanup: { release: jobsOf(caller).cleanup, suite: jobsOf(suite).cleanup },
+    gates: {
+      request: at(release, /release_gate\.py\s+request\b/), evidence: at(release, /release_gate\.py\s+evidence\b/),
+      prodEvidence: at(release, /release_gate\.py\s+prod-evidence\b/), compare: at(release, /release_gate\.py\s+compare\b/),
+    },
     suiteGuard: at(guard, /release_gate\.py\s+suite-guard\b/),
   };
   return templateCache;
@@ -607,10 +613,11 @@ function prefixFindings(where, steps, ref, gates) {
   return out;
 }
 
-/** The job that only deletes its own request branch (cloud-releases.md: a cloud session cannot delete a branch): its
- * steps and permissions equal the reference cleanup job exactly, with nothing else that could run code. */
-function isRefCleanup(job, wf) {
-  const ref = templates().cleanupJob;
+/** The template's `cleanup` job, which only deletes its own request branch (a cloud session cannot delete a branch):
+ * its steps and permissions equal the template job of that `kind` (`release` caller or `suite`) exactly, and its job
+ * settings match, with nothing else that could run code. */
+function isRefCleanup(job, wf, kind = 'release') {
+  const ref = templates().cleanup[kind];
   if (!isObj(job) || !isObj(ref) || job.uses || jobOverrides(job, wf, ref).length) return false;
   const steps = asArray(job.steps); const rs = asArray(ref.steps);
   const perms = job.permissions != null ? job.permissions : wf && wf.permissions;
@@ -664,14 +671,16 @@ function requestPushFindings(wf, cfg, branches, wfAt, slug) {
     for (const u of units) {
       if (guardIds.has(u.id)) continue;
       if (!reaches(u)) out.push(`${u.where} does not need the suite guard (every suite job runs after \`guard\`, FA-FR-74)`);
-      else if (/\b(always|failure|cancelled)\s*\(/.test(String(u.job.if || '')) && !isRefCleanup(u.job, u.wf)) out.push(`${u.where} runs even when the guard fails (\`${u.job.if}\`); only the job that deletes the request branch may`);
+      else if (/\b(always|failure|cancelled)\s*\(/.test(String(u.job.if || '')) && !isRefCleanup(u.job, u.wf, 'suite')) out.push(`${u.where} runs even when the guard fails (\`${u.job.if}\`); only the job that deletes the request branch may`);
       if (DEPLOY_STEP.test(stepsText(u.job))) out.push(`${u.where} applies or deploys (the dev integration suite never runs \`terraform apply\` or writes an environment)`);
     }
     return out;
   }
   const gates = [{ cmd: 'request', t: T.gates.request }];
   if (envs.includes('staging')) gates.push({ cmd: 'evidence', t: T.gates.evidence });
-  if (envs.includes('prod')) gates.push({ cmd: 'compare', t: T.gates.compare });
+  // Prod: a successful staging release of this commit (`prod-evidence`, CI-09; tools/pipeline v1.0.1+) and the
+  // approved change hash (`compare`).
+  if (envs.includes('prod')) gates.push({ cmd: 'prod-evidence', t: T.gates.prodEvidence }, { cmd: 'compare', t: T.gates.compare });
   for (const u of units) {
     if (isRefCleanup(u.job, u.wf)) continue;
     out.push(...prefixFindings(u.where, asArray(u.job.steps), T.release, gates));
@@ -690,7 +699,7 @@ const grantsToken = (p) => p === 'write-all' || (isObj(p) && String(p['id-token'
 // read-only spoke `fleet/FleetPlanReadOnly`; or the template's repository variables for exactly those roles.
 const ACCT = String.raw`(?:\d{12}|\$\{\{\s*vars\.[A-Z0-9_]+\s*\}\})`;
 const PLAN_FIRST = [new RegExp(`^arn:aws:iam::${ACCT}:role/(?:pipeline/[a-z0-9-]+-plan|fleet/FleetPlanHub-[a-z0-9-]+)$`), /^\$\{\{\s*vars\.PIPELINE_PLAN_ROLE_ARN\s*\}\}$/];
-// (Spec v1.5.0: only the pull-request plan reads role variables; the release job takes its role ARNs from the gate.)
+// (Spec v1.5.0 and later: only the pull-request plan reads role variables; the release job takes its role ARNs from the gate.)
 const PLAN_SPOKE = [new RegExp(`^arn:aws:iam::${ACCT}:role/fleet/FleetPlanReadOnly$`), /^\$\{\{\s*vars\.PIPELINE_PR_SPOKE_ARN\s*\}\}$/];
 
 /** CI-04: why a pull_request job may not hold `id-token: write`, or null when every role it assumes is a read-only plan

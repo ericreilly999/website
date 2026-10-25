@@ -1,4 +1,4 @@
-# TEMPLATE (spec/pl1-fleet-agent-access.md v1.5.0, FA-FR-50 to FA-FR-54, FA-FR-72 to FA-FR-77; T-490 RC-1 to RC-7).
+# TEMPLATE (spec/pl1-fleet-agent-access.md v1.6.0, FA-FR-50 to FA-FR-54, FA-FR-72 to FA-FR-77; T-490 RC-1 to RC-7; T-500).
 # The reusable workflow of the central Terraform pipeline. Copied byte for byte to
 # .github/workflows/terraform-pipeline.yml of an adopting repo (and of Platform, plan-only).
 #
@@ -7,7 +7,7 @@
 #
 # Every release request comes from a pushed release/<env>/<sha> branch (FA-FR-72). The job reads the
 # request from the request commit through release_gate.py, which it runs from a trusted checkout of
-# main. The gate (and for staging the evidence step) runs before any AWS, Terraform or src/ step.
+# main. The gate (and the evidence step: staging evidence for a staging apply, prod evidence for a prod apply) runs before any AWS, Terraform or src/ step.
 # No step executes a file from src/; Terraform reads its configuration from there.
 #
 # Repository variables this workflow reads (set with `gh variable set`, never in this file):
@@ -63,7 +63,7 @@ jobs:
               parts = line.strip().split("/")
               for i in range(1, len(parts)):
                   cand = "/".join(parts[:i])
-                  if pattern.search(cand) and os.path.isdir("src/" + cand) and cand not in roots:
+                  if pattern.fullmatch(cand) and os.path.isdir("src/" + cand) and cand not in roots:
                       roots.append(cand)
           print("\n".join(roots))
           PY
@@ -199,7 +199,10 @@ jobs:
           heads=$( { printf '%s\n' "$REL_SHA"; jq -r '.[].workflow_runs[]?.head_sha' "$RUNNER_TEMP/release-runs.json"; } | sort -u )
           : > "$RUNNER_TEMP/commits.ndjson"
           for c in $heads; do
-            rec=$(gh api "repos/$GITHUB_REPOSITORY/git/commits/$c" 2> /dev/null) || continue
+            if ! rec=$(gh api "repos/$GITHUB_REPOSITORY/git/commits/$c" 2> "$RUNNER_TEMP/commit-error.txt"); then
+              grep -q 'HTTP 404' "$RUNNER_TEMP/commit-error.txt" || { echo "could not fetch commit $c: $(< "$RUNNER_TEMP/commit-error.txt")" >&2; exit 1; }
+              continue
+            fi
             jq -c --arg c "$c" '{($c): .}' <<< "$rec" >> "$RUNNER_TEMP/commits.ndjson"
           done
           jq -s 'add // {}' "$RUNNER_TEMP/commits.ndjson" > "$RUNNER_TEMP/commits.json"
@@ -225,6 +228,46 @@ jobs:
             echo "suite_run_id=$(jq -r .suite_run_id <<< "$out")"
             echo "dev_release_run_id=$(jq -r .dev_release_run_id <<< "$out")"
           } >> "$GITHUB_OUTPUT"
+      # 4b. Prod apply only (CI-09, FA-FR-73 as amended in 1.6.0): a successful staging release of the paired staging
+      # root at this commit, read through the Actions API, with the staging gate's anti-spoof rules.
+      - name: Fetch the staging release runs
+        if: ${{ steps.gate.outputs.env == 'prod' && steps.gate.outputs.mode == 'apply' }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REL_SHA: ${{ steps.gate.outputs.sha }}
+        run: |
+          gh api --paginate --slurp "repos/$GITHUB_REPOSITORY/actions/runs?event=push&branch=release/staging/$REL_SHA&status=completed&per_page=100" > "$RUNNER_TEMP/staging-runs.json"
+      - name: Fetch the staging commit records
+        if: ${{ steps.gate.outputs.env == 'prod' && steps.gate.outputs.mode == 'apply' }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REL_SHA: ${{ steps.gate.outputs.sha }}
+        run: |
+          heads=$( { printf '%s\n' "$REL_SHA"; jq -r '.[].workflow_runs[]?.head_sha' "$RUNNER_TEMP/staging-runs.json"; } | sort -u )
+          : > "$RUNNER_TEMP/staging-commits.ndjson"
+          for c in $heads; do
+            if ! rec=$(gh api "repos/$GITHUB_REPOSITORY/git/commits/$c" 2> "$RUNNER_TEMP/commit-error.txt"); then
+              grep -q 'HTTP 404' "$RUNNER_TEMP/commit-error.txt" || { echo "could not fetch commit $c: $(< "$RUNNER_TEMP/commit-error.txt")" >&2; exit 1; }
+              continue
+            fi
+            jq -c --arg c "$c" '{($c): .}' <<< "$rec" >> "$RUNNER_TEMP/staging-commits.ndjson"
+          done
+          jq -s 'add // {}' "$RUNNER_TEMP/staging-commits.ndjson" > "$RUNNER_TEMP/staging-commits.json"
+      - name: Prod evidence
+        id: prod_evidence
+        if: ${{ steps.gate.outputs.env == 'prod' && steps.gate.outputs.mode == 'apply' }}
+        env:
+          REL_SHA: ${{ steps.gate.outputs.sha }}
+          REL_ROOT: ${{ steps.gate.outputs.root }}
+        run: |
+          out=$(python3 trusted/scripts/pipeline/release_gate.py prod-evidence \
+            --sha "$REL_SHA" \
+            --root "$REL_ROOT" \
+            --repository "$GITHUB_REPOSITORY" \
+            --staging-runs "$RUNNER_TEMP/staging-runs.json" \
+            --commits "$RUNNER_TEMP/staging-commits.json" \
+            --config trusted/.github/pipeline-config.json)
+          echo "staging_release_run_id=$(jq -r .staging_release_run_id <<< "$out")" >> "$GITHUB_OUTPUT"
       # 5. Only now does the release commit come onto the runner.
       - name: Check out the release commit
         uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
@@ -375,6 +418,7 @@ jobs:
           POST_EXIT: ${{ steps.post.outputs.exit }}
           SUITE_RUN: ${{ steps.evidence.outputs.suite_run_id }}
           DEV_RELEASE_RUN: ${{ steps.evidence.outputs.dev_release_run_id }}
+          STAGING_RELEASE_RUN: ${{ steps.prod_evidence.outputs.staging_release_run_id }}
           REQUEST_COMMIT: ${{ github.sha }}
           RUN_ID: ${{ github.run_id }}
         run: |
@@ -394,4 +438,5 @@ jobs:
             echo "- card: ${CARD:-none}"
             echo "- suite run id: ${SUITE_RUN:-n/a}"
             echo "- dev release run id: ${DEV_RELEASE_RUN:-n/a}"
+            echo "- staging release run id: ${STAGING_RELEASE_RUN:-n/a}"
           } >> "$GITHUB_STEP_SUMMARY"

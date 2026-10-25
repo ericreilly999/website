@@ -1,8 +1,12 @@
-# TEMPLATE (spec/pl1-fleet-agent-access.md v1.4.0, FA-FR-74): the dev integration suite skeleton.
-# Copied to .github/workflows/dev-integration-suite.yml of an adopting repo. The `guard` job is
-# Platform's text and is copied unchanged; the adopting project fills in the `suite` job (only its
-# steps). A session starts a run by pushing the release commit to test/dev/<sha>, after the dev
-# release of that sha succeeded. FA-FR-73 reads this run's conclusion for the staging gate.
+# TEMPLATE (spec/pl1-fleet-agent-access.md v1.6.0, FA-FR-74, FA-FR-76): the dev integration suite skeleton.
+# Copied to .github/workflows/dev-integration-suite.yml of an adopting repo. The `guard` and `cleanup` jobs are
+# Platform's text and are copied unchanged; the adopting project fills in the `suite` job (only its
+# steps). The `cleanup` job (v1.6.0, T-500) deletes this run's own test/dev/<sha> branch at the end, only while
+# it still points at this run's commit (a cloud session cannot delete a branch). `contents: write` is on that job
+# alone, and a failed delete never fails the run: the staging gate reads this run's conclusion.
+#
+# A session starts a run by pushing the release commit to test/dev/<sha>, after the dev release of that sha
+# succeeded. FA-FR-73 reads this run's conclusion for the staging gate.
 #
 # The suite never runs `terraform apply`, never writes to staging or prod, and prints no secret. If it
 # calls AWS it uses the project's own dev test role, never a pipeline/ role (no pipeline trust names a
@@ -54,7 +58,10 @@ jobs:
           heads=$( { printf '%s\n' "$test_sha"; jq -r '.[].workflow_runs[]?.head_sha' "$RUNNER_TEMP/release-runs.json"; } | sort -u )
           : > "$RUNNER_TEMP/commits.ndjson"
           for c in $heads; do
-            rec=$(gh api "repos/$GITHUB_REPOSITORY/git/commits/$c" 2> /dev/null) || continue
+            if ! rec=$(gh api "repos/$GITHUB_REPOSITORY/git/commits/$c" 2> "$RUNNER_TEMP/commit-error.txt"); then
+              grep -q 'HTTP 404' "$RUNNER_TEMP/commit-error.txt" || { echo "could not fetch commit $c: $(< "$RUNNER_TEMP/commit-error.txt")" >&2; exit 1; }
+              continue
+            fi
             jq -c --arg c "$c" '{($c): .}' <<< "$rec" >> "$RUNNER_TEMP/commits.ndjson"
           done
           jq -s 'add // {}' "$RUNNER_TEMP/commits.ndjson" > "$RUNNER_TEMP/commits.json"
@@ -92,3 +99,23 @@ jobs:
         run: |
           echo "the dev integration suite is not filled in for this project" >&2
           exit 1
+
+  cleanup:
+    needs: suite
+    if: ${{ always() }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 2
+    permissions:
+      contents: write
+    steps:
+      - name: Refuse a branch name that is not a request branch
+        run: |
+          [[ "$GITHUB_REF" =~ ^refs/heads/test/dev/[0-9a-f]{40}$ ]] || { echo "release-gate: bad-ref: $GITHUB_REF is not a request branch; nothing deleted" >&2; exit 1; }
+      - name: Delete this request branch while it still points at this run's commit
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          branch="${GITHUB_REF#refs/heads/}"
+          head=$(gh api "repos/$GITHUB_REPOSITORY/git/ref/heads/$branch" --jq .object.sha) || exit 0
+          [ "$head" = "$GITHUB_SHA" ] || exit 0
+          gh api -X DELETE "repos/$GITHUB_REPOSITORY/git/refs/heads/$branch" || echo "the request branch was not deleted: $branch"

@@ -1,11 +1,19 @@
-# TEMPLATE (spec/pl1-fleet-agent-access.md v1.4.0, FA-FR-52): the caller of the central pipeline.
+# TEMPLATE (spec/pl1-fleet-agent-access.md v1.6.0, FA-FR-52, FA-FR-76): the caller of the central pipeline.
 # Copied byte for byte to .github/workflows/terraform-release.yml of an adopting repo, except the one
 # token __REPOSITORY__, which becomes <owner>/<repo>. Platform itself never commits this file (FA-FR-77).
 #
-# A release run starts when a session pushes a release-request branch (FA-FR-72). The one job calls
+# A release run starts when a session pushes a release-request branch (FA-FR-72). The `release` job calls
 # the reusable workflow at @main: the OIDC claim job_workflow_ref then names main's
 # terraform-pipeline.yml, and that is the only claim the pipeline roles trust (FA-FR-50, FA-FR-76).
-# This file has no `with:`, no `secrets:`, no step and no filter other than the three branch patterns.
+# The `release` job has no `with:`, no `secrets:`, no step and no filter other than the three branch patterns.
+#
+# The `cleanup` job (v1.6.0, T-500) is the one other job: a cloud session can push release/* but cannot delete
+# a branch (HTTP 403 at its proxy), so the workflow deletes its own request branch at the end of every run, only
+# while the branch still points at this run's commit. It is a separate job so `contents: write` is on that job
+# alone: the `release` job, which holds the AWS roles, keeps `contents: read`, and the permissions of the called
+# workflow are capped by that job. The cleanup runs no Terraform, assumes no role and starts no run (a delete made
+# with the job token starts none). A failed delete never fails the run: the staging and prod gates read this
+# run's conclusion. A repository ruleset on release/* (B-077) needs a github-actions[bot] bypass for deletes only.
 name: terraform-release
 
 on:
@@ -25,3 +33,23 @@ jobs:
       group: tf-${{ github.repository }}-release
       cancel-in-progress: false
     uses: __REPOSITORY__/.github/workflows/terraform-pipeline.yml@main
+
+  cleanup:
+    needs: release
+    if: ${{ always() }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 2
+    permissions:
+      contents: write
+    steps:
+      - name: Refuse a branch name that is not a request branch
+        run: |
+          [[ "$GITHUB_REF" =~ ^refs/heads/release/(dev|staging|prod)/[0-9a-f]{40}$ ]] || { echo "release-gate: bad-ref: $GITHUB_REF is not a request branch; nothing deleted" >&2; exit 1; }
+      - name: Delete this request branch while it still points at this run's commit
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          branch="${GITHUB_REF#refs/heads/}"
+          head=$(gh api "repos/$GITHUB_REPOSITORY/git/ref/heads/$branch" --jq .object.sha) || exit 0
+          [ "$head" = "$GITHUB_SHA" ] || exit 0
+          gh api -X DELETE "repos/$GITHUB_REPOSITORY/git/refs/heads/$branch" || echo "the request branch was not deleted: $branch"
