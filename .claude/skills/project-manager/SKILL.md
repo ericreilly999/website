@@ -144,7 +144,7 @@ State parallelism explicitly when invoking:
 
 Defined by @.claude/docs/agent-conventions/sprint-cadence.md. Summary:
 
-- **Local dev / unit → dev → staging → prod**, with dev deployed on merge to main and staging dispatched with each merge commit (CI-01)
+- **Local dev / unit → dev → staging → prod**, with dev deployed on merge to main and staging dispatched with each merge commit (CI-01). In a repo on the release-request pipeline, each step is a pushed branch instead: `release/dev/<sha>`, `test/dev/<sha>` (the dev integration suite), `release/staging/<sha>` (no card once the suite passed at that commit, FL-20 B), `release/prod/<sha>` (a decided card naming the commit and change hash): @.claude/docs/agent-conventions/cloud-releases.md
 - Release-candidate tag cut weekly at sprint checkpoint, after an owner card (Tier 3)
 - Prod deploys only **post-LIVE** (active production traffic flowing), risk-tiered soak windows (Tier 1: ~2 hours, Tier 2: 2–3 days, Tier 3: 2 weeks)
 - Hotfix path skips soak with mandatory post-incident review
@@ -178,7 +178,7 @@ Before invoking any agent or summarizing for the human:
 4. **Check that `workflow-state.md` is no more than one event behind reality.** If stale, reconcile it against step 3 (delegate fact-gathering) before any dispatch. **If the brief contradicts ground truth, do not act on the brief:** count each contradiction as `brief_corrections` in your status block.
 5. **Act on timed-out decisions.** For each of your `decide` cards unanswered past `default.after_days`, act on `default.option`, set the card `resolved` with an `outcome`, and append `[auto timeout]` to `decisions.md`.
 6. **Check for in-flight background work from prior session.** `run_in_background` jobs and agent dispatches do not survive a `/clear`; re-establish or report them. Step 3 is the real safety net.
-7. **Weekly cards.** If your last digest `fyi` card is older than 7 days, write it now (that week's auto items, random 10% (at least 1) marked for spot-check) and the P-9 `do` card bundling non-urgent owner chores.
+7. **Weekly cards.** If your last digest `fyi` card is older than 7 days, write it now (that week's auto items, random 10% (at least 1) marked for spot-check) and the P-9 `do` card bundling non-urgent owner chores (only what the owner alone can do; steps a local session can run are `local/` tasks, `local-tasks.md`).
 
 ### Stage 0 — Project Kickoff *(once per project)*
 - Confirm sprint cadence + LIVE trigger date with human (see @.claude/docs/agent-conventions/sprint-cadence.md)
@@ -228,7 +228,8 @@ The order matters. Docs ride the PR — do NOT invoke Documentation Agent after 
 **Gate (atomic):** PR merged with docs in the same commit set.
 
 ### Stage 4 — Continuous Deploy to Dev + Staging *(per story, automatic)*
-- Every merge to main deploys to dev (a path-filtered push) and is dispatched to staging (staging is dispatch-only, standard CI-01; P-2 covers the run)
+- Every merge to main deploys to dev (a path-filtered push) and is dispatched to staging (standard CI-01; P-2 covers the run)
+- On the release-request pipeline (FL-19 B, FL-20 B, owner 2026-10-24) DevOps pushes the requests instead, in order: the dev release, the dev integration suite against dev at the same commit, then the staging release, which needs no owner card once that suite passed (all changes included). They are pushes, so a cloud session runs them and they never become local tasks (@.claude/docs/agent-conventions/cloud-releases.md)
 - DevOps owns the pipeline; intervene only on deploy failure
 
 **Gate:** Dev + staging environments live, smoke tests pass.
@@ -268,6 +269,7 @@ Combined planning + retro session at a fixed weekday and time. ~30–60 minutes.
 - Wait the soak window (Tier 1: ~2 hours, Tier 2: 2–3 days, Tier 3: 2 weeks — see sprint-cadence.md)
 - odds-analysis and website deploys that are code/image-only, $0 cost delta, reviewed and verifier-signed, with no IAM, infra or schema change, go ahead under P-7 and are logged as auto items; so do additive-only pipeline applies under P-10.
 - Anything else: a decision card with tag SHA, soak tier, sign-off summary and open risks; invoke DevOps after approval.
+- On the release-request pipeline every prod apply needs a decided card (FL-20 B; a P-7/P-10 auto item is not one): DevOps pushes a prod plan request for the change hash, your card names repo, root, `prod`, the commit and that hash, you verify `decided_by_owner === true` (agent rule 2) and hand DevOps the card id, and DevOps pushes the apply request with `FLEET_PROD_RELEASE_APPROVED=<card id>` (@.claude/docs/agent-conventions/cloud-releases.md)
 
 **Gate:** Deployment confirmed, smoke tests pass, `.project/deployment-log.md` updated.
 

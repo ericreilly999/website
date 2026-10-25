@@ -129,8 +129,9 @@ The rules behind these items are `docs/standards/ci-cd.md` (CI-) and `testing.md
 - [ ] Branch naming enforced: `feature/`, `defect/`, `chore/` prefixes only
 - [ ] No direct push to `main` — PR required
 - [ ] Deploy to dev: a path-filtered push to main, or `workflow_dispatch` (CI-01) ✅
-- [ ] Deploy to staging: `workflow_dispatch` only, never a push or a tag (CI-01) ✅
-- [ ] Deploy to prod: manual `workflow_dispatch` only ✅
+- [ ] Deploy to staging: `workflow_dispatch`, or a `release/staging/*` push whose job runs `release_gate.py request` and `evidence` before AWS (platform template; FL-20 B); never a tag (CI-01) ✅
+- [ ] Deploy to prod: manual `workflow_dispatch`, or a `release/prod/*` push whose job runs the gate and `release_gate.py compare` before `terraform apply` (card and change hash, FA-FR-75) ✅
+- [ ] Release-request and dev-suite workflows are byte-for-byte platform's templates at the recorded tag (only `__REPOSITORY__` and the `suite` job's steps differ) ✅
 
 ### Reliability
 - [ ] Workflow has `timeout-minutes` set — no infinite hanging jobs

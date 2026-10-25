@@ -1,6 +1,6 @@
 # Owner queue and cross-project relays (on the page)
 
-Owner decision, 2026-10-24. A per-project cloud session can reach only its own repo and the Fleet Decisions page (https://claude.ai/artifact/AgEqZELaoLFLbCaWLqQUMS). It can't see fleet-state, so the queue in `queue.md` and a coordinator carrying requests between PMs both stopped working once each project ran on its own. Both now live as page collections that every session reads at open.
+Owner decision, 2026-10-24. A per-project cloud session can reach only its own repo and the Fleet Decisions page (https://claude.ai/artifact/AgEqZELaoLFLbCaWLqQUMS). It can't see fleet-state, so the queue in `queue.md` and a coordinator carrying requests between PMs both stopped working once each project ran on its own. Both now live as page collections that every session reads at open. A third collection, `local/<id>`, holds steps a cloud session needs a local session to run; it has its own page, [[local-tasks]] (owner 2026-10-24).
 
 ## `queue/<id>`: work the owner asked for
 
@@ -36,11 +36,11 @@ A PM that needs something from another project writes a relay instead of waiting
 
 ## Who writes what
 
-| Writer | `queue` | `relays` |
-|---|---|---|
-| Coordinator (local fleet session) | creates items from owner chat; when the owner approved Tier 3 work in that chat, first records the chat decision on a `decisions/` card (fleet skill, Chat decisions) and puts its id in `decision_id`; may close `dropped` on the owner's word | reads only |
-| Project session (PM) | updates its own items' status fields only (`status`, `logged_*`, `updated_at`, `note`) | creates its own outgoing (edits `ask` while `open`; sets `closed` once it has acted on the answer); updates incoming ones' `status`, `backlog_id`, `response` |
-| Weekly standards routine (`skills/fleet-standards`) | never | creates one relay from `"fleet"` (`R-fleet-<YYYYMMDD>-<n>`, `created_run: "standards-<day>"`) per project with a newly failing standards rule; never updates one. The receiver handles it like any relay and ends at `done` or `declined` with its `response`; no sender acts on the answer, so it never moves to `closed` |
-| Weekly improvement routine (`skills/fleet-improve`) | reads only (lists stale items in its issue) | creates one relay from `"fleet"` (`R-fleet-<YYYYMMDD>-<n>`, `created_run: "improve-<day>"`) per project-lane finding that isn't the owner's call; never updates one, so like the standards relays it ends at `done` or `declined` |
+| Writer | `queue` | `relays` | `local` ([[local-tasks]]) |
+|---|---|---|---|
+| Coordinator (local fleet session) | creates items from owner chat; when the owner approved Tier 3 work in that chat, first records the chat decision on a `decisions/` card (fleet skill, Chat decisions) and puts its id in `decision_id`; may close `dropped` on the owner's word | reads only | claims open tasks when the owner says to run them, verifies `approval_ids`, runs the steps, writes `result`, `done_at` and `done` or `failed`; may set `dropped` on the owner's word |
+| Project session (PM) | updates its own items' status fields only (`status`, `logged_*`, `updated_at`, `note`) | creates its own outgoing (edits `ask` while `open`; sets `closed` once it has acted on the answer); updates incoming ones' `status`, `backlog_id`, `response` | creates its own project's tasks instead of chores-card steps; edits `steps`, `expected`, `approval_ids` and may set `dropped` while `open`; sets `closed` once it has applied a `done` or `failed` result to its `follow_up` |
+| Weekly standards routine (`skills/fleet-standards`) | never | creates one relay from `"fleet"` (`R-fleet-<YYYYMMDD>-<n>`, `created_run: "standards-<day>"`) per project with a newly failing standards rule; never updates one. The receiver handles it like any relay and ends at `done` or `declined` with its `response`; no sender acts on the answer, so it never moves to `closed` | never |
+| Weekly improvement routine (`skills/fleet-improve`) | reads only (lists stale items in its issue) | creates one relay from `"fleet"` (`R-fleet-<YYYYMMDD>-<n>`, `created_run: "improve-<day>"`) per project-lane finding that isn't the owner's call; never updates one, so like the standards relays it ends at `done` or `declined` | reads only (the report's **Local tasks** section: counts by kind and project, median age, a finding per kind with 2 or more new tasks) |
 
 Every write after creation is pinned with `if_version` from the read. Documents are small; read them with `query` and no `out_dir`.

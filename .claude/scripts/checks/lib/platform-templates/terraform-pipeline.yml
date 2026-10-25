@@ -1,0 +1,397 @@
+# TEMPLATE (spec/pl1-fleet-agent-access.md v1.5.0, FA-FR-50 to FA-FR-54, FA-FR-72 to FA-FR-77; T-490 RC-1 to RC-7).
+# The reusable workflow of the central Terraform pipeline. Copied byte for byte to
+# .github/workflows/terraform-pipeline.yml of an adopting repo (and of Platform, plan-only).
+#
+#   pull_request   job `plan`:    a plan of the roots the pull request changes. Same-repo heads only.
+#   workflow_call  job `release`: a release run, called by terraform-release.yml at @main.
+#
+# Every release request comes from a pushed release/<env>/<sha> branch (FA-FR-72). The job reads the
+# request from the request commit through release_gate.py, which it runs from a trusted checkout of
+# main. The gate (and for staging the evidence step) runs before any AWS, Terraform or src/ step.
+# No step executes a file from src/; Terraform reads its configuration from there.
+#
+# Repository variables this workflow reads (set with `gh variable set`, never in this file):
+#   AWS_REGION
+#   PIPELINE_PLAN_ROLE_ARN                      the pipeline/<repo>-plan role (pull-request plan only)
+#   PIPELINE_PR_SPOKE_ARN                       the spoke a pull-request plan reads through
+# The RELEASE job reads no role variable. Its account id and role ARNs (plan, spoke, apply, deploy) come from the
+# gate, which reads them from .github/pipeline-config.json on main, so changing one needs a commit to main (T-490
+# RC-2). After the roles are assumed, the job compares `aws sts get-caller-identity` with the config's account.
+#
+# Terraform version: keep equal to TERRAFORM_VERSION in scripts/tool-versions.env.
+name: terraform-pipeline
+
+on:
+  pull_request:
+  workflow_call:
+
+jobs:
+  plan:
+    if: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    permissions:
+      id-token: write
+      contents: read
+      actions: read
+    concurrency:
+      group: tf-${{ github.repository }}-pr-${{ github.event.pull_request.number }}
+      cancel-in-progress: false
+    steps:
+      - name: Check out main (trusted config)
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          ref: refs/heads/main
+          path: trusted
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Check out the pull request merge commit
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          path: src
+          fetch-depth: 2
+          persist-credentials: false
+      - name: Select the changed roots
+        id: roots
+        run: |
+          git -C src diff --name-only HEAD^1 HEAD > "$RUNNER_TEMP/changed.txt"
+          python3 - <<'PY' > "$RUNNER_TEMP/roots.txt"
+          import json, os, re
+          pattern = re.compile(json.load(open("trusted/.github/pipeline-config.json"))["root_pattern"])
+          roots = []
+          for line in open(os.environ["RUNNER_TEMP"] + "/changed.txt"):
+              parts = line.strip().split("/")
+              for i in range(1, len(parts)):
+                  cand = "/".join(parts[:i])
+                  if pattern.search(cand) and os.path.isdir("src/" + cand) and cand not in roots:
+                      roots.append(cand)
+          print("\n".join(roots))
+          PY
+          if [ -s "$RUNNER_TEMP/roots.txt" ]; then echo "any=true" >> "$GITHUB_OUTPUT"; else echo "any=false" >> "$GITHUB_OUTPUT"; echo "No root changed in this pull request." >> "$GITHUB_STEP_SUMMARY"; fi
+      - name: Install Terraform
+        if: ${{ steps.roots.outputs.any == 'true' }}
+        uses: hashicorp/setup-terraform@b9cd54a3c349d3f38e8881555d616ced269862dd # v3
+        with:
+          terraform_version: 1.14.7
+          terraform_wrapper: false
+      - name: Assume the plan role
+        if: ${{ steps.roots.outputs.any == 'true' }}
+        uses: aws-actions/configure-aws-credentials@7474bc4690e29a8392af63c5b98e7449536d5c3a # v4
+        with:
+          role-to-assume: ${{ vars.PIPELINE_PLAN_ROLE_ARN }}
+          aws-region: ${{ vars.AWS_REGION }}
+          role-duration-seconds: 900
+          role-session-name: ${{ github.event.repository.name }}-${{ github.run_id }}
+      - name: Assume the spoke
+        if: ${{ steps.roots.outputs.any == 'true' }}
+        uses: aws-actions/configure-aws-credentials@7474bc4690e29a8392af63c5b98e7449536d5c3a # v4
+        with:
+          role-to-assume: ${{ vars.PIPELINE_PR_SPOKE_ARN }}
+          aws-region: ${{ vars.AWS_REGION }}
+          role-chaining: true
+          role-duration-seconds: 900
+          role-session-name: ${{ github.event.repository.name }}-${{ github.run_id }}
+      - name: Plan each changed root
+        if: ${{ steps.roots.outputs.any == 'true' }}
+        run: |
+          status=0
+          while read -r root; do
+            [ -n "$root" ] || continue
+            echo "## $root" >> "$GITHUB_STEP_SUMMARY"
+            if ! terraform -chdir="src/$root" init -input=false -no-color > "$RUNNER_TEMP/init.txt" 2>&1; then
+              grep -E '^(Error|│ Error)' "$RUNNER_TEMP/init.txt" || true
+              echo "init failed for $root" >> "$GITHUB_STEP_SUMMARY"; status=1; continue
+            fi
+            terraform -chdir="src/$root" plan -lock=false -input=false -no-color -out="$RUNNER_TEMP/tfplan" > "$RUNNER_TEMP/plan.txt" 2>&1 || { grep -E '^(Error|│ Error)' "$RUNNER_TEMP/plan.txt" || true; echo "plan failed for $root" >> "$GITHUB_STEP_SUMMARY"; status=1; continue; }
+            terraform -chdir="src/$root" show -json "$RUNNER_TEMP/tfplan" > "$RUNNER_TEMP/tfshow.json"
+            jq -r '.resource_changes // [] | map(select(.change.actions != ["no-op"] and .change.actions != ["read"])) | .[] | "\(.change.actions | join("/")) \(.address)"' "$RUNNER_TEMP/tfshow.json" >> "$GITHUB_STEP_SUMMARY"
+            grep -E '^(Plan:|No changes)' "$RUNNER_TEMP/plan.txt" | tee -a "$GITHUB_STEP_SUMMARY" || true
+          done < "$RUNNER_TEMP/roots.txt"
+          exit "$status"
+
+  release:
+    # Only under workflow_call from the push caller; never in the platform repository (FA-FR-77, FA-NFR-11).
+    if: ${{ github.event_name == 'push' && github.repository != 'ericreilly999/platform' }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    permissions:
+      id-token: write
+      contents: read
+      actions: read
+    steps:
+      # 1. The trusted copy of main puts release_gate.py on the runner (no AWS, no Terraform).
+      - name: Check out main (trusted)
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          ref: refs/heads/main
+          path: trusted
+          fetch-depth: 0
+          persist-credentials: false
+      # 2. The minutes step (FA-FR-54). The env is read from the ref; an unreadable ref counts as dev.
+      - name: Minutes cap
+        id: minutes
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          case "$GITHUB_REF" in
+            refs/heads/release/staging/*) env_name=staging ;;
+            refs/heads/release/prod/*) env_name=prod ;;
+            *) env_name=dev ;;
+          esac
+          now=$(date -u +%Y-%m-%dT%H:%M:%SZ)
+          month_start=$(date -u +%Y-%m-01)
+          gh api --method GET --paginate --slurp -f created=">=$month_start" -f per_page=100 "repos/$GITHUB_REPOSITORY/actions/runs" > "$RUNNER_TEMP/month-runs.json"
+          : > "$RUNNER_TEMP/jobs.ndjson"
+          for run_id in $(jq -r '.[].workflow_runs[]?.id' "$RUNNER_TEMP/month-runs.json"); do
+            gh api --paginate --slurp "repos/$GITHUB_REPOSITORY/actions/runs/$run_id/jobs?per_page=100" | jq -c '[.[].jobs[]?]' >> "$RUNNER_TEMP/jobs.ndjson"
+          done
+          jq -s 'add // []' "$RUNNER_TEMP/jobs.ndjson" > "$RUNNER_TEMP/jobs.json"
+          python3 trusted/scripts/pipeline/release_gate.py minutes --jobs "$RUNNER_TEMP/jobs.json" --env "$env_name" --cap-minutes 300 --now "$now"
+      # 3. The gate (FA-FR-72, FA-FR-76, FA-FR-77). The request commit is fetched into the trusted clone first.
+      - name: Release gate
+        id: gate
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TRIGGERING_ACTOR: ${{ github.triggering_actor }}
+        run: |
+          basic=$(printf 'x-access-token:%s' "$GH_TOKEN" | base64 -w0)
+          echo "::add-mask::$basic"
+          git -C trusted -c "http.https://github.com/.extraheader=AUTHORIZATION: basic $basic" fetch --no-tags origin "$GITHUB_SHA"
+          out=$(python3 trusted/scripts/pipeline/release_gate.py request \
+            --git-dir trusted/.git \
+            --ref "$GITHUB_REF" \
+            --head "$GITHUB_SHA" \
+            --actor "$GITHUB_ACTOR" \
+            --triggering-actor "$TRIGGERING_ACTOR" \
+            --repository "$GITHUB_REPOSITORY" \
+            --event "$GITHUB_EVENT_PATH" \
+            --config trusted/.github/pipeline-config.json)
+          {
+            echo "env=$(jq -r .env <<< "$out")"
+            echo "sha=$(jq -r .sha <<< "$out")"
+            echo "root=$(jq -r .root <<< "$out")"
+            echo "mode=$(jq -r .mode <<< "$out")"
+            echo "card=$(jq -r '.card // empty' <<< "$out")"
+            echo "change_hash=$(jq -r '.change_hash // empty' <<< "$out")"
+            echo "account_id=$(jq -r .account_id <<< "$out")"
+            echo "plan_role_arn=$(jq -r .plan_role_arn <<< "$out")"
+            echo "spoke_role_arn=$(jq -r .spoke_role_arn <<< "$out")"
+            echo "apply_role_arn=$(jq -r .apply_role_arn <<< "$out")"
+            echo "deploy_role_arn=$(jq -r .deploy_role_arn <<< "$out")"
+          } >> "$GITHUB_OUTPUT"
+      # 4. Staging apply only (FA-FR-73): fetch the API responses into files, then run the evidence step.
+      - name: Fetch the dev release and suite runs
+        id: fetch
+        if: ${{ steps.gate.outputs.env == 'staging' && steps.gate.outputs.mode == 'apply' && steps.gate.outputs.card == '' }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REL_SHA: ${{ steps.gate.outputs.sha }}
+        run: |
+          gh api --paginate --slurp "repos/$GITHUB_REPOSITORY/actions/runs?event=push&branch=release/dev/$REL_SHA&status=completed&per_page=100" > "$RUNNER_TEMP/release-runs.json"
+          gh api --paginate --slurp "repos/$GITHUB_REPOSITORY/actions/runs?event=push&branch=test/dev/$REL_SHA&per_page=100" > "$RUNNER_TEMP/suite-runs.json"
+          echo "suite_workflow_id=$(gh api "repos/$GITHUB_REPOSITORY/actions/workflows/dev-integration-suite.yml" --jq .id)" >> "$GITHUB_OUTPUT"
+      - name: Fetch the commit records
+        if: ${{ steps.gate.outputs.env == 'staging' && steps.gate.outputs.mode == 'apply' && steps.gate.outputs.card == '' }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REL_SHA: ${{ steps.gate.outputs.sha }}
+        run: |
+          heads=$( { printf '%s\n' "$REL_SHA"; jq -r '.[].workflow_runs[]?.head_sha' "$RUNNER_TEMP/release-runs.json"; } | sort -u )
+          : > "$RUNNER_TEMP/commits.ndjson"
+          for c in $heads; do
+            rec=$(gh api "repos/$GITHUB_REPOSITORY/git/commits/$c" 2> /dev/null) || continue
+            jq -c --arg c "$c" '{($c): .}' <<< "$rec" >> "$RUNNER_TEMP/commits.ndjson"
+          done
+          jq -s 'add // {}' "$RUNNER_TEMP/commits.ndjson" > "$RUNNER_TEMP/commits.json"
+      - name: Staging evidence
+        id: evidence
+        if: ${{ steps.gate.outputs.env == 'staging' && steps.gate.outputs.mode == 'apply' && steps.gate.outputs.card == '' }}
+        env:
+          REL_SHA: ${{ steps.gate.outputs.sha }}
+          REL_ROOT: ${{ steps.gate.outputs.root }}
+          SUITE_ID: ${{ steps.fetch.outputs.suite_workflow_id }}
+        run: |
+          out=$(python3 trusted/scripts/pipeline/release_gate.py evidence \
+            --sha "$REL_SHA" \
+            --root "$REL_ROOT" \
+            --repository "$GITHUB_REPOSITORY" \
+            --now "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
+            --suite-workflow-id "$SUITE_ID" \
+            --suite-runs "$RUNNER_TEMP/suite-runs.json" \
+            --release-runs "$RUNNER_TEMP/release-runs.json" \
+            --commits "$RUNNER_TEMP/commits.json" \
+            --config trusted/.github/pipeline-config.json)
+          {
+            echo "suite_run_id=$(jq -r .suite_run_id <<< "$out")"
+            echo "dev_release_run_id=$(jq -r .dev_release_run_id <<< "$out")"
+          } >> "$GITHUB_OUTPUT"
+      # 5. Only now does the release commit come onto the runner.
+      - name: Check out the release commit
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          ref: ${{ steps.gate.outputs.sha }}
+          path: src
+          persist-credentials: false
+      - name: Install Terraform
+        uses: hashicorp/setup-terraform@b9cd54a3c349d3f38e8881555d616ced269862dd # v3
+        with:
+          terraform_version: 1.14.7
+          terraform_wrapper: false
+      - name: Assume the plan role
+        if: ${{ steps.gate.outputs.mode == 'plan' }}
+        uses: aws-actions/configure-aws-credentials@7474bc4690e29a8392af63c5b98e7449536d5c3a # v4
+        with:
+          role-to-assume: ${{ steps.gate.outputs.plan_role_arn }}
+          aws-region: ${{ vars.AWS_REGION }}
+          role-duration-seconds: 900
+          role-session-name: ${{ github.event.repository.name }}-${{ github.run_id }}
+      - name: Assume the environment spoke
+        if: ${{ steps.gate.outputs.mode == 'plan' }}
+        uses: aws-actions/configure-aws-credentials@7474bc4690e29a8392af63c5b98e7449536d5c3a # v4
+        with:
+          role-to-assume: ${{ steps.gate.outputs.spoke_role_arn }}
+          aws-region: ${{ vars.AWS_REGION }}
+          role-chaining: true
+          role-duration-seconds: 900
+          role-session-name: ${{ github.event.repository.name }}-${{ github.run_id }}
+      - name: Assume the apply role
+        if: ${{ steps.gate.outputs.mode == 'apply' }}
+        uses: aws-actions/configure-aws-credentials@7474bc4690e29a8392af63c5b98e7449536d5c3a # v4
+        with:
+          role-to-assume: ${{ steps.gate.outputs.apply_role_arn }}
+          aws-region: ${{ vars.AWS_REGION }}
+          role-duration-seconds: 3600
+          role-session-name: ${{ github.event.repository.name }}-${{ github.run_id }}
+      - name: Assume the environment deploy role
+        if: ${{ steps.gate.outputs.mode == 'apply' }}
+        uses: aws-actions/configure-aws-credentials@7474bc4690e29a8392af63c5b98e7449536d5c3a # v4
+        with:
+          role-to-assume: ${{ steps.gate.outputs.deploy_role_arn }}
+          aws-region: ${{ vars.AWS_REGION }}
+          role-chaining: true
+          role-duration-seconds: 3600
+          role-session-name: ${{ github.event.repository.name }}-${{ github.run_id }}
+      # T-490 RC-2: the credentials must be in the account the trusted config names for this environment. Whatever
+      # role was assumed (spoke for a plan, deploy for an apply), a mismatch stops the run before init.
+      - name: Verify the account
+        env:
+          EXPECTED_ACCOUNT: ${{ steps.gate.outputs.account_id }}
+        run: |
+          actual=$(aws sts get-caller-identity --query Account --output text)
+          python3 trusted/scripts/pipeline/release_gate.py account --expected "$EXPECTED_ACCOUNT" --actual "$actual"
+      - name: Init
+        env:
+          REL_ROOT: ${{ steps.gate.outputs.root }}
+        run: |
+          terraform -chdir="src/$REL_ROOT" init -input=false -no-color > "$RUNNER_TEMP/init.txt" 2>&1 || { grep -E '^(Error|│ Error)' "$RUNNER_TEMP/init.txt" || true; exit 1; }
+      # Mode plan: no lock, nothing applied.
+      - name: Plan (mode plan)
+        if: ${{ steps.gate.outputs.mode == 'plan' }}
+        env:
+          REL_ROOT: ${{ steps.gate.outputs.root }}
+        run: |
+          terraform -chdir="src/$REL_ROOT" plan -lock=false -input=false -no-color -out="$RUNNER_TEMP/tfplan" > "$RUNNER_TEMP/plan.txt" 2>&1 || { grep -E '^(Error|│ Error)' "$RUNNER_TEMP/plan.txt" || true; exit 1; }
+          grep -E '^(Plan:|No changes)' "$RUNNER_TEMP/plan.txt" || true
+      # Mode apply: re-plan with locking, then classify, compare, apply, and require a clean plan after.
+      - name: Re-plan with the state lock (mode apply)
+        if: ${{ steps.gate.outputs.mode == 'apply' }}
+        env:
+          REL_ROOT: ${{ steps.gate.outputs.root }}
+        run: |
+          terraform -chdir="src/$REL_ROOT" plan -input=false -no-color -out="$RUNNER_TEMP/tfplan" > "$RUNNER_TEMP/plan.txt" 2>&1 || { grep -E '^(Error|│ Error)' "$RUNNER_TEMP/plan.txt" || true; exit 1; }
+          grep -E '^(Plan:|No changes)' "$RUNNER_TEMP/plan.txt" || true
+      - name: Change summary and hash
+        id: plan
+        env:
+          REL_ROOT: ${{ steps.gate.outputs.root }}
+          REL_SHA: ${{ steps.gate.outputs.sha }}
+          TARGET_ENV: ${{ steps.gate.outputs.env }}
+        run: |
+          terraform -chdir="src/$REL_ROOT" show -json "$RUNNER_TEMP/tfplan" > "$RUNNER_TEMP/tfshow.json"
+          hash=$(python3 trusted/scripts/pipeline/release_gate.py hash --plan-json "$RUNNER_TEMP/tfshow.json" --sha "$REL_SHA" --root "$REL_ROOT" --env "$TARGET_ENV")
+          changes=$(jq '[.resource_changes // [] | .[] | select(.change.actions != ["no-op"] and .change.actions != ["read"])] | length' "$RUNNER_TEMP/tfshow.json")
+          echo "hash=$hash" >> "$GITHUB_OUTPUT"
+          echo "changes=$changes" >> "$GITHUB_OUTPUT"
+          {
+            echo "### Change summary: $REL_ROOT in $TARGET_ENV"
+            jq -r '.resource_changes // [] | map(select(.change.actions != ["no-op"] and .change.actions != ["read"])) | .[] | "- \(.change.actions | join("/")) \(.address)"' "$RUNNER_TEMP/tfshow.json"
+            echo "changes: $changes"
+            echo "change hash: $hash"
+          } >> "$GITHUB_STEP_SUMMARY"
+      - name: Anchor check
+        id: classify
+        env:
+          MODE: ${{ steps.gate.outputs.mode }}
+        run: |
+          result=$(python3 trusted/scripts/pipeline/release_gate.py classify --plan-json "$RUNNER_TEMP/tfshow.json")
+          anchors=$(jq -r '.anchors | join(",")' <<< "$result")
+          echo "iam_class=$(jq -r .iam_class <<< "$result")" >> "$GITHUB_OUTPUT"
+          echo "anchors=$anchors" >> "$GITHUB_OUTPUT"
+          if [ -n "$anchors" ] && [ "$MODE" = apply ]; then
+            echo "release-gate: anchor: $anchors" >&2
+            exit 1
+          fi
+          if [ -n "$anchors" ]; then echo "anchor addresses in this plan (listed, nothing is applied): $anchors"; fi
+      - name: Compare the approved hash (prod, and staging in a repo with no dev)
+        if: ${{ steps.gate.outputs.mode == 'apply' && steps.gate.outputs.change_hash != '' }}
+        env:
+          APPROVED: ${{ steps.gate.outputs.change_hash }}
+          ACTUAL: ${{ steps.plan.outputs.hash }}
+        run: |
+          python3 trusted/scripts/pipeline/release_gate.py compare --approved "$APPROVED" --actual "$ACTUAL"
+      - name: Apply the saved plan
+        if: ${{ steps.gate.outputs.mode == 'apply' }}
+        env:
+          REL_ROOT: ${{ steps.gate.outputs.root }}
+        run: |
+          terraform -chdir="src/$REL_ROOT" apply -input=false -no-color "$RUNNER_TEMP/tfplan" > "$RUNNER_TEMP/apply.txt" 2>&1 || { grep -E '^(Error|│ Error)' "$RUNNER_TEMP/apply.txt" || true; exit 1; }
+          grep -E '^(Apply complete|Resources:)' "$RUNNER_TEMP/apply.txt" || true
+      - name: Plan after apply must be clean
+        id: post
+        if: ${{ steps.gate.outputs.mode == 'apply' }}
+        env:
+          REL_ROOT: ${{ steps.gate.outputs.root }}
+        run: |
+          set +e
+          terraform -chdir="src/$REL_ROOT" plan -detailed-exitcode -input=false -no-color > "$RUNNER_TEMP/post.txt" 2>&1
+          rc=$?
+          echo "exit=$rc" >> "$GITHUB_OUTPUT"
+          if [ "$rc" -ne 0 ]; then
+            grep -E '^(Plan:|Error|│ Error)' "$RUNNER_TEMP/post.txt" || true
+            echo "the plan after apply exited $rc, not 0"
+            exit 1
+          fi
+      - name: Run summary
+        if: ${{ always() && steps.gate.conclusion == 'success' }}
+        env:
+          REL_ROOT: ${{ steps.gate.outputs.root }}
+          REL_SHA: ${{ steps.gate.outputs.sha }}
+          TARGET_ENV: ${{ steps.gate.outputs.env }}
+          MODE: ${{ steps.gate.outputs.mode }}
+          CARD: ${{ steps.gate.outputs.card }}
+          CHANGE_HASH: ${{ steps.plan.outputs.hash }}
+          CHANGES: ${{ steps.plan.outputs.changes }}
+          IAM_CLASS: ${{ steps.classify.outputs.iam_class }}
+          POST_EXIT: ${{ steps.post.outputs.exit }}
+          SUITE_RUN: ${{ steps.evidence.outputs.suite_run_id }}
+          DEV_RELEASE_RUN: ${{ steps.evidence.outputs.dev_release_run_id }}
+          REQUEST_COMMIT: ${{ github.sha }}
+          RUN_ID: ${{ github.run_id }}
+        run: |
+          {
+            echo "### Run summary"
+            echo "- root: $REL_ROOT"
+            echo "- environment: $TARGET_ENV"
+            echo "- mode: $MODE"
+            echo "- run id: $RUN_ID"
+            echo "- release commit: $REL_SHA"
+            echo "- request commit: $REQUEST_COMMIT"
+            echo "- actor: $GITHUB_ACTOR"
+            echo "- change hash: $CHANGE_HASH"
+            echo "- changes: $CHANGES"
+            echo "- iam_class: $IAM_CLASS"
+            echo "- post-apply exit code: ${POST_EXIT:-n/a}"
+            echo "- card: ${CARD:-none}"
+            echo "- suite run id: ${SUITE_RUN:-n/a}"
+            echo "- dev release run id: ${DEV_RELEASE_RUN:-n/a}"
+          } >> "$GITHUB_STEP_SUMMARY"

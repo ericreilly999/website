@@ -1,0 +1,94 @@
+# TEMPLATE (spec/pl1-fleet-agent-access.md v1.4.0, FA-FR-74): the dev integration suite skeleton.
+# Copied to .github/workflows/dev-integration-suite.yml of an adopting repo. The `guard` job is
+# Platform's text and is copied unchanged; the adopting project fills in the `suite` job (only its
+# steps). A session starts a run by pushing the release commit to test/dev/<sha>, after the dev
+# release of that sha succeeded. FA-FR-73 reads this run's conclusion for the staging gate.
+#
+# The suite never runs `terraform apply`, never writes to staging or prod, and prints no secret. If it
+# calls AWS it uses the project's own dev test role, never a pipeline/ role (no pipeline trust names a
+# test/ subject, FA-FR-50), and then the suite job adds `id-token: write` to its permissions.
+name: dev-integration-suite
+
+on:
+  push:
+    branches:
+      - test/dev/*
+
+permissions:
+  contents: read
+
+jobs:
+  guard:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    permissions:
+      contents: read
+      actions: read
+    steps:
+      - name: Check out main (trusted)
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          ref: refs/heads/main
+          path: trusted
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Minutes cap
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          now=$(date -u +%Y-%m-%dT%H:%M:%SZ)
+          month_start=$(date -u +%Y-%m-01)
+          gh api --method GET --paginate --slurp -f created=">=$month_start" -f per_page=100 "repos/$GITHUB_REPOSITORY/actions/runs" > "$RUNNER_TEMP/month-runs.json"
+          : > "$RUNNER_TEMP/jobs.ndjson"
+          for run_id in $(jq -r '.[].workflow_runs[]?.id' "$RUNNER_TEMP/month-runs.json"); do
+            gh api --paginate --slurp "repos/$GITHUB_REPOSITORY/actions/runs/$run_id/jobs?per_page=100" | jq -c '[.[].jobs[]?]' >> "$RUNNER_TEMP/jobs.ndjson"
+          done
+          jq -s 'add // []' "$RUNNER_TEMP/jobs.ndjson" > "$RUNNER_TEMP/jobs.json"
+          python3 trusted/scripts/pipeline/release_gate.py minutes --jobs "$RUNNER_TEMP/jobs.json" --env suite --cap-minutes 300 --now "$now"
+      - name: Fetch the dev release runs
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          test_sha="${GITHUB_REF#refs/heads/test/dev/}"
+          gh api --paginate --slurp "repos/$GITHUB_REPOSITORY/actions/runs?event=push&branch=release/dev/$test_sha&status=completed&per_page=100" > "$RUNNER_TEMP/release-runs.json"
+          heads=$( { printf '%s\n' "$test_sha"; jq -r '.[].workflow_runs[]?.head_sha' "$RUNNER_TEMP/release-runs.json"; } | sort -u )
+          : > "$RUNNER_TEMP/commits.ndjson"
+          for c in $heads; do
+            rec=$(gh api "repos/$GITHUB_REPOSITORY/git/commits/$c" 2> /dev/null) || continue
+            jq -c --arg c "$c" '{($c): .}' <<< "$rec" >> "$RUNNER_TEMP/commits.ndjson"
+          done
+          jq -s 'add // {}' "$RUNNER_TEMP/commits.ndjson" > "$RUNNER_TEMP/commits.json"
+      - name: Suite guard
+        env:
+          TRIGGERING_ACTOR: ${{ github.triggering_actor }}
+        run: |
+          python3 trusted/scripts/pipeline/release_gate.py suite-guard \
+            --git-dir trusted/.git \
+            --ref "$GITHUB_REF" \
+            --head "$GITHUB_SHA" \
+            --actor "$GITHUB_ACTOR" \
+            --triggering-actor "$TRIGGERING_ACTOR" \
+            --repository "$GITHUB_REPOSITORY" \
+            --config trusted/.github/pipeline-config.json \
+            --release-runs "$RUNNER_TEMP/release-runs.json" \
+            --commits "$RUNNER_TEMP/commits.json"
+
+  suite:
+    needs: guard
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    permissions:
+      contents: read
+      actions: read
+    steps:
+      - name: Check out the commit under test
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+      # The adopting project replaces this step. It must be the first test: dev serves this commit
+      # (a version endpoint or a deployed artifact tag), and it fails otherwise. Then the project's
+      # integration tests run against dev. Until the project fills this in, the suite fails closed.
+      - name: Dev serves this commit, then the integration tests (the project fills this in)
+        run: |
+          echo "the dev integration suite is not filled in for this project" >&2
+          exit 1

@@ -139,7 +139,7 @@ Hard rules:
 Defined in @.claude/docs/agent-conventions/sprint-cadence.md. Summary for DevOps:
 
 - **Dev** — continuous, deploys on a path-filtered push to main (FL-6)
-- **Staging** — continuous, a `workflow_dispatch` of each merge commit (staging and prod are dispatch-only, standard CI-01; P-2 covers the run)
+- **Staging** — continuous, a `workflow_dispatch` of each merge commit (standard CI-01; P-2 covers the run). In a repo on the release-request pipeline you push `release/dev/<sha>`, then `test/dev/<sha>` (the dev integration suite), then `release/staging/<sha>`, which needs no owner card once that suite passed at the same commit (FL-20 B); prod is a pushed `release/prod/<sha>` with a decided card and its change hash, sent as `FLEET_PROD_RELEASE_APPROVED=<card id> git push ...`. Checks before each push, waiting and cleanup: [[cloud-releases]]
 - **Release-candidate tag** — the PM raises a Tier-3 card at the weekly sprint checkpoint; you cut `v0.NN.0` from current main only after the owner decides, and push it with `FLEET_TAG_APPROVED=<id>` (standard CI-13, [[autonomy-bar]]). Tag is an artifact, not a deploy trigger.
 - **Prod** — manual `workflow_dispatch` with tag input, **post-LIVE only**. Soak window precedes deploy:
   - Tier 1 (low risk): ~2 hours
@@ -201,10 +201,10 @@ Trigger: `push` to main with a `paths:` filter (per project `CLAUDE.md`), or `wo
 9. Surface result to PM
 
 ### Pipeline 3: Deploy to Staging (`deploy-staging.yml`)
-Trigger: `workflow_dispatch` with the merge commit SHA, run after each merge to main (standard CI-01: staging and prod are dispatch-only). Staging is continuous; the weekly tag is an artifact, not a trigger. Same steps as Pipeline 2, except it pulls this commit's artifact from the registry (builds only if Pipeline 2 hasn't), applies subject to any auto-apply gates in `CLAUDE.md`, and runs the larger prod-like smoke suite.
+Trigger: `workflow_dispatch` with the merge commit SHA, run after each merge to main, or, on the release-request pipeline, a pushed `release/staging/<sha>` whose job checks the same-commit dev suite run (standard CI-01; [[cloud-releases]]). Staging is continuous; the weekly tag is an artifact, not a trigger. Same steps as Pipeline 2, except it pulls this commit's artifact from the registry (builds only if Pipeline 2 hasn't), applies subject to any auto-apply gates in `CLAUDE.md`, and runs the larger prod-like smoke suite.
 
 ### Pipeline 4: Deploy to Production (`deploy-prod.yml`)
-Trigger: `workflow_dispatch` (manual only)
+Trigger: `workflow_dispatch` (manual only), or on the release-request pipeline a pushed `release/prod/<sha>` request carrying the decided card and the change hash ([[cloud-releases]]; the job re-plans and refuses a hash mismatch)
 
 1. Environment protection: required reviewer for deploys outside P-7/P-10; a P-7 deploy (odds-analysis, website) or a P-10 apply uses a wait timer only, and the dispatch cites the P-n auto item id.
 2. Verify the input tag (or, for P-7, the commit SHA) exists and every PR merged into it since the last prod tag has a PASS sign-off record for its merge commit (`node .claude/scripts/checks/signoff-read.js <project> <PR> --sha <sha>` exits 0; commit statuses are unreadable in cloud sessions)

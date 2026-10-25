@@ -284,6 +284,134 @@ function diffFiles(g, from, to, ctx) {
 }
 
 const isFleetState = (url) => { const r = slugFrom(url); return !!(r && r.repo.toLowerCase() === 'fleet-state'); };
+
+// ---- Release-request branches (FL-19 B, FL-20 B, owner 2026-10-24; docs/agent-conventions/cloud-releases.md) --------
+// `release/<dev|staging|prod>/<sha>` and `test/dev/<sha>` pushes start pipeline runs; they are ordinary branch pushes
+// here (main is never touched). A push that writes `release/prod/*` needs the approving card's id in the command's own
+// environment, `FLEET_PROD_RELEASE_APPROVED=<id> git push ...` (the FLEET_TAG_APPROVED pattern), equal to the request
+// commit's `Release-Card` trailer. A prod `plan` request carries no card (its run gives the change hash the card then
+// names, FJ35), so it needs no id; deleting a request branch releases nothing (`deleted-ref`), so it needs none either.
+const PROD_REQUEST_REF = /^refs\/heads\/release\/prod\//;
+const CARD_ID = /^[A-Z][A-Z0-9]*-\d+$/; // the gate's card-format rule for Release-Card
+const PROD_PLAN_SUBJECT = /^release: prod plan \S+ [0-9a-f]{40}$/;
+
+/** The full message of the commit `rev` names in the push's repo, or null. Tests inject ctx.commitMessage. */
+function commitMessage(g, rev, ctx) {
+  if (ctx.commitMessage) return ctx.commitMessage(g.cwd, rev);
+  if (!rev || /^[-]/.test(rev)) return null;
+  try {
+    return execFileSync('git', [...g.runPrefix, 'show', '-s', '--format=%B', rev, '--'], { cwd: g.cwd, encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'], timeout: DIFF_MS, env: gitEnv(g) });
+  } catch { return null; }
+}
+
+/** {subject, trailers: {key: [values]}, keys: [key]} of a request commit message, the trailers read the way
+ * platform's release_gate.py reads them (`git interpret-trailers --parse --no-divider`), so the hook and the gate see
+ * the same keys. Null when git cannot parse it (the caller then fails closed). Tests may inject ctx.parseTrailers. */
+function requestFields(msg, ctx = {}) {
+  if (msg == null) return null;
+  const text = String(msg).replace(/\r/g, '');
+  let parsed;
+  try {
+    parsed = ctx.parseTrailers ? ctx.parseTrailers(text)
+      : execFileSync('git', ['interpret-trailers', '--parse', '--no-divider'], { cwd: os.tmpdir(), input: text, encoding: 'utf8', stdio: ['pipe', 'pipe', 'ignore'], timeout: DIFF_MS, env: gitEnv() });
+  } catch { return null; }
+  const trailers = {}; const keys = [];
+  for (const line of String(parsed).split('\n')) {
+    if (!line.trim()) continue;
+    const i = line.indexOf(':');
+    const k = (i < 0 ? line : line.slice(0, i)).trim(); const v = i < 0 ? '' : line.slice(i + 1).trim();
+    keys.push(k); (trailers[k] = trailers[k] || []).push(v);
+  }
+  return { subject: text.trim().split('\n')[0].trim(), trailers, keys };
+}
+
+/** The block message for a write of `dest` (`release/prod/<sha>`) whose new head is the commit `msg` (null: unreadable),
+ * made with approval id `id` ('' when absent), else null. `how` names the command that would pass. One rule for
+ * every route: `git push`, `gh api` on `git/refs`, and (never passing) MCP writes. */
+function prodReleaseBlock({ dest, where, msg, id, ctx, rev }) {
+  const f = requestFields(msg, ctx);
+  // A prod plan request: exactly Release-Root and Release-Mode: plan, the plan subject. The gate reads the same
+  // trailers and refuses any other key or a subject that disagrees, so a commit read as a plan here never applies.
+  if (f && PROD_PLAN_SUBJECT.test(f.subject) && f.keys.length === 2 && (f.trailers['Release-Root'] || []).length === 1
+    && (f.trailers['Release-Mode'] || []).join() === 'plan') return null;
+  const how = 'Read the card with ArtifactData and push only if `answer.decided_by_owner === true` and it names this repo, the root, prod, the commit and the change hash '
+    + '(PM rule 2; docs/agent-conventions/cloud-releases.md), then push with its id: `FLEET_PROD_RELEASE_APPROVED=<card id> git push origin HEAD:refs/heads/' + dest + '`. '
+    + 'A prod plan request (`release: prod plan <root> <sha>`, `Release-Mode: plan`, no card) needs no id.';
+  if (!CARD_ID.test(id)) {
+    return `Prod release requests apply to prod, so each needs the owner's approval: this ${where} writes ${dest} `
+      + `${id ? `and FLEET_PROD_RELEASE_APPROVED=${id.slice(0, 40)} is not a card id like PL-101` : 'without FLEET_PROD_RELEASE_APPROVED in the command'}. ${how}`;
+  }
+  if (!f) return `Prod release requests need a readable request commit: the hook cannot read the commit \`${rev || '(none)'}\` this ${where} writes to ${dest}. Push from the request commit itself (\`HEAD:refs/heads/${dest}\`). ${how}`;
+  const card = f.trailers['Release-Card'] || [];
+  if (card.length !== 1 || card[0] !== id) {
+    return `Prod release requests must carry the approving card: this ${where} writes ${dest} with FLEET_PROD_RELEASE_APPROVED=${id}, but the request commit's \`Release-Card\` is `
+      + `${card.length ? card.join(', ') : 'missing'}. Rebuild the request commit with \`Release-Card: ${id}\` and the card's \`Release-Change-Hash\`, or cite the card it names. ${how}`;
+  }
+  return null;
+}
+
+/** Block message for a push that writes refs/heads/release/prod/* without the approving card's id, else null. */
+function checkProdRelease(g, b, ref, ctx) {
+  return prodReleaseBlock({ dest: ref.to.replace(/^refs\/heads\//, ''), where: `push to ${b.url}`, msg: commitMessage(g, ref.from, ctx), id: String((g.env || {}).FLEET_PROD_RELEASE_APPROVED || ''), ctx, rev: ref.from });
+}
+
+// The same rule through the REST API: `gh api` POST/PATCH/PUT on `repos/O/R/git/refs[/<ref>]` (review of #58: the
+// guard saw only `git push`). The ref and the sha must be literal: a `$x`, `--input` or a missing field fails closed
+// when the endpoint is git/refs. GraphQL `createRef`/`updateRef(s)` naming release/prod always blocks (no literal sha).
+const REFS_EP = /^(?:https?:\/\/[^/]+\/)?\/?repos\/([^/\s]+)\/([^/\s]+)\/git\/refs(?:\/(\S*))?$/i;
+const PROD_REF = /^(refs\/)?(heads\/)?release\/prod\//;
+const RENAME_EP = /^(?:https?:\/\/[^/]+\/)?\/?repos\/([^/\s]+)\/([^/\s]+)\/branches\/(\S+)\/rename\/?$/i;
+const REQUEST_NAME = /^(release\/|test\/dev\/)/;
+function checkGhRefWrite(tokens, cwd, ctx) {
+  if (tokens[1] !== 'api') return null;
+  let method = null; let ep = null; let input = false; const fields = {}; let anyField = false;
+  for (let i = 2; i < tokens.length; i++) {
+    const t = tokens[i]; let m;
+    if (t === '-X' || t === '--method') { method = tokens[++i]; continue; }
+    if ((m = /^(?:-X=?|--method=)(.+)$/.exec(t))) { method = m[1]; continue; }
+    if (['-f', '--raw-field', '-F', '--field'].includes(t)) { const kv = String(tokens[++i] || ''); const j = kv.indexOf('='); fields[j < 0 ? kv : kv.slice(0, j)] = j < 0 ? '' : kv.slice(j + 1); anyField = true; continue; }
+    if ((m = /^(?:-f|-F|--raw-field=|--field=)(.+)$/.exec(t))) { const kv = m[1]; const j = kv.indexOf('='); fields[j < 0 ? kv : kv.slice(0, j)] = j < 0 ? '' : kv.slice(j + 1); anyField = true; continue; }
+    if (t === '--input') { input = true; i++; continue; }
+    if (['-H', '--header', '-q', '--jq', '-t', '--template', '--hostname', '-p', '--preview', '--cache'].includes(t)) { i++; continue; }
+    if (t.startsWith('-') || ep) continue;
+    ep = t;
+  }
+  const meth = String(method || (anyField || input ? 'POST' : 'GET')).toUpperCase();
+  const env = tokens.env || {};
+  if (ep === 'graphql') {
+    const all = tokens.join(' ');
+    if (/\b(createRef|updateRefs?)\b/.test(all) && /release\/prod\//.test(all)) {
+      return prodReleaseBlock({ dest: 'release/prod/<sha>', where: 'GraphQL ref write', msg: null, id: String(env.FLEET_PROD_RELEASE_APPROVED || ''), ctx, rev: null })
+        || 'Prod release requests through GraphQL cannot be checked (no literal request commit). Push the request with `FLEET_PROD_RELEASE_APPROVED=<card id> git push origin HEAD:refs/heads/release/prod/<sha>`.';
+    }
+    return null;
+  }
+  // A branch rename (`POST repos/O/R/branches/<b>/rename -f new_name=...`, review 2 of #58) would move a commit under a
+  // request name without the push the guard checks, so a rename into `release/` or `test/dev/` always blocks.
+  const rename = RENAME_EP.exec(String(ep || ''));
+  if (rename && meth !== 'GET') {
+    const to = fields.new_name;
+    const unread = to == null || input || NON_LITERAL.test(String(to)) || /[$`]/.test(ep); // `%2F` in the old name is how a slash is sent
+    const target = String(to || '').replace(/^refs\/heads\//, '');
+    if (!unread && !REQUEST_NAME.test(target)) return null;
+    const how = 'Make the request commit and push it (`git push origin HEAD:refs/heads/<release|test branch>`), with `FLEET_PROD_RELEASE_APPROVED=<card id>` for release/prod/* (docs/agent-conventions/cloud-releases.md).';
+    if (!unread && PROD_REF.test(target)) return `Prod release requests are made by a checked push, never by renaming a branch: this \`gh api\` call renames a branch to ${target}. ${how}`;
+    return `Request branches are made by a checked push, never by renaming a branch: this \`gh api\` call renames a branch to ${unread ? 'a name the hook cannot read (a variable, `--input` or no `new_name`)' : target}. ${how}`;
+  }
+  const m = REFS_EP.exec(String(ep || ''));
+  if (!m || meth === 'GET' || meth === 'DELETE') return null; // a delete releases nothing
+  const ref = m[3] ? `refs/${m[3]}` : fields.ref;
+  const opaque = (v) => v == null || NON_LITERAL.test(String(v));
+  if (opaque(ref) || input || NON_LITERAL.test(ep)) {
+    return 'Prod release requests are checked on every ref write, and this `gh api` write to git/refs names its ref through a variable, `--input` or not at all, '
+      + 'so the hook cannot tell whether it writes release/prod/*. Name the ref and sha literally (`-f ref=refs/heads/<branch> -f sha=<sha>`), or push the request with `git push`.';
+  }
+  if (!PROD_REF.test(ref.replace(/^refs\//, ''))) return null;
+  const dest = ref.replace(/^refs\//, '').replace(/^heads\//, '');
+  const sha = fields.sha;
+  const msg = opaque(sha) ? null : commitMessage({ cwd, runPrefix: [] }, sha, ctx);
+  return prodReleaseBlock({ dest, where: '`gh api` ref write', msg, id: String(env.FLEET_PROD_RELEASE_APPROVED || ''), ctx, rev: sha });
+}
 const ALLOWED = 'Pushes whose changes to main are all under `.project/` (the PM\'s state commits), and fast-forward pushes to fleet-state, are allowed.';
 
 /** Block message when the push (as git resolves it) writes refs/heads/main or master, else null. Fails closed. */
@@ -326,6 +454,10 @@ function checkPushMain(g, ctx) {
   }
   for (const b of blocks) {
     for (const ref of b.refs) {
+      if (PROD_REQUEST_REF.test(ref.to) && !['=', '!', '-'].includes(ref.flag)) {
+        const prod = checkProdRelease(g, b, ref, ctx);
+        if (prod) return prod;
+      }
       if (!MAIN_REF.test(ref.to) || ref.flag === '=' || ref.flag === '!') continue; // up to date, or rejected by git anyway (no earlier command in this call changed the repo)
       const dest = ref.to.replace(/^refs\/heads\//, '');
       if (ref.flag === '-') return `Direct pushes to main/master skip review and the FC-14 merge gate: this push deletes ${dest} on ${b.url}, which is blocked on every repository, fleet-state included.`;
@@ -356,9 +488,12 @@ function readOnlyGit(g) {
   const a = g.args || []; const pos = a.filter((x) => !x.startsWith('-'));
   // Config overrides, GIT_* or pager variables, and pager/external-diff flags can run a program (core.fsmonitor,
   // core.pager, GIT_EXTERNAL_DIFF, `grep -O<cmd>`), and a program can commit.
-  if ((g.prefix || []).some((x) => x === '-c' || /^-c./.test(x) || /^--(config-env|exec-path|paginate)/.test(x) || x === '-p')) return false;
+  // `--git-dir`/`--work-tree` point git at another repository's config (core.fsmonitor, core.pager there run too).
+  if ((g.prefix || []).some((x) => x === '-c' || /^-c./.test(x) || /^--(config-env|exec-path|paginate|git-dir|work-tree|super-prefix)/.test(x) || x === '-p')) return false;
   if (Object.keys(g.env || {}).some((k) => /^(GIT_|PAGER$|LESS|SSH)/i.test(k))) return false;
-  if (a.some((x) => /^(-O|--open-files-in-pager|--ext-diff|--textconv|--exec|--upload-pack|--receive-pack)/.test(x))) return false;
+  // Program-running options: an upload/receive pack or exec program (`--upload-pack`, `-u <exec>` of ls-remote and
+  // fetch), a pager or external diff, a `-c` given after the subcommand, and `ext::`/`fd::` transports (review 3 of #58).
+  if (a.some((x) => /^(-O|--open-files-in-pager|--ext-diff|--textconv|--exec|--upload-pack|--receive-pack|--config)/.test(x) || x === '-u' || /^-u./.test(x) || x === '-c' || /(^|=)(ext|fd)::/i.test(x))) return false;
   if (!g.sub || READ_ONLY_GIT.has(g.sub)) return true;
   switch (g.sub) {
     case 'remote': return !a.length || ['-v', '--verbose', 'get-url', 'show'].includes(a[0]);
@@ -751,12 +886,15 @@ const GIT_REASONS = { reset: 'git_reset_hard', checkout: 'git_discard_all', rest
 function blockReason(tool, sub, msg) {
   if (tool === 'terraform') return 'terraform_prod';
   if (tool === 'gh') {
+    if (msg.startsWith('Prod release requests')) return 'prod_release_unapproved';
+    if (msg.startsWith('Request branches')) return 'request_branch_rename';
     if (msg.startsWith("FC-14: can't verify")) return 'merge_unverified';
     if (msg.startsWith('Protected path:')) return 'merge_protected_path';
     return /the latest verdict on head/.test(msg) ? 'merge_changes_requested' : 'merge_no_approve';
   }
   if (sub === 'push') {
     if (msg.startsWith('Tag pushes')) return 'tag_push_unapproved';
+    if (msg.startsWith('Prod release requests')) return 'prod_release_unapproved';
     if (msg.startsWith('Run `git push` in its own')) return 'push_chained';
     return msg.startsWith('Direct pushes') ? 'push_main' : 'force_push_protected';
   }
@@ -776,7 +914,7 @@ function scan(cmd, cwd0, ps, ctx, depth) {
     let msg = null; let tool = null; let sub = null;
     if (b === 'git') { const g = parseGit(t, cwd); tool = 'git'; sub = g.sub; msg = checkGit(g, ctx); }
     else if (b === 'terraform' || b === 'tofu') { tool = 'terraform'; msg = checkTerraform(t, cwd); }
-    else if (b === 'gh') { tool = 'gh'; msg = checkGh(t, cwd, ctx); }
+    else if (b === 'gh') { tool = 'gh'; msg = checkGhRefWrite(t, cwd, ctx) || checkGh(t, cwd, ctx); }
     else { const inner = innerCommand(b, t); if (inner) { const r = scan(inner.cmd, cwd, inner.ps, ctx, depth + 1); if (r) return r; } }
     if (msg) {
       let reason = null;
@@ -835,8 +973,27 @@ function checkMcpFileWrite(payload, ctx) {
   };
 }
 
+// An MCP branch or file write to `release/prod/*` (review of #58): an MCP call carries no FLEET_PROD_RELEASE_APPROVED and
+// no request commit the hook can read (push_files commits files; a request commit changes none), so it always blocks.
+const MCP_BRANCH = /^mcp__.+__create_branch$/;
+function checkMcpProdRelease(payload) {
+  const i = payload.tool_input || {};
+  const branch = String(i.branch == null ? '' : i.branch).trim().replace(/^refs\/heads\//, '');
+  if (!PROD_REF.test(branch)) return null;
+  return {
+    block: `Blocked: ${payload.tool_name} to ${branch}\nProd release requests need the approving card's id and a request commit the hook can read, which an MCP write cannot carry. `
+      + 'Verify the card (`answer.decided_by_owner === true`, docs/agent-conventions/cloud-releases.md), make the request commit, then push it: '
+      + `\`FLEET_PROD_RELEASE_APPROVED=<card id> git push origin HEAD:refs/heads/${branch}\`.`,
+    gate: { reason: 'prod_release_unapproved' },
+  };
+}
+
 function decide(payload, ctx = {}) {
   if (MCP_MERGE.test(String(payload.tool_name || ''))) return checkMcpMerge(payload);
+  if (MCP_BRANCH.test(String(payload.tool_name || '')) || MCP_FILE_WRITE.test(String(payload.tool_name || ''))) {
+    const prod = checkMcpProdRelease(payload);
+    if (prod) return prod;
+  }
   if (MCP_FILE_WRITE.test(String(payload.tool_name || ''))) return checkMcpFileWrite(payload, ctx);
   if (!['Bash', 'PowerShell'].includes(payload.tool_name)) return null;
   const cmd = (payload.tool_input || {}).command;

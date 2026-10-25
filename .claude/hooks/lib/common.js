@@ -214,6 +214,8 @@ const GATE_REASONS = {
   push_main: 'git-guard', // git push that writes main/master (not .project/-only, not fleet-state) or cannot be checked; MCP file write to the default branch
   push_chained: 'git-guard', // git push in a Bash call that also runs a git command that changes the repo (fleet-state chains excepted)
   tag_push_unapproved: 'git-guard', // tag push without FLEET_TAG_APPROVED=<decision id>
+  prod_release_unapproved: 'git-guard', // git push / gh api git/refs write of release/prod/<sha> (not a prod plan request) without FLEET_PROD_RELEASE_APPROVED=<card id> equal to its Release-Card; any MCP write there
+  request_branch_rename: 'git-guard', // gh api branches/<b>/rename into release/ or test/dev/ (a request branch is made by a checked push)
   branch_delete_checked_out: 'git-guard', // git branch -D of a branch checked out in a worktree
   terraform_prod: 'git-guard', // terraform/tofu apply or destroy against a prod path
   merge_no_approve: 'git-guard', // FC-14: no `Verdict: APPROVE` on the head commit
