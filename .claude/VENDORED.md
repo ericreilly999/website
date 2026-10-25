@@ -84,7 +84,6 @@ Paths such as `.claude/docs/...` in these files are relative to the repo root.
 - `scripts/checks/lib/iam.js`
 - `scripts/checks/lib/platform-templates/README.md`
 - `scripts/checks/lib/platform-templates/dev-integration-suite.yml`
-- `scripts/checks/lib/platform-templates/request-branch-cleanup.yml`
 - `scripts/checks/lib/platform-templates/terraform-pipeline.yml`
 - `scripts/checks/lib/platform-templates/terraform-release.yml`
 - `scripts/checks/lib/ux.js`
