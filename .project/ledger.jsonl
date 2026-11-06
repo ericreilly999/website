@@ -60,3 +60,4 @@
 {"ts":"2026-10-24T11:19:04Z","run_id":"fleet-2026-10-24-1028","project":"website","task":"adhoc","agent":"code-reviewer","outcome":"merged","pr":45,"notes":"PR 45 squash merged 4a8422f; 0 findings"}
 {"ts":"2026-10-24T11:20:52Z","run_id":"fleet-2026-10-24-1028","project":"website","task":"adhoc","agent":"code-reviewer","model":"claude-sonnet-5-5","tokens":75827,"tool_uses":25,"minutes":7.7,"outcome":"usage","source":"hook","agent_id":"a7efb03cb61b34455"}
 {"ts":"2026-10-24T11:21:00Z","run_id":"fleet-2026-10-24-1028","project":"website","task":"adhoc","agent":"code-reviewer","outcome":"merged","pr":44,"notes":"PR 44 squash merged f8d6f60; 0 blocking; honeypot on staging/verifier pending (no deploy path until secrets exist)"}
+{"ts":"2026-11-06T02:04:00Z","run_id":"website-2026-11-06-0150","project":"website","task":"ritual","agent":"project-manager","outcome":"ritual","notes":"R-platform-20261024-2/-5 acknowledged; local/L-website-20261106-1 written"}
