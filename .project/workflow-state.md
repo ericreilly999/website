@@ -227,3 +227,11 @@ CLD-13 and CLD-14 both fully shipped/closed — no further action queued for eit
 - Blocked on platform relay R-website-20261024-1 (account ids, state buckets, DNS shape, SES decision, SCPs). Open owner cards WS-9, WS-10, WS-11 (none blocking). Env secrets list in README must be created on staging and production before first plan; raise pending-Eric card when values known.
 - Then: staging plan -> show coordinator -> apply via pipeline -> deploy site to staging -> QA + verifier (includes #44 honeypot) -> prod per runbook. Backlog B-Q43-08/09 low priority. Prod still parked by owner.
 - Worktrees: only main.
+
+## Session - 2026-11-06 (`website-2026-11-06-0150`)
+### RESUME (latest, Q-43 - blocked)
+- Done: opened from ground truth (main df74a68, no open PRs, no deploy-failure issues, standards-check 8 pass/0 fail/1 waived CI-01). Owner decisions WS-9 (A, 5-15 min apex window), WS-10 (A, custom API domain first), WS-11 (done) are answered; none unblocks work by itself. Claimed relays R-platform-20261024-2 and -5 (acknowledged) and logged B-Q43-10.
+- Open: platform still owes account ids, state buckets, DNS shape (R-website-20261024-1). B-Q43-10 needs the private repo website-infra created.
+- Waiting on a local session: local/L-website-20261106-1 (create website-infra).
+- Next: once the repo exists, attach it and move the env roots; once platform answers, staging plan, show coordinator, apply via pipeline. Prod site deploy still parked by owner. B-Q43-04 (custom API domain, WS-10 A) is unblocked in principle but its backend sits in the management account; revisit after platform answers.
+- Branches/worktrees: none besides main.

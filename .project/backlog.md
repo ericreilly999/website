@@ -150,3 +150,19 @@
 ## Done
 
 ## Cancelled
+
+## Q-43: move infra code to private repo website-infra (platform relay R-platform-20261024-5)
+
+- **ID**: B-Q43-10
+- **Type**: Infra
+- **Status**: Blocked: local/L-website-20261106-1
+- **Estimate**: M
+- **Milestone**: M7
+- **Created**: 2026-11-06 by PM
+- **Source**: relay R-platform-20261024-5 (owner PL-69 option C; supersedes asks A1/A6 of R-platform-20261024-2)
+- **Outcome**: Terraform roots live in a private repo using Platform's shared apply pipeline; the public repo keeps site content and dispatch-only content-deploy workflows.
+- **Acceptance**:
+  - private repo ericreilly999/website-infra exists (local task) and is attached to the session
+  - terraform/envs/{staging,prod} and the legacy freeze moved from PRs 39-41; no Terraform apply from the public repo
+  - runbook updated to WM-FR-33 to WM-FR-39 (platform spec pl1-website-account-migration.md v1.1.0)
+  - relay answered with the moved paths
