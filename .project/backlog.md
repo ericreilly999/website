@@ -155,7 +155,7 @@
 
 - **ID**: B-Q43-10
 - **Type**: Infra
-- **Status**: Blocked: local/L-website-20261106-1
+- **Status**: In progress (2026-11-09: terraform/ copied to website-infra branch claude/website-20261109-1325; removal from public repo, pipeline wiring, runbook update, relay answer pending; repo has no default branch yet)
 - **Estimate**: M
 - **Milestone**: M7
 - **Created**: 2026-11-06 by PM
