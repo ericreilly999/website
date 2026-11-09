@@ -235,3 +235,10 @@ CLD-13 and CLD-14 both fully shipped/closed — no further action queued for eit
 - Waiting on a local session: local/L-website-20261106-1 (create website-infra).
 - Next: once the repo exists, attach it and move the env roots; once platform answers, staging plan, show coordinator, apply via pipeline. Prod site deploy still parked by owner. B-Q43-04 (custom API domain, WS-10 A) is unblocked in principle but its backend sits in the management account; revisit after platform answers.
 - Branches/worktrees: none besides main.
+
+## Session - 2026-11-09 (`website-2026-11-09-1325`)
+### RESUME (latest, Q-43 - partial)
+- Done: opened from ground truth (main d15ad05, no open PRs, no deploy-failure issues, standards-check 8 pass/0 fail/1 waived CI-01). Local task L-website-20261106-1 was done by the coordinator; closed. Attached website-infra (empty repo) and pushed terraform/ + README to branch claude/website-20261109-1325 there (7b81dd1). B-Q43-10 now In progress.
+- Open: website-infra has no default branch, so no PR possible there; owner/platform must create `main` (e.g. platform's pipeline template commit), then PR the branch. After that: delete terraform/ and terraform workflows from public repo (PR), update runbook to WM-FR-33..39, answer relays R-platform-20261024-2 and -5 with moved paths. Platform still owes account ids/DNS shape (R-website-20261024-1).
+- Waiting on a local session: none. Prod site deploy still parked by owner.
+- Branches: claude/website-20261109-1325 (website, bookkeeping), same name in website-infra.
