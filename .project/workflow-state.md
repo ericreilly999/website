@@ -242,3 +242,10 @@ CLD-13 and CLD-14 both fully shipped/closed — no further action queued for eit
 - Open: website-infra has no default branch, so no PR possible there; owner/platform must create `main` (e.g. platform's pipeline template commit), then PR the branch. After that: delete terraform/ and terraform workflows from public repo (PR), update runbook to WM-FR-33..39, answer relays R-platform-20261024-2 and -5 with moved paths. Platform still owes account ids/DNS shape (R-website-20261024-1).
 - Waiting on a local session: none. Prod site deploy still parked by owner.
 - Branches: claude/website-20261109-1325 (website, bookkeeping), same name in website-infra.
+
+## Session - 2026-11-13 (`website-2026-11-13-0005`)
+### RESUME (latest, Q-43 - blocked, idle)
+- Done: opened from ground truth (main f389738, no open PRs, no deploy-failure issues, standards-check 8 pass/0 fail/1 waived CI-01). Owner queue, relays and local tasks empty; no new owner answers (WS-9 A, WS-10 A, WS-11 done already recorded).
+- Open: platform still owes account ids (relay R-website-20261024-1 done; ids come after owner-lane account creation). website-infra needs a default branch `main` created by owner/platform and is not attached to this session (add_repo needed) so B-Q43-10 cannot advance.
+- Remaining Ready items: none; every Q-43 item blocked on platform account ids or website-infra `main`. Prod site deploy still parked by owner.
+- Waiting on a local session: none. Branches/worktrees: none besides main.
