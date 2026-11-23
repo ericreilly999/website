@@ -256,3 +256,10 @@ CLD-13 and CLD-14 both fully shipped/closed — no further action queued for eit
 - Open: platform still owes account ids (R-website-20261024-1 done; ids follow owner-lane account creation). website-infra still not attached to this session (add_repo needed) and needs `main`, so B-Q43-10 cannot advance.
 - Remaining Ready items: none; each Q-43 item blocked on platform account ids or website-infra `main`. Prod site deploy still parked by owner.
 - Waiting on a local session: none. Branches/worktrees: none besides main.
+
+## Session - 2026-11-23 (`website-2026-11-23-1322`)
+### RESUME (latest, Q-43 - blocked, idle)
+- Done: opened from ground truth (main bec788f, no open PRs, no deploy-failure issues, standards-check 8 pass/0 fail/1 waived CI-01). Owner queue, relays, local tasks, decisions: nothing new. Attached website-infra (add_repo): still only branch claude/website-20261109-1325, no `main`.
+- Open: B-Q43-10 needs `main` in website-infra (owner/platform). Platform still owes account ids/DNS shape. Prod site deploy parked by owner.
+- Remaining Ready items: none; each blocked as above.
+- Waiting on a local session: none. Branches/worktrees: none besides main.
