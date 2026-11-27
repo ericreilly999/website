@@ -14,12 +14,43 @@
   } catch (e) {}
 })();
 </script>
+<script>
+/* Home hero A/B test. To run the next test: change id and the variant B copy below. */
+var HERO_EXPERIMENT = { id: 'hero-01', active: true, variants: ['a', 'b'], weights: [50, 50] };
+(function (x) {
+  var shown = 'a', assigned = false;
+  try {
+    if (x.active && !/bot|crawl|spider|slurp|mediapartners|lighthouse/i.test(navigator.userAgent)) {
+      var v = x.variants, forced = (/[?&]hero=([^&#]*)/.exec(location.search) || [])[1], stored, s, r, i;
+      if (v.indexOf(forced) < 0) forced = '';
+      try {
+        s = JSON.parse(localStorage.getItem('heroExperiment'));
+        if (s && s.id === x.id && v.indexOf(s.variant) >= 0) stored = s.variant;
+      } catch (e) {}
+      if (!stored) {
+        stored = forced || v[v.length - 1];
+        if (!forced) {
+          r = Math.random() * x.weights.reduce(function (a, b) { return a + b; }, 0);
+          for (i = 0; i < v.length; i++) { r -= x.weights[i]; if (r < 0) { stored = v[i]; break; } }
+        }
+        localStorage.setItem('heroExperiment', JSON.stringify({ id: x.id, variant: stored }));
+      }
+      shown = forced || stored;
+      assigned = shown === stored;
+    }
+  } catch (e) { shown = 'a'; assigned = false; }
+  document.documentElement.setAttribute('data-hero-variant', shown);
+  window.heroExperiment = { id: x.id, shown: shown, assigned: assigned };
+})(HERO_EXPERIMENT);
+</script>
 <link rel="icon" type="image/svg+xml" href="favicon.svg" />
 <link rel="canonical" href="https://ericreilly.com" />
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Instrument+Serif:ital@0;1&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
 <link rel="stylesheet" href="shared.css" />
+<script src="site-config.js" defer></script>
+<script src="analytics.js" defer></script>
 </head>
 <body>
 <div class="grain" aria-hidden="true"></div>
@@ -46,10 +77,18 @@
 
   <header class="hero hero-pitch reveal">
     <p class="hero-name">Eric Reilly</p>
-    <h1 class="headline">
-      Launch it. Build it. <span class="token">Scale it.</span><span class="cursor" aria-hidden="true"></span>
-    </h1>
-    <p class="sub">Websites, custom apps, and reliable platforms, plus the leadership to keep them running.</p>
+    <div class="hero-copy" data-variant="a">
+      <h1 class="headline">
+        Launch it. Build it. <span class="token">Scale it.</span><span class="cursor" aria-hidden="true"></span>
+      </h1>
+      <p class="sub">Websites, custom apps, and reliable platforms, plus the leadership to keep them running.</p>
+    </div>
+    <div class="hero-copy" data-variant="b">
+      <h1 class="headline">
+        One engineer. <span class="token">Start to finish.</span><span class="cursor" aria-hidden="true"></span>
+      </h1>
+      <p class="sub">I plan, build, and run your website, app, or cloud platform, with one fixed quote and no agency overhead.</p>
+    </div>
     <ul class="hero-links">
       <li>
         <a href="/contact">
@@ -167,11 +206,11 @@
   <footer>
     <div>© <span id="year"></span> eric reilly <span class="accent">·</span> made in tampa, fl</div>
     <div>
-      <a href="https://www.linkedin.com/in/eric-reilly-sre/" target="_blank" rel="noopener noreferrer">linkedin</a>
-      &nbsp;·&nbsp;
-      <a href="https://github.com/ericreilly999" target="_blank" rel="noopener noreferrer">github</a>
-      &nbsp;·&nbsp;
-      <a href="/contact">say hi</a>
+      <a href="https://www.linkedin.com/in/eric-reilly-sre/" target="_blank" rel="noopener noreferrer">linkedin</a>&nbsp;&nbsp;·&nbsp;
+      <a href="https://github.com/ericreilly999" target="_blank" rel="noopener noreferrer">github</a>&nbsp;&nbsp;·&nbsp;
+      <a href="/contact">say hi</a>&nbsp;&nbsp;·&nbsp;
+      <a href="/links">links</a>&nbsp;&nbsp;·&nbsp;
+      <a href="/privacy">privacy</a><span class="footer-choices" hidden>&nbsp;&nbsp;·&nbsp; <button type="button" class="footer-link" data-privacy-choices hidden>privacy choices</button></span>
     </div>
   </footer>
 
@@ -199,6 +238,15 @@
       syncThemeToggleState();
     });
   }
+
+  // Conversion clicks for the hero test. analytics.js is deferred, so look it up at click time.
+  [['.hero-links li:first-child a', 'hero'], ['.cta-btn', 'cta']].forEach(function (pair) {
+    var el = document.querySelector(pair[0]);
+    if (!el) return;
+    el.addEventListener('click', function () {
+      try { window.siteAnalytics && window.siteAnalytics.track('cta_click', { location: pair[1] }); } catch (e) {}
+    });
+  });
 </script>
 </body>
 </html>

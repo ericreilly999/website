@@ -103,7 +103,7 @@ jobs:
         run: |
           CACHE="no-cache, no-store, must-revalidate"
           aws s3 sync build/ "s3://${S3_BUCKET}" --delete --cache-control "$CACHE"
-          for page in about projects contact; do
+          for page in about projects contact links privacy; do
             aws s3 cp "build/${page}.html" "s3://${S3_BUCKET}/${page}" \
               --content-type "text/html" --cache-control "$CACHE"
           done
