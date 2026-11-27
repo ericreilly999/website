@@ -65,10 +65,12 @@ test.describe('Homepage (consulting pitch)', () => {
       'Hosting done right',
       'SEO optimization',
     ]);
-    // Owner copy 2026-10-19: one shared supporting line on every card, plus a typical term.
+    // Owner copy 2026-10-19: a supporting line on every card, plus a typical term.
+    // Owner copy 2026-11-27: Launch has its own supporting line.
+    const LAUNCH_SUPPORT = 'A public profile for your business, hosted by me or handed over to you.';
     const SUPPORT = 'A production-ready app your customers and employees can use.';
     const SCALE_SUPPORT = 'From requirements gathering to deliverables to results. A multi-month engagement that can run open-ended.';
-    const supports = [SUPPORT, SUPPORT, SCALE_SUPPORT];
+    const supports = [LAUNCH_SUPPORT, SUPPORT, SCALE_SUPPORT];
     const terms = ['Typical term: 1 month', 'Typical term: 2-3 months', 'Typical term: 3+ months'];
     for (let i = 0; i < 3; i++) {
       await expect(tiers.nth(i).locator('.outcome')).toHaveText(supports[i]);
@@ -111,7 +113,7 @@ test.describe('Homepage (consulting pitch)', () => {
     const tiles = page.locator('#proof a.tile');
     await expect(tiles).toHaveCount(3);
     const expected = [
-      ['GenCast', 'In staging, building toward launch'],
+      ['GenCast', 'In production, waitlist open'],
       ['Football Odds Analysis Engine', 'Live paper-trading season in progress'],
       ['DrinkUp', 'Paused, built through final hardening'],
     ];

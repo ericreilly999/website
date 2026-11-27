@@ -62,14 +62,15 @@
           <div class="title">GenCast</div>
           <div class="meta">
             gencast (private) <span class="sep">·</span>
-            <span class="status">In staging, building toward launch</span> <span class="sep">·</span>
-            Updated Oct 18, 2026
+            <span class="status">In production, waitlist open</span> <span class="sep">·</span>
+            Updated Nov 27, 2026
           </div>
           <p class="desc">A self-serve way to turn a topic into a produced podcast episode, and to keep a series going with memory across episodes.</p>
           <ul class="bullets">
-            <li>Sign-up and account flow tested against real email delivery, not just mocks.</li>
-            <li>An episode wizard that creates real episodes from a topic.</li>
-            <li>Stripe billing set up.</li>
+            <li>The first production release went out in early November 2026, with regular releases since.</li>
+            <li>One account can run several shows, each with its own podcast feed.</li>
+            <li>You can preview a voice before you pick it, and an episode that fails can be retried, edited, or discarded.</li>
+            <li>Sign-up is not open yet. There is a waitlist at <a href="https://gencast.app" target="_blank" rel="noopener noreferrer">gencast.app</a>, and Stripe billing is built in for when it opens.</li>
             <li>Evolved from the Prompted pipeline, taking the same idea from my own show to something anyone can use.</li>
           </ul>
           <div class="why">
@@ -87,12 +88,14 @@
           <div class="meta">
             odds-analysis (private) <span class="sep">·</span>
             <span class="status">Live paper-trading season in progress</span> <span class="sep">·</span>
-            Updated Oct 18, 2026
+            Updated Nov 27, 2026
           </div>
           <p class="desc">A batch pipeline for NFL and NCAAF sportsbook odds. It ingests lines from multiple books, devigs and blends them into a sharp-book consensus fair line, runs that through a deterministic rules engine to produce an adjusted probability estimate, and publishes a small number of value picks each week, each with a fully auditable explanation of how the estimate was reached.</p>
           <ul class="bullets">
             <li>No machine learning and no LLM anywhere in the reasoning path. Every pick traces back through a versioned, explicit rules engine, so the rationale is fully explainable rather than a black-box score.</li>
-            <li>The 2026 season is under way. Picks are posted with timestamps on a public track-record site, <a href="https://picks.ericreilly.com" target="_blank" rel="noopener noreferrer">picks.ericreilly.com</a>, so the record cannot be quietly rewritten.</li>
+            <li>The 2026 season is under way. Picks are posted with timestamps on a public track-record site, <a href="https://picks.ericreilly.com" target="_blank" rel="noopener noreferrer">picks.ericreilly.com</a>, so the record cannot be quietly rewritten. The site refreshes every day.</li>
+            <li>NFL picks are active. There have been no new college picks since mid-October. A game whose result was not captured is shown as not graded instead of being dropped from the record.</li>
+            <li>A model for totals (over/under) is in research. It missed one of its accuracy checks, so no totals rule is switched on.</li>
             <li>Still paper trading only, with no money at risk. The goal is to answer one question by February 2027: does this approach produce positive closing line value.</li>
           </ul>
           <div class="why">
@@ -110,13 +113,13 @@
           <div class="meta">
             stock-analysis (private) <span class="sep">·</span>
             <span class="status">Built and in regular use, run each quarter</span> <span class="sep">·</span>
-            Updated Oct 18, 2026
+            Updated Nov 27, 2026
           </div>
           <p class="desc">A local, rules-based Python engine for personal market research. It pulls free market data, scores a universe of tickers against a set of technical and fundamental rules, and turns that into a ranked, auditable list of proposed trades.</p>
           <ul class="bullets">
             <li>Every candidate comes with a written scorecard, so I can see exactly why it ranked where it did instead of trusting a black-box number.</li>
             <li>Hard safety boundary baked into the design: the engine only ever proposes trades. It never places, modifies, or cancels an order itself.</li>
-            <li>129 tests passing, 2 skipped, with a CLI that runs the full scoring pipeline end to end.</li>
+            <li>More than 1,700 automated tests, with a CLI that runs the full scoring pipeline end to end.</li>
           </ul>
           <div class="why">
             <div class="why-label">Why I built this</div>
@@ -133,12 +136,14 @@
           <div class="meta">
             internal (private) <span class="sep">·</span>
             <span class="status">Internal tooling, in daily use</span> <span class="sep">·</span>
-            Updated Oct 18, 2026
+            Updated Nov 27, 2026
           </div>
           <p class="desc">The workspace I use to run several projects with AI agents: a private approvals-and-status page, plus shared cloud account standards and infrastructure modules.</p>
           <ul class="bullets">
             <li>A private page where agents surface decisions and status, and I approve or answer from my phone.</li>
+            <li>A status view on that page that flags work that has gone stale or fallen behind schedule. Recent rounds made it load faster and easier to read in the light theme.</li>
             <li>Shared standards and reusable infrastructure modules, so each project starts from the same safe baseline.</li>
+            <li>A shared release tool and alert email templates that the projects reuse instead of each writing their own.</li>
             <li>Built for my own use. It is not a product and the code stays private.</li>
           </ul>
           <div class="why">
@@ -155,7 +160,7 @@
           <div class="title">Prompted: Tech Talks</div>
           <div class="meta">
             prompted-tech-talks (private) <span class="sep">·</span>
-            <span class="status">Active, new episodes shipping regularly</span> <span class="sep">·</span>
+            <span class="status">Active, four episodes published</span> <span class="sep">·</span>
             Updated Jun 6, 2026
           </div>
           <p class="desc">An end-to-end AI podcast pipeline. Listeners submit a topic prompt, Claude generates a structured multi-segment script using a custom skill, OpenAI tts-1-hd synthesizes dual-voice audio (sage + echo voices with intro/outro), FFmpeg assembles the final MP3, and GitHub Actions publishes to S3, rebuilds the RSS feed, and syncs to Spotify and Apple Podcasts. Zero manual production steps after the script is approved.</p>
@@ -183,13 +188,13 @@
           <div class="meta">
             website <span class="sep">·</span>
             <span class="status">Production live</span> <span class="sep">·</span>
-            Updated Oct 18, 2026
+            Updated Nov 27, 2026
           </div>
           <p class="desc">The site you are looking at now. It is a simple home base for who I am, what I work on, and how people can reach me, with infrastructure and deployment wired so updates are easy to ship.</p>
           <ul class="bullets">
             <li>Static HTML with a shared design system: Instrument Serif headlines, JetBrains Mono accents, and a light and dark theme toggle.</li>
             <li>A staging site that every change must pass browser tests on before it can go to production, with a protected main branch so nothing lands without a pull request.</li>
-            <li>Production AWS resources modeled in Terraform with local modules for CloudFront, S3, Route 53, ACM, and the GitHub OIDC deploy role. Tag pushes deploy through GitHub Actions with OIDC instead of long-lived AWS secrets.</li>
+            <li>Production AWS resources modeled in Terraform with local modules for CloudFront, S3, Route 53, ACM, and the GitHub OIDC deploy role. Releases run through GitHub Actions with OIDC instead of long-lived AWS secrets: staging first, then production from a version tag with an approval step.</li>
             <li>The <a href="https://picks.ericreilly.com" target="_blank" rel="noopener noreferrer">picks.ericreilly.com</a> track-record site for the odds project is hosted from the same AWS setup.</li>
           </ul>
           <div class="why">
