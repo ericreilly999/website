@@ -28,7 +28,7 @@ test.describe('Projects page', () => {
   });
 
   test('proof tiles on the landing page match the status wording here', async ({ page }) => {
-    for (const [title, status] of [['GenCast', 'In staging, building toward launch'], ['Football Odds Analysis Engine', 'Live paper-trading season in progress'], ['DrinkUp', 'Paused, built through final hardening']]) {
+    for (const [title, status] of [['GenCast', 'In production, waitlist open'], ['Football Odds Analysis Engine', 'Live paper-trading season in progress'], ['DrinkUp', 'Paused, built through final hardening']]) {
       await expect(rowFor(page, title).locator('.status')).toHaveText(status);
     }
   });
@@ -132,9 +132,10 @@ test.describe('Projects page', () => {
     await expect(row).toContainText(/no machine learning/i);
   });
 
-  test('GenCast row: staging status, no launch date, pricing or customer claims', async ({ page }) => {
+  test('GenCast row: production status with waitlist, no pricing or customer claims', async ({ page }) => {
     const row = rowFor(page, 'GenCast');
-    await expect(row.locator('.status')).toContainText('In staging, building toward launch');
+    await expect(row.locator('.status')).toHaveText('In production, waitlist open');
+    await expect(row.locator('a[href="https://gencast.app"]')).toHaveCount(1);
     await expect(row).toContainText('keep a series going with memory across episodes');
     await expect(row).toContainText(/Stripe/);
     await expect(row).not.toContainText(/\$\d|per month|customers/i);

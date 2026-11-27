@@ -180,7 +180,9 @@ jobs:
   e2e:
     name: E2E Tests (Staging)
     needs: [deploy-site, deploy-prompted]
-    runs-on: ubuntu-latest
+    # Pinned: the locked Playwright (1.59) has no Chromium build for the
+    # ubuntu-latest image (26.04). Move back to ubuntu-latest with a Playwright bump.
+    runs-on: ubuntu-24.04
     timeout-minutes: 15
     environment: staging
     permissions:
