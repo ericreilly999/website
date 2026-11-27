@@ -19,6 +19,8 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Instrument+Serif:ital@0;1&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
 <link rel="stylesheet" href="shared.css" />
+<script src="site-config.js" defer></script>
+<script src="analytics.js" defer></script>
 </head>
 <body>
 <div class="grain" aria-hidden="true"></div>
@@ -125,11 +127,11 @@
   <footer>
     <div>© <span id="year"></span> eric reilly <span class="accent">·</span> tampa, fl</div>
     <div>
-      <a href="https://www.linkedin.com/in/eric-reilly-sre/" target="_blank" rel="noopener noreferrer">linkedin</a>
-      &nbsp;·&nbsp;
-      <a href="https://github.com/ericreilly999" target="_blank" rel="noopener noreferrer">github</a>
-      &nbsp;·&nbsp;
-      <a href="/contact">contact</a>
+      <a href="https://www.linkedin.com/in/eric-reilly-sre/" target="_blank" rel="noopener noreferrer">linkedin</a>&nbsp;&nbsp;·&nbsp;
+      <a href="https://github.com/ericreilly999" target="_blank" rel="noopener noreferrer">github</a>&nbsp;&nbsp;·&nbsp;
+      <a href="/contact">contact</a>&nbsp;&nbsp;·&nbsp;
+      <a href="/links">links</a>&nbsp;&nbsp;·&nbsp;
+      <a href="/privacy">privacy</a><span class="footer-choices" hidden>&nbsp;&nbsp;·&nbsp; <button type="button" class="footer-link" data-privacy-choices hidden>privacy choices</button></span>
     </div>
   </footer>
 
@@ -192,6 +194,7 @@
       });
       const result = await res.json();
       if (res.ok) {
+        try { window.siteAnalytics && window.siteAnalytics.track('contact_submit', {}); } catch (e) {}
         showMessage(result.message || "→ message sent. I'll get back to you soon.", false);
         form.reset();
       } else {

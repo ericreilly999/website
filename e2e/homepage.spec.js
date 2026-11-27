@@ -5,9 +5,11 @@ const EM_DASH = '—';
 const LINKEDIN_URL = 'https://www.linkedin.com/in/eric-reilly-sre/';
 
 // Q-25: the landing page is the consulting pitch. Work history lives on /about.
+// 0.3.0 (WS3-FR-26): the home page carries two hero copies (A/B test). This
+// spec pins variant A with ?hero=a so every assertion stays deterministic.
 test.describe('Homepage (consulting pitch)', () => {
   test.beforeEach(async ({ page }) => {
-    await page.goto('/');
+    await page.goto('/?hero=a');
   });
 
   test('page title leads with the name and describes the offer', async ({ page }) => {
@@ -22,13 +24,14 @@ test.describe('Homepage (consulting pitch)', () => {
     expect(content).not.toContain(EM_DASH);
   });
 
-  test('hero leads with the name, then the headline and one-line sub', async ({ page }) => {
+  test('WS3-AC-11 hero leads with the name, then the headline and one-line sub (variant A)', async ({ page }) => {
     const name = page.locator('header.hero .hero-name');
     await expect(name).toHaveText('Eric Reilly');
-    const headline = page.locator('h1.headline');
+    const heroA = page.locator('header.hero .hero-copy[data-variant="a"]');
+    const headline = heroA.locator('h1.headline');
     await expect(headline).toHaveText('Launch it. Build it. Scale it.');
     await expect(headline.locator('.token')).not.toHaveCount(0);
-    await expect(page.locator('header.hero .sub')).toHaveText('Websites, custom apps, and reliable platforms, plus the leadership to keep them running.');
+    await expect(heroA.locator('.sub')).toHaveText('Websites, custom apps, and reliable platforms, plus the leadership to keep them running.');
     const nameBox = await name.boundingBox();
     const headlineBox = await headline.boundingBox();
     expect(nameBox.y).toBeLessThan(headlineBox.y);

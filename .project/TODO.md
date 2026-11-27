@@ -168,3 +168,72 @@ Tags tasks to `.project/milestones.md` M5 (OA-17 cross-project DNS handoff for `
 ## Q-24 — Projects page refresh (queued by owner 2026-10-17; worked first)
 
 - [ ] **T-04** — Refresh `public/projects.html` with latest project status; add GenCast and fleet tooling. Milestone: none (maintenance). Gate: owner picks an option on decision card `WS-5` (draft entries in its details), then QA-first test update (`e2e/projects.spec.js` counts 6 to 8 and status regexes), implementation, local tests + preview build, a second owner go-ahead, then tag deploy to prod.
+
+---
+
+## 0.3.0: /links, home hero A/B test, Google Analytics, privacy notice (spec: `spec/website-0.3.0.md`; backlog B-030-01, B-030-02, B-030-03)
+
+TDD order: QA-301..305 write RED tests from the spec before any DEV task. Branch `claude/website-030`. Parallel tracks: QA-301..305 can run in parallel with each other; DEVOPS-301 and PM-301 depend on nothing and run alongside QA. DEV tasks start only after their QA task. Test titles start with the AC id they prove.
+
+- [ ] **QA-301** (QA, S): Update existing specs so they stay deterministic and cover the new pages
+  - `e2e/homepage.spec.js`: load `/?hero=a`, scope hero locators to `.hero-copy[data-variant="a"]`; no assertion weakened
+  - `e2e/navigation.spec.js`: add `/links`, `/privacy` to the page lists (nav order and no active link, broken-link sweep, favicon, unique titles/descriptions, em dash and White Glove hygiene, 375/390px overflow); footer `links`/`privacy` links on all six pages; build list; sitemap; deploy loops; no new dependency or external script src; `analytics.js` and head-script size limits; no-JS pass over the six pages
+  - AC: WS3-AC-04, 06, 07, 08, 09, 10, 36, 37, 38; NFR-05, NFR-08
+  - Journeys: J1, J7, J9
+  - Depends On: —
+
+- [ ] **QA-302** (QA, S): Write `e2e/links.spec.js`
+  - AC: WS3-AC-01, 02, 03, 04, 05
+  - Journeys: J1, J9
+  - Depends On: —
+
+- [ ] **QA-303** (QA, M): Write `e2e/hero-experiment.spec.js` (assignment, persistence, old-id re-assignment, `?hero` forcing, no flash, storage blocked, no JS, crawler UA, `active:false`, variant B copy rules)
+  - AC: WS3-AC-11, 12, 13, 14, 15, 16, 17, 18, 19, 20; NFR-01
+  - Journeys: J2, J3, J4
+  - Depends On: —
+
+- [ ] **QA-304** (QA, M): Write `e2e/analytics.spec.js` (routed `site-config.js`, stubbed Google hosts, routed contact API; never a real id or real API)
+  - AC: WS3-AC-10 (banner at 375/390px), 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33; NFR-02, NFR-07, NFR-09
+  - Journeys: J5, J6, J7
+  - Depends On: —
+
+- [ ] **QA-305** (QA, S): Write `e2e/privacy.spec.js`
+  - AC: WS3-AC-34, 35
+  - Journeys: J8
+  - Depends On: —
+
+- [ ] **DEVOPS-301** (DEVOPS, XS): Add `links privacy` to the extensionless loop in `.github/workflows/deploy-staging.yml` and `deploy-prod.yml` (`for page in about projects contact links privacy; do`)
+  - AC: WS3-AC-09, WS3-AC-01 and 34 (live)
+  - Depends On: — (parallel with QA)
+
+- [ ] **PM-301** (PM, XS): Send one owner decision card with the five open questions in spec section 12 (consent approach, GA property settings and custom dimensions, measurement id, Instagram/TikTok URLs, which hero B; recommend candidate 1). Log the spec defaults D1..D16 in `.project/decisions.md` as spec-default lines.
+  - Depends On: — (parallel with QA; does not block DEV-301..304)
+
+- [x] **DEV-301** (FRONTEND-DEV, S): `/links` page and shared footer
+  - New `public/links.html` (WS3-FR-01..05, Instagram/TikTok as the exact comment block); footer change on `index.html`, `about.html`, `projects.html`, `contact.html`, `links.html` (WS3-FR-06); `.link-list`/`.link-card` and footer-button styles in `public/shared.css`; `package.json` build list adds `links.html`, `privacy.html`, `site-config.js`, `analytics.js`; `public/sitemap.xml` adds `/links` and `/privacy` (lastmod = commit date)
+  - AC: WS3-AC-01..08, 10, 37, 38
+  - Depends On: QA-301, QA-302
+
+- [x] **DEV-302** (FRONTEND-DEV, M): Home hero experiment
+  - `public/index.html`: `HERO_EXPERIMENT` config and assignment in the `<head>` script (spec 5.2), both `.hero-copy` blocks with variant B = Appendix A candidate 1 (or the owner's pick from PM-301), `window.heroExperiment`; `public/shared.css` variant visibility rules
+  - AC: WS3-AC-11..20
+  - Depends On: QA-301, QA-303
+
+- [x] **DEV-303** (FRONTEND-DEV, M): Analytics and consent
+  - New `public/site-config.js` (empty id, `banner`, hostname allowlist) and `public/analytics.js` (spec 5.3: enabled check, banner, consent storage, privacy choices, gtag loader with signals and ad personalization off, `siteAnalytics.track`, D10 withdrawal); script tags in the `<head>` of all six pages; `cta_click` listeners in `index.html`; `contact_submit` inside `res.ok` in `contact.html` without changing the submit flow; banner styles in `public/shared.css` (both themes, 375px)
+  - AC: WS3-AC-10, 21..33
+  - Depends On: QA-304, DEV-301 (footer button markup), DEV-302 (`window.heroExperiment`)
+
+- [x] **DEV-304** (FRONTEND-DEV, S): `/privacy` page
+  - New `public/privacy.html` with Appendix B content (banner-mode wording), `privacy choices` button, shared nav and footer
+  - AC: WS3-AC-34, 35
+  - Depends On: QA-305, DEV-301
+
+- [ ] **QA-306** (QA, M): Live validation on staging (Deploy Staging run on the merge commit)
+  - Full suite green against staging with the shipped config (WS3-AC-36); `/links` and `/privacy` 200 extensionless; zero Google requests on all six pages (WS3-AC-21); `/?hero=b` screenshot at 1280px and 375px in both themes for the owner's hero B review
+  - AC: WS3-AC-01, 09, 21, 34, 36
+  - Depends On: DEV-301, DEV-302, DEV-303, DEV-304, DEVOPS-301, staging deploy
+
+- [ ] **DEV-305** (FRONTEND-DEV, XS): Apply the owner's answers: measurement id into `public/site-config.js`; `consent` value (and the Appendix B "none" wording if `none`); Instagram/TikTok entries switched on if URLs are given; hero B copy if the owner picks another candidate
+  - AC: WS3-AC-03 (updated for any enabled network), 12, 30 or 22, 34
+  - Depends On: PM-301 answered, QA-306. Release of 0.3.0 does not wait for this task: 0.3.0 can ship with an empty id (nothing is sent).
