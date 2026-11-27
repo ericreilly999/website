@@ -117,7 +117,7 @@
 - **Outcome**: the buckets are no longer publicly readable and a bad deploy can be rolled back by object version.
 - **Acceptance**: TBD at spec time (note the S3 website endpoint serves the extensionless `about`/`projects`/`contact` objects; confirm the replacement handles them)
 
-## Q-43 follow-up: contact page 390px nav overflow
+## Q-43 follow-up: contact page 390px nav overflow (fixed on all pages by PR 59, v0.2.0)
 
 - **ID**: B-Q43-08
 - **Type**: Defect
@@ -146,6 +146,74 @@
 - **Acceptance**: spec states the rule; code and tests match it
 
 ---
+
+## 0.2.1: Scale card bullet reads "Fractional technical leadership"
+
+- **ID**: B-021-01
+- **Type**: Feature
+- **Status**: Ready
+- **Estimate**: XS
+- **Created**: 2026-11-27 by PM
+- **Source**: owner, fleet chat 2026-11-27 (relayed by the coordinator): "another minor change for 0.2.1 - let's modify the text on the splash from: * Fractional technical leadership (team structure, delivery process, hiring support, operating cadence) to: * Fractional technical leadership"
+- **Outcome**: the Scale card's third bullet is exactly `Fractional technical leadership`; the bullet stays.
+- **Acceptance**:
+  - `public/index.html` and `e2e/homepage.spec.js` updated; PR, review, staging, verifier, release card for 0.2.1
+
+## 0.3.0: /links page
+
+- **ID**: B-030-01
+- **Type**: Feature
+- **Status**: Backlog (needs spec)
+- **Estimate**: S
+- **Created**: 2026-11-27 by PM
+- **Source**: owner queue Q-118 (1): "I want a ericreilly.com/links page - this should provide all my links. Linkedin, github, and shortly we will create an instagram and tiktok that we will link here too."
+- **Outcome**: ericreilly.com/links lists LinkedIn and GitHub; Instagram and TikTok appear when the owner creates the accounts (hidden until then).
+- **Acceptance**:
+  - spec in `spec/`; page on the shared design system, in the build script, sitemap and the extensionless-page deploy loop; E2E coverage
+
+## 0.3.0: constant A/B test of the home hero
+
+- **ID**: B-030-02
+- **Type**: Feature
+- **Status**: Backlog (needs spec; depends on B-030-03 for measurement)
+- **Estimate**: M
+- **Created**: 2026-11-27 by PM
+- **Source**: owner queue Q-118 (2): "I also want the splash page to have a constant A/B testing pipeline going. We can keep the hero text that we currently have on 0.2.0 as the main text, and you can come up with a new hero text to test as a second splash page."
+- **Outcome**: visitors are split between the 0.2.0 hero (A) and an agent-drafted variant (B), with a measured goal and a way to read results.
+- **Acceptance**:
+  - spec names the goal metric, the split method for a static site, and how results are read; variant B copy shown to the owner before release
+
+## 0.3.0: Google Analytics
+
+- **ID**: B-030-03
+- **Type**: Feature
+- **Status**: Backlog (blocked on an owner card for consent and data sharing, and an owner action for the GA property and measurement id)
+- **Estimate**: S
+- **Created**: 2026-11-27 by PM
+- **Source**: owner queue Q-118 (3): "We will also want this site to plug into google analytics as part of this next iteration."
+- **Outcome**: the site reports page views and the A/B goal events to Google Analytics under the consent approach the owner chooses.
+- **Acceptance**:
+  - owner card answered (consent approach, data sharing); privacy notice as decided; measurement id supplied by the owner
+
+## Follow-up: contrast and accessibility regression test
+
+- **ID**: B-A11Y-01
+- **Type**: Test
+- **Status**: Ready
+- **Estimate**: S
+- **Created**: 2026-11-27 by PM
+- **Source**: reviewer warnings on PRs 60 and 61; verifier record 61.md
+- **Outcome**: an axe WCAG A/AA spec in `e2e/` covers the four pages and the prompted page in both themes after animations settle, so a palette edit cannot regress silently. Also update `spec/light-mode-toggle.md` section 5.4 (dark `--fg-dimmer` is now `#7D828B`).
+
+## Follow-up: release pipeline loose ends from v0.2.0
+
+- **ID**: B-REL-01
+- **Type**: Infra
+- **Status**: Ready
+- **Estimate**: S
+- **Created**: 2026-11-27 by PM
+- **Source**: run website-2026-11-27-1701
+- **Outcome**: (a) bump Playwright and return the staging E2E job to `ubuntu-latest`; (b) `Production Smoke` should not need a second environment approval; (c) document the real rollback path (v0.1.8 cannot be re-dispatched); (d) `sitemap.xml` lastmod and its test still say 2026-10-18; (e) reword the home-tile test ban on "live in production"; (f) the contact API still lacks the honeypot handler, and staging forms post to the production API.
 
 ## Done
 

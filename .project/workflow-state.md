@@ -263,3 +263,11 @@ CLD-13 and CLD-14 both fully shipped/closed — no further action queued for eit
 - Open: B-Q43-10 needs `main` in website-infra (owner/platform). Platform still owes account ids/DNS shape. Prod site deploy parked by owner.
 - Remaining Ready items: none; each blocked as above.
 - Waiting on a local session: none. Branches/worktrees: none besides main.
+
+## Session - 2026-11-27 (`website-2026-11-27-1701`)
+### RESUME (latest - v0.2.0 live)
+- Done: v0.2.0 (152fd7c) is live on ericreilly.com and prompted.ericreilly.com (Deploy Production run 46053086283, card WS-14, verifier 61.md PASS). It carries the owner's Launch line, the Nov 2026 project updates, phone nav and contrast fixes, and everything parked in staging since 2026-10-18. The "parked in staging" instruction is over. Staging and production GitHub environments now hold deploy settings for the existing management-account stack.
+- Open: `Production Smoke` job of run 46053086283 waits on a second owner approval click (deploys already succeeded). Owner questions: about.html vs home copy; GenCast "In production" vs gencast.app "coming soon".
+- Next: (1) B-021-01, 0.2.1 Scale bullet "Fractional technical leadership" through PR, review, staging, verifier, release card. (2) Q-118 logged as B-030-01..03 for 0.3.0: write the spec (Requirement Analyst), raise the Google Analytics consent/data-sharing card and the owner action for the property and measurement id. (3) B-A11Y-01, B-REL-01.
+- Q-43 unchanged: blocked on platform account ids and website-infra `main`.
+- Waiting on a local session: none. Worktrees: C:\dev\gitrepos\website-wt-1127 (this run) and C:\dev\gitrepos\website-verify-57 (verifier; branch merged) can be removed. The primary checkout's local main is behind origin and has uncommitted vendored `.claude/` edits that this run did not touch.

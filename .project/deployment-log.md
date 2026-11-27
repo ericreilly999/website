@@ -4,6 +4,18 @@ Deployments are recorded in reverse-chronological order.
 
 ---
 
+## 2026-11-27 - v0.2.0 - Production
+
+**Deployed by:** GitHub Actions `Deploy Production` run 46053086283 (dispatch, tag `v0.2.0`, signoff 61); owner approved the `production` environment review.
+**Commit:** 152fd7cc26163943374beaf97b283b19e426f556
+**Approval:** release card WS-14 (owner, 2026-11-27T18:34:04Z).
+**Staging:** `Deploy Staging` run 46049657888 on the same commit, E2E 161 passed / 2 skipped. Verifier PASS: `.project/verification/61.md` (covers PRs 57, 59, 60, 61).
+**Contents:** PRs 28, 30-37, 44 (parked since 2026-10-18), 57 (Launch line, project updates), 59 (phone nav), 60 and 61 (contrast).
+**Status:** Live. Both deploy jobs succeeded; browser check at 1280 and 375 wide on /, /about, /projects, /contact and prompted.ericreilly.com. The run's `Production Smoke` job sits behind a second environment approval.
+**Notes:** First run of the dispatch-only workflows. Environment secrets and variables point at the existing management-account roles, buckets and distributions. Rollback is not a re-dispatch of v0.1.8 (no sign-off record or staging run for it): revert PR, staging, new release.
+
+---
+
 ## 2026-10-24 - Out-of-band: GitHub environment protection (no deploy)
 
 **What:** Via `gh api` on `ericreilly999/website`: environments `staging` and `production` changed from no protection to deployment branch policy "selected branches" with the single branch `main` (policy ids 64189704, 64189705); `production` additionally requires reviewer `ericreilly999` (user 241388049), self-review allowed (solo repo). No environment variables or secrets set; no AWS role values.
