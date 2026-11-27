@@ -90,7 +90,7 @@ test.describe('Homepage (consulting pitch)', () => {
     await expect(scale.locator('li')).toHaveText([
       'Cloud architecture and cost optimization',
       'Reliability, Observability, and incident response',
-      'Fractional technical leadership (team structure, delivery process, hiring support, operating cadence)',
+      'Fractional technical leadership',
     ]);
     expect(await scale.innerText()).not.toMatch(/—|–/);
   });
