@@ -106,3 +106,10 @@ Owner instruction (relayed by coordinator, chat): "don't deploy anything to prod
 - [auto] Verifier findings fixed rather than waived: phone nav overflow (PR 59), dark-theme `--fg-dimmer` #565A62 to #7D828B for 4.5:1 contrast on the main site and prompted page (PR 60, a visible palette change; spec/light-mode-toggle.md section 5.4 still lists the old dark value), prompted `#charCount` inline opacity removed (PR 61).
 - [auto] Staging E2E job pinned to ubuntu-24.04 (Playwright 1.59 has no Chromium build for the ubuntu-latest 26.04 image).
 - Open owner questions: about.html still differs from the home copy; GenCast status says "In production, waitlist open" while gencast.app says "coming soon".
+
+## 2026-11-27 — 0.2.1 release and 0.3.0 to staging (run website-2026-11-27-1921)
+- [approval] FL-39 (fleet card, owner chat 2026-11-27T19:08:42Z, decided_by_owner true): "approved 0.2 .  Get 0.2.1 shipped (you have my standing approval) and get 0.3 pushed to staging." Recorded on release card WS-17 (v0.2.1 at 9bd38fb). FL-39 does not cover 0.3.0 production.
+- [auto] WS-15 (fyi): Google Analytics consent approach is the banner (nothing loads until Accept). The card hook refused a decide card under FL-36 (reversible, not spend or production), so the PM chose the cautious option and notified. One config value switches it.
+- [auto] Hero variant B is the spec's recommended copy: "One engineer. Start to finish." / "I plan, build, and run your website, app, or cloud platform, with one fixed quote and no agency overhead." The owner sees it on staging (`/?hero=b`) before any production release; two alternatives are in the spec appendix.
+- [auto] 0.3.0 PM defaults D1 to D16 are listed in spec/website-0.3.0.md section 4.2 (for example: Instagram and TikTok are commented-out entries in links.html; Analytics only runs on an allowlist of production hostnames, so staging never sends; /links is in the footer, not the top nav; goal metric is a click on a "Work with me" button).
+- Owner actions open: WS-16 (create the GA4 property, send the measurement id; also turn off enhanced measurement or the privacy notice must be widened).

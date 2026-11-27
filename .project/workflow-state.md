@@ -271,3 +271,10 @@ CLD-13 and CLD-14 both fully shipped/closed — no further action queued for eit
 - Next: (1) B-021-01, 0.2.1 Scale bullet "Fractional technical leadership" through PR, review, staging, verifier, release card. (2) Q-118 logged as B-030-01..03 for 0.3.0: write the spec (Requirement Analyst), raise the Google Analytics consent/data-sharing card and the owner action for the property and measurement id. (3) B-A11Y-01, B-REL-01.
 - Q-43 unchanged: blocked on platform account ids and website-infra `main`.
 - Waiting on a local session: none. Worktrees: C:\dev\gitrepos\website-wt-1127 (this run) and C:\dev\gitrepos\website-verify-57 (verifier; branch merged) can be removed. The primary checkout's local main is behind origin and has uncommitted vendored `.claude/` edits that this run did not touch.
+
+## Session - 2026-11-27 (`website-2026-11-27-1921`)
+### RESUME (latest - 0.2.1 waiting on owner click, 0.3.0 on staging)
+- Done: v0.2.1 (9bd38fb, PR 63) passed review, staging (run 46056535952) and the verifier (63.md PASS); card WS-17 carries the owner's standing approval (FL-39); tag v0.2.1 pushed; Deploy Production run 46058213548 verified the tag and waits for the owner's `production` review click in GitHub. 0.3.0 (PR 65, 9fb0455: /links, /privacy, hero A/B test, Google Analytics off by default) is on staging, run 46061790074, E2E 262 passed; PM browser check at 1280 and 375 done.
+- Open: owner clicks on run 46058213548 (deploy jobs, then the smoke job) and the leftover smoke job of run 46053086283. WS-16 owner action (GA4 property and measurement id). Owner to look at hero B on staging (`/?hero=b`).
+- Next: (1) when run 46058213548 deploys, check production in a browser (Scale bullet), update WS-17 outcome and the deployment log. (2) 0.3.0 has no verifier sign-off and no production approval: dispatch the verifier on 9fb0455, then raise its release card only after a PASS and only when the owner asks for production. (3) B-REL-01, B-REL-02, B-A11Y-01.
+- Q-43 unchanged. Waiting on a local session: none. Worktrees to remove: C:\dev\gitrepos\website-wt-1127, website-030, website-verify-57, website-verify-63.
