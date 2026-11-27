@@ -151,7 +151,7 @@
 
 - **ID**: B-021-01
 - **Type**: Feature
-- **Status**: Ready
+- **Status**: Released pending owner click (PR 63, tag v0.2.1, card WS-17, Deploy Production run 46058213548)
 - **Estimate**: XS
 - **Created**: 2026-11-27 by PM
 - **Source**: owner, fleet chat 2026-11-27 (relayed by the coordinator): "another minor change for 0.2.1 - let's modify the text on the splash from: * Fractional technical leadership (team structure, delivery process, hiring support, operating cadence) to: * Fractional technical leadership"
@@ -163,7 +163,7 @@
 
 - **ID**: B-030-01
 - **Type**: Feature
-- **Status**: Backlog (needs spec)
+- **Status**: On staging (PR 65, 9fb0455); production not approved
 - **Estimate**: S
 - **Created**: 2026-11-27 by PM
 - **Source**: owner queue Q-118 (1): "I want a ericreilly.com/links page - this should provide all my links. Linkedin, github, and shortly we will create an instagram and tiktok that we will link here too."
@@ -175,7 +175,7 @@
 
 - **ID**: B-030-02
 - **Type**: Feature
-- **Status**: Backlog (needs spec; depends on B-030-03 for measurement)
+- **Status**: On staging (PR 65, 9fb0455); results unreadable until the Analytics id exists
 - **Estimate**: M
 - **Created**: 2026-11-27 by PM
 - **Source**: owner queue Q-118 (2): "I also want the splash page to have a constant A/B testing pipeline going. We can keep the hero text that we currently have on 0.2.0 as the main text, and you can come up with a new hero text to test as a second splash page."
@@ -187,7 +187,7 @@
 
 - **ID**: B-030-03
 - **Type**: Feature
-- **Status**: Backlog (blocked on an owner card for consent and data sharing, and an owner action for the GA property and measurement id)
+- **Status**: On staging, switched off (PR 65); blocked on owner action WS-16 for the measurement id
 - **Estimate**: S
 - **Created**: 2026-11-27 by PM
 - **Source**: owner queue Q-118 (3): "We will also want this site to plug into google analytics as part of this next iteration."
@@ -214,6 +214,16 @@
 - **Created**: 2026-11-27 by PM
 - **Source**: run website-2026-11-27-1701
 - **Outcome**: (a) bump Playwright and return the staging E2E job to `ubuntu-latest`; (b) `Production Smoke` should not need a second environment approval; (c) document the real rollback path (v0.1.8 cannot be re-dispatched); (d) `sitemap.xml` lastmod and its test still say 2026-10-18; (e) reword the home-tile test ban on "live in production"; (f) the contact API still lacks the honeypot handler, and staging forms post to the production API.
+
+## Follow-up: findings from the 0.2.1 and 0.3.0 reviews
+
+- **ID**: B-REL-02
+- **Type**: Fix
+- **Status**: Ready
+- **Estimate**: S
+- **Created**: 2026-11-27 by PM
+- **Source**: verifier record 63.md; reviewer of PR 65
+- **Outcome**: (a) unknown paths return the home page with HTTP 200 instead of a 404; (b) `public/google5125689d7ed988c4.html` is not in the build list, so the Search Console verification file is not served; (c) before an Analytics id is set: turn off GA4 enhanced measurement or widen the privacy notice, and make `consent: "none"` respect a stored Decline; (d) self-host the fonts; (e) pre-existing en dashes in about.html and contact.html.
 
 ## Done
 
