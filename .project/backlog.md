@@ -151,7 +151,7 @@
 
 - **ID**: B-021-01
 - **Type**: Feature
-- **Status**: Released pending owner click (PR 63, tag v0.2.1, card WS-17, Deploy Production run 46058213548)
+- **Status**: Done (v0.2.1 live 2026-11-27, PR 63, card WS-17, run 46058213548)
 - **Estimate**: XS
 - **Created**: 2026-11-27 by PM
 - **Source**: owner, fleet chat 2026-11-27 (relayed by the coordinator): "another minor change for 0.2.1 - let's modify the text on the splash from: * Fractional technical leadership (team structure, delivery process, hiring support, operating cadence) to: * Fractional technical leadership"
@@ -187,7 +187,7 @@
 
 - **ID**: B-030-03
 - **Type**: Feature
-- **Status**: On staging, switched off (PR 65); blocked on owner action WS-16 for the measurement id
+- **Status**: On staging with the measurement id set (PRs 65, 67); staging sends nothing by design; production not approved
 - **Estimate**: S
 - **Created**: 2026-11-27 by PM
 - **Source**: owner queue Q-118 (3): "We will also want this site to plug into google analytics as part of this next iteration."

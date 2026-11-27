@@ -4,6 +4,25 @@ Deployments are recorded in reverse-chronological order.
 
 ---
 
+## 2026-11-27 - v0.2.1 - Production
+
+**Deployed by:** GitHub Actions `Deploy Production` run 46058213548 (dispatch, tag `v0.2.1`, signoff 63); owner approved the `production` environment review.
+**Commit:** 9bd38fb85582b46279b556ddea6abbee913c48db
+**Approval:** release card WS-17 (owner standing approval FL-39, 2026-11-27T19:08:42Z).
+**Staging:** `Deploy Staging` run 46056535952 on the same commit, E2E 161 passed / 2 skipped. Verifier PASS: `.project/verification/63.md`.
+**Contents:** PR 63 (Scale card bullet reads "Fractional technical leadership").
+**Status:** Live. Browser check at 1280 and 375 wide. The run's `Production Smoke` job sits behind a second environment approval.
+
+---
+
+## 2026-11-27 - 0.3.0 - Staging only
+
+**Deployed by:** `Deploy Staging` runs 46061790074 (PR 65, 9fb0455) and 46069134012 (PR 67, 8804f1f, Analytics id set); E2E 262 passed / 2 skipped on both.
+**Contents:** /links, /privacy, hero A/B test, Google Analytics (consent banner, production hostnames only).
+**Status:** On staging. No verifier sign-off and no production approval yet.
+
+---
+
 ## 2026-11-27 - v0.2.0 - Production
 
 **Deployed by:** GitHub Actions `Deploy Production` run 46053086283 (dispatch, tag `v0.2.0`, signoff 61); owner approved the `production` environment review.
