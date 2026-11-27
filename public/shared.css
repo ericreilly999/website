@@ -97,9 +97,16 @@ nav.top {
 .brand b { font-weight: 600; }
 .brand span.path { color: var(--fg-dim); }
 .nav-links {
-  display: inline-flex; gap: 22px;
+  display: inline-flex; gap: 8px 22px;
+  flex-wrap: wrap;
+  max-width: 100%;
   font-family: var(--mono);
   font-size: 13px;
+}
+/* Phones: the six nav items do not fit one row, so they wrap and tighten
+   instead of pushing the page (and the theme toggle) off-screen. */
+@media (max-width: 600px) {
+  .nav-links { gap: 8px 16px; align-items: center; }
 }
 .nav-links a {
   text-decoration: none;

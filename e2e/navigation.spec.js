@@ -173,4 +173,38 @@ test.describe('Q-25 site-wide hygiene', () => {
       for (const l of loops) expect(l).toContain('about');
     }
   });
+  // Phone width: the nav must wrap instead of widening the page (found 2026-11-27:
+  // a 441px nav row pushed the theme toggle off-screen at 375px on every page).
+  for (const width of [375, 390]) {
+    for (const route of ['/', '/about', '/projects', '/contact']) {
+      test(`no horizontal overflow at ${width}px on ${route}, theme toggle reachable`, async ({ page }) => {
+        await page.setViewportSize({ width, height: 812 });
+        await page.goto(route);
+        await page.waitForLoadState('networkidle');
+        const m = await page.evaluate(() => {
+          const r = document.querySelector('.theme-toggle').getBoundingClientRect();
+          return { doc: document.documentElement.scrollWidth, win: window.innerWidth, left: r.left, right: r.right };
+        });
+        expect(m.doc).toBeLessThanOrEqual(m.win);
+        expect(m.left).toBeGreaterThanOrEqual(0);
+        expect(m.right).toBeLessThanOrEqual(m.win);
+        await page.locator('.theme-toggle').click();
+        await expect(page.locator('html')).toHaveAttribute('data-theme', 'light');
+      });
+    }
+  }
+
+  test('desktop nav stays on one row at 1280px', async ({ page }) => {
+    await page.setViewportSize({ width: 1280, height: 800 });
+    await page.goto('/');
+    await page.waitForLoadState('networkidle');
+    const m = await page.evaluate(() => {
+      const tops = [...document.querySelectorAll('.nav-links > a')].map((a) => Math.round(a.getBoundingClientRect().top));
+      const brand = document.querySelector('nav.top .brand').getBoundingClientRect();
+      const links = document.querySelector('.nav-links').getBoundingClientRect();
+      return { tops, sameRowAsBrand: links.top < brand.bottom && brand.top < links.bottom };
+    });
+    expect(new Set(m.tops).size).toBe(1);
+    expect(m.sameRowAsBrand).toBe(true);
+  });
 });
