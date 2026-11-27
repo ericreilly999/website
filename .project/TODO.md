@@ -209,22 +209,22 @@ TDD order: QA-301..305 write RED tests from the spec before any DEV task. Branch
 - [ ] **PM-301** (PM, XS): Send one owner decision card with the five open questions in spec section 12 (consent approach, GA property settings and custom dimensions, measurement id, Instagram/TikTok URLs, which hero B; recommend candidate 1). Log the spec defaults D1..D16 in `.project/decisions.md` as spec-default lines.
   - Depends On: — (parallel with QA; does not block DEV-301..304)
 
-- [ ] **DEV-301** (FRONTEND-DEV, S): `/links` page and shared footer
+- [x] **DEV-301** (FRONTEND-DEV, S): `/links` page and shared footer
   - New `public/links.html` (WS3-FR-01..05, Instagram/TikTok as the exact comment block); footer change on `index.html`, `about.html`, `projects.html`, `contact.html`, `links.html` (WS3-FR-06); `.link-list`/`.link-card` and footer-button styles in `public/shared.css`; `package.json` build list adds `links.html`, `privacy.html`, `site-config.js`, `analytics.js`; `public/sitemap.xml` adds `/links` and `/privacy` (lastmod = commit date)
   - AC: WS3-AC-01..08, 10, 37, 38
   - Depends On: QA-301, QA-302
 
-- [ ] **DEV-302** (FRONTEND-DEV, M): Home hero experiment
+- [x] **DEV-302** (FRONTEND-DEV, M): Home hero experiment
   - `public/index.html`: `HERO_EXPERIMENT` config and assignment in the `<head>` script (spec 5.2), both `.hero-copy` blocks with variant B = Appendix A candidate 1 (or the owner's pick from PM-301), `window.heroExperiment`; `public/shared.css` variant visibility rules
   - AC: WS3-AC-11..20
   - Depends On: QA-301, QA-303
 
-- [ ] **DEV-303** (FRONTEND-DEV, M): Analytics and consent
+- [x] **DEV-303** (FRONTEND-DEV, M): Analytics and consent
   - New `public/site-config.js` (empty id, `banner`, hostname allowlist) and `public/analytics.js` (spec 5.3: enabled check, banner, consent storage, privacy choices, gtag loader with signals and ad personalization off, `siteAnalytics.track`, D10 withdrawal); script tags in the `<head>` of all six pages; `cta_click` listeners in `index.html`; `contact_submit` inside `res.ok` in `contact.html` without changing the submit flow; banner styles in `public/shared.css` (both themes, 375px)
   - AC: WS3-AC-10, 21..33
   - Depends On: QA-304, DEV-301 (footer button markup), DEV-302 (`window.heroExperiment`)
 
-- [ ] **DEV-304** (FRONTEND-DEV, S): `/privacy` page
+- [x] **DEV-304** (FRONTEND-DEV, S): `/privacy` page
   - New `public/privacy.html` with Appendix B content (banner-mode wording), `privacy choices` button, shared nav and footer
   - AC: WS3-AC-34, 35
   - Depends On: QA-305, DEV-301
