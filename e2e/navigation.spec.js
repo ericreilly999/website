@@ -173,4 +173,22 @@ test.describe('Q-25 site-wide hygiene', () => {
       for (const l of loops) expect(l).toContain('about');
     }
   });
+  // Phone width: the nav must wrap instead of widening the page (found 2026-11-27:
+  // a 441px nav row pushed the theme toggle off-screen at 375px on every page).
+  for (const route of ['/', '/about', '/projects', '/contact']) {
+    test(`no horizontal overflow at phone width on ${route}`, async ({ browser }) => {
+      const context = await browser.newContext({ viewport: { width: 375, height: 812 } });
+      const page = await context.newPage();
+      await page.goto(route);
+      await page.waitForLoadState('networkidle');
+      const m = await page.evaluate(() => ({
+        doc: document.documentElement.scrollWidth,
+        win: window.innerWidth,
+        toggleRight: document.querySelector('.theme-toggle').getBoundingClientRect().right,
+      }));
+      expect(m.doc).toBeLessThanOrEqual(m.win);
+      expect(m.toggleRight).toBeLessThanOrEqual(m.win);
+      await context.close();
+    });
+  }
 });
