@@ -102,15 +102,19 @@ async function expectGaActive(page, g) {
   expect(cfg[0][2]).toMatchObject({ allow_google_signals: false, allow_ad_personalization_signals: false });
 }
 
-test.describe('Shipped config: measurement id empty (J7)', () => {
-  test('WS3-AC-21 six pages plus hero and CTA clicks: no Google request, no dataLayer, no banner, choices hidden, no _ga', async ({ page, context }) => {
+// The measurement id was set by the owner on 2026-11-27. The shipped config must still send
+// nothing on any host outside gaHostnames (staging, localhost): that is what this block proves.
+// On an allowlisted host the banner is expected, so the block does not apply there.
+test.describe('Shipped config: id set, host not in gaHostnames (J7)', () => {
+  test('WS3-AC-21 six pages plus hero and CTA clicks: no Google request, no dataLayer, no banner, choices hidden, no _ga', async ({ page, context, baseURL }) => {
+    test.skip(['ericreilly.com', 'www.ericreilly.com'].includes(new URL(baseURL).hostname), 'allowlisted host: the banner is expected here');
     const g = await guardGoogle(context);
     const errors = collectPageErrors(page);
     for (const p of SIX_PAGES) {
       const res = await page.goto(p);
       expect(res.status(), p).toBe(200);
       const cfg = await page.evaluate(() => window['SITE_CONFIG']);
-      expect(cfg, `${p}: shipped site-config.js`).toEqual({ gaMeasurementId: '', consent: 'banner', gaHostnames: ['ericreilly.com', 'www.ericreilly.com'] });
+      expect(cfg, `${p}: shipped site-config.js`).toEqual({ gaMeasurementId: 'G-66HRSJFF0W', consent: 'banner', gaHostnames: ['ericreilly.com', 'www.ericreilly.com'] });
       await expectAnalyticsOff(page, g);
     }
     await page.goto('/');

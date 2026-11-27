@@ -102,7 +102,7 @@ See §12. The build does not wait on them: the defaults above ship safely with a
 |---|---|---|
 | `public/links.html` | new | /links page |
 | `public/privacy.html` | new | /privacy page |
-| `public/site-config.js` | new | `window.SITE_CONFIG = { gaMeasurementId: '', consent: 'banner', gaHostnames: ['ericreilly.com', 'www.ericreilly.com'] };` and nothing else |
+| `public/site-config.js` | new | `window.SITE_CONFIG = { gaMeasurementId: '', consent: 'banner', gaHostnames: ['ericreilly.com', 'www.ericreilly.com'] };` and nothing else (the owner supplied the id `G-66HRSJFF0W` on 2026-11-27; it replaces the empty string) |
 | `public/analytics.js` | new | consent state, banner, gtag loader, `window.siteAnalytics.track()` |
 | `public/index.html` | changed | head experiment script, variant B markup, CTA tracking, footer, script tags |
 | `public/about.html`, `projects.html`, `contact.html` | changed | footer, script tags; contact also `contact_submit` |
@@ -330,7 +330,7 @@ Platform: Web (desktop and mobile browsers, one surface).
 
 ### 7.4 Google Analytics (B-030-03)
 
-- **WS3-FR-14** `public/site-config.js` shall contain only the `window.SITE_CONFIG` object of §5.1, with `gaMeasurementId: ''`, `consent: 'banner'`, `gaHostnames: ['ericreilly.com', 'www.ericreilly.com']`. It is the single place to set the measurement id and the consent mode.
+- **WS3-FR-14** `public/site-config.js` shall contain only the `window.SITE_CONFIG` object of §5.1, with `gaMeasurementId` (empty until the owner supplied `G-66HRSJFF0W` on 2026-11-27), `consent: 'banner'`, `gaHostnames: ['ericreilly.com', 'www.ericreilly.com']`. It is the single place to set the measurement id and the consent mode.
 - **WS3-FR-15** `analytics.js` shall load gtag.js (`https://www.googletagmanager.com/gtag/js?id=<id>`) only when all hold: the id is valid (D8), the hostname is in `gaHostnames` (D7), and either `consent` is `none` or `analyticsConsent` is `granted` (stored or just clicked). Otherwise it shall make no request to `googletagmanager.com`, `google-analytics.com`, `analytics.google.com`, `stats.g.doubleclick.net` or any other new third-party host, set no cookie, and create no `window.dataLayer`.
 - **WS3-FR-16** In `banner` mode with GA enabled and no stored choice, the banner of §5.3 shall appear on every page. It shall be `position: fixed`, shall not change the position of any in-flow element, shall contain `Accept`, `Decline` and a link to `/privacy`, and shall meet WCAG AA contrast in both themes.
 - **WS3-FR-17** In `banner` mode with GA enabled, the footer `privacy choices` button and the one on `/privacy` shall be visible and reopen the banner. In `none` mode, or with GA not enabled, they stay hidden.
