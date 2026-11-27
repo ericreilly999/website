@@ -278,3 +278,10 @@ CLD-13 and CLD-14 both fully shipped/closed — no further action queued for eit
 - Open: owner clicks on run 46058213548 (deploy jobs, then the smoke job) and the leftover smoke job of run 46053086283. WS-16 owner action (GA4 property and measurement id). Owner to look at hero B on staging (`/?hero=b`).
 - Next: (1) when run 46058213548 deploys, check production in a browser (Scale bullet), update WS-17 outcome and the deployment log. (2) 0.3.0 has no verifier sign-off and no production approval: dispatch the verifier on 9fb0455, then raise its release card only after a PASS and only when the owner asks for production. (3) B-REL-01, B-REL-02, B-A11Y-01.
 - Q-43 unchanged. Waiting on a local session: none. Worktrees to remove: C:\dev\gitrepos\website-wt-1127, website-030, website-verify-57, website-verify-63.
+
+## Session - 2026-11-27 (`website-2026-11-27-2108`)
+### RESUME (latest - v0.2.1 live, 0.3.0 on staging with the Analytics id)
+- Done: v0.2.1 (9bd38fb) is live on production (run 46058213548, card WS-17), checked in a browser. The owner's GA4 measurement id is wired in (PR 67, 8804f1f) and 0.3.0 is redeployed to staging (run 46069134012, E2E 262 passed). WS-16 closed. Staging shows no banner and sends nothing because Analytics is limited to the production hostnames; the Accept/Decline gating was confirmed with the shipped config under hostname ericreilly.com mapped to a local build.
+- Open: second approval clicks on the smoke jobs of runs 46053086283 and 46058213548 (sites are live either way). Owner: turn off GA4 enhanced measurement (or ask for a wider privacy page); look at hero B on staging (`/?hero=b`); say when 0.3.0 should go to production.
+- Next: (1) verifier on 8804f1f, including the mapped-hostname Analytics check (no automated test covers the shipped config on an allowlisted host). (2) Release card for 0.3.0 only after a verifier PASS and only when the owner asks for production. (3) Spec lines 105, 403, 444 still say "empty id". (4) B-REL-01, B-REL-02, B-A11Y-01.
+- Q-43 unchanged. Waiting on a local session: none. Worktrees to remove: C:\dev\gitrepos\website-wt-1127, website-030, website-verify-57, website-verify-63.
